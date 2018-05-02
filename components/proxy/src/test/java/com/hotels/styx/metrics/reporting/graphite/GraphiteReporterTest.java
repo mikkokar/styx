@@ -70,6 +70,10 @@ public class GraphiteReporterTest {
     private GraphiteReporter reporter;
     private LoggingTestSupport logging;
 
+//    static {
+//        System.setProperty("sun.net.spi.nameservice.provider.1", "dns,local-dns");
+//    }
+
     @BeforeMethod
     public void setUp() throws Exception {
         Clock clock = mock(Clock.class);
