@@ -17,19 +17,23 @@ package com.hotels.styx.api.extension.service.spi;
 
 import com.google.common.collect.Iterables;
 import com.hotels.styx.api.Environment;
+import com.hotels.styx.api.Id;
 import com.hotels.styx.api.Identifiable;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.configuration.ServiceFactory;
 
 import java.util.EventListener;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import static com.hotels.styx.api.extension.service.spi.Registry.Outcome.FAILED;
 import static com.hotels.styx.api.extension.service.spi.Registry.Outcome.RELOADED;
 import static com.hotels.styx.api.extension.service.spi.Registry.Outcome.UNCHANGED;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -78,6 +82,10 @@ public interface Registry<T extends Identifiable> extends Supplier<Iterable<T>> 
     /**
      * The set of changes between reloads.
      *
+     * The identities added to the change set must be unique. The `build` method throws an
+     * IllegalArgumentException if two or more same identities are found between or within
+     * `added`, `removed` and `updated` sets.
+     *
      * @param <T>
      */
     final class Changes<T extends Identifiable> {
@@ -89,6 +97,32 @@ public interface Registry<T extends Identifiable> extends Supplier<Iterable<T>> 
             this.added = nullToEmpty(builder.added);
             this.removed = nullToEmpty(builder.removed);
             this.updated = nullToEmpty(builder.updated);
+            requireUniqueIds();
+        }
+
+        private void requireUniqueIds() {
+            Set<Id> ids = new HashSet<>();
+
+            this.added.forEach(element -> {
+                test(ids, element.id());
+                ids.add(element.id());
+            });
+
+            this.removed.forEach(element -> {
+                test(ids, element.id());
+                ids.add(element.id());
+            });
+
+            this.updated.forEach(element -> {
+                test(ids, element.id());
+                ids.add(element.id());
+            });
+        }
+
+        private void test(Set<Id> ids, Id id) {
+            if (ids.contains(id)) {
+                throw new IllegalArgumentException(format("Duplicate id: '%s'", id));
+            }
         }
 
         private static <T> Iterable<T> nullToEmpty(Iterable iterable) {
