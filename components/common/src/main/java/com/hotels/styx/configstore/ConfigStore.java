@@ -18,7 +18,9 @@ package com.hotels.styx.configstore;
 import com.google.common.annotations.VisibleForTesting;
 import rx.Observable;
 import rx.Observer;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
 import java.util.Iterator;
 import java.util.List;
@@ -49,6 +51,8 @@ public class ConfigStore {
     private final ConcurrentMap<String, Object> values;
     private final Observable<ConfigEntry<Object>> propagation;
 
+    private final ConcurrentMap<String, ReplaySubject<Object>> topics = new ConcurrentHashMap<>();
+
     public ConfigStore() {
         this.values = new ConcurrentHashMap<>();
 
@@ -74,8 +78,16 @@ public class ConfigStore {
      * @return value if present, otherwise empty
      */
     public <T> Optional<T> get(String key, Class<T> type) {
-        return Optional.ofNullable(values.get(key)).map(type::cast);
+        return Optional.ofNullable(this.topics.getOrDefault(key, null))
+                .flatMap(subject -> Optional.ofNullable(subject.getValue()))
+                .map(type::cast);
     }
+
+    public <T> Optional<T> get(String key) {
+        return Optional.ofNullable(this.topics.getOrDefault(key, null))
+                .flatMap(subject -> Optional.ofNullable((T)subject.getValue()));
+    }
+
 
     /**
      * Sets the value of a config entry. This will also publish the new value to watchers.
@@ -84,25 +96,29 @@ public class ConfigStore {
      * @param value new value
      */
     public void set(String key, Object value) {
-        this.updates.onNext(new ConfigEntry<>(key, value));
+        this.topics.putIfAbsent(key, ReplaySubject.create());
+        this.topics.get(key).onNext(value);
     }
 
-    /**
-     * Watch for changes to an entry.
-     *
-     * @param key  key
-     * @param type type to cast values to
-     * @param <T>  type
-     * @return observable supplying entry values when changes occur
-     */
-    public <T> Observable<T> watch(String key, Class<T> type) {
-        Observable<T> subsequentStates = propagation
-                .filter(update -> update.key().equals(key))
-                .map(ConfigEntry::value)
-                .cast(type)
-                .observeOn(computation());
+    public void unset(String key) {
+        ReplaySubject<?> subject = this.topics.remove(key);
+        if (subject != null) {
+            subject.onCompleted();
+        }
+    }
 
-        return concat(currentValueIfPresent(key, type), subsequentStates);
+    public <T> Observable<T> watch(String key, Class<T> type) {
+        this.topics.putIfAbsent(key, ReplaySubject.create());
+        return this.topics.get(key)
+                .observeOn(Schedulers.computation())
+                .cast(type);
+    }
+
+    public <T> Observable<T> watch(String key) {
+        this.topics.putIfAbsent(key, ReplaySubject.create());
+        Observable<T> subject = ((ReplaySubject<T>) this.topics.get(key));
+
+        return subject.observeOn(Schedulers.computation());
     }
 
     /**
