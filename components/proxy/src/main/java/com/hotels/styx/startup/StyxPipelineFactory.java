@@ -24,6 +24,7 @@ import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.extension.service.spi.StyxService;
+import com.hotels.styx.proxy.BackendRegistryShim;
 import com.hotels.styx.proxy.StyxBackendServiceClientFactory;
 import com.hotels.styx.proxy.interceptors.ConfigurationContextResolverInterceptor;
 import com.hotels.styx.proxy.interceptors.HopByHopHeadersRemovingInterceptor;
@@ -121,7 +122,10 @@ public final class StyxPipelineFactory implements PipelineFactory {
             };
         } else {
             Registry<BackendService> backendServicesRegistry = (Registry<BackendService>) servicesFromConfig.get("backendServiceRegistry");
-            pipelineBuilder = new StaticPipelineFactory(environment, backendServicesRegistry, plugins, requestTracking);
+            BackendRegistryShim shim = new BackendRegistryShim(environment.configStore());
+            backendServicesRegistry.addListener(shim);
+
+            pipelineBuilder = new StaticPipelineFactory(environment, plugins, requestTracking);
         }
 
         return pipelineBuilder.build();

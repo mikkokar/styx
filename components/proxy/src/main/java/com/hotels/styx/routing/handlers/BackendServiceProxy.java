@@ -25,6 +25,7 @@ import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
+import com.hotels.styx.proxy.BackendRegistryShim;
 import com.hotels.styx.proxy.BackendServiceClientFactory;
 import com.hotels.styx.proxy.BackendServicesRouter;
 import com.hotels.styx.proxy.RouteHandlerAdapter;
@@ -50,7 +51,8 @@ public class BackendServiceProxy implements HttpHandler {
 
     private BackendServiceProxy(BackendServiceClientFactory serviceClientFactory, Registry<BackendService> registry, Environment environment) {
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        registry.addListener(router);
+        BackendRegistryShim shim = new BackendRegistryShim(environment.configStore());
+        registry.addListener(shim);
         handler = new RouteHandlerAdapter(router);
     }
 

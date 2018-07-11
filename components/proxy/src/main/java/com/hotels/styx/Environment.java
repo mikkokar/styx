@@ -17,10 +17,10 @@ package com.hotels.styx;
 
 import com.google.common.eventbus.EventBus;
 import com.hotels.styx.api.MetricRegistry;
-import com.hotels.styx.proxy.HttpErrorStatusCauseLogger;
-import com.hotels.styx.proxy.HttpErrorStatusMetrics;
 import com.hotels.styx.api.metrics.codahale.CodaHaleMetricRegistry;
 import com.hotels.styx.configstore.ConfigStore;
+import com.hotels.styx.proxy.HttpErrorStatusCauseLogger;
+import com.hotels.styx.proxy.HttpErrorStatusMetrics;
 import com.hotels.styx.server.HttpErrorStatusListener;
 import com.hotels.styx.server.ServerEnvironment;
 
@@ -41,7 +41,7 @@ public final class Environment implements com.hotels.styx.api.Environment {
 
     private Environment(Builder builder) {
         this.eventBus = firstNonNull(builder.eventBus, () -> new EventBus("Styx"));
-        this.configStore = new ConfigStore();
+        this.configStore = builder.configStore;
 
         this.aggregatedConfiguration = firstNonNull(builder.aggregatedConfiguration, () -> new AggregatedConfiguration(new StyxConfig()));
         this.version = firstNonNull(builder.version, Version::newVersion);
@@ -96,9 +96,9 @@ public final class Environment implements com.hotels.styx.api.Environment {
     public static class Builder {
         private AggregatedConfiguration aggregatedConfiguration;
         private MetricRegistry metricRegistry;
+        private ConfigStore configStore = new ConfigStore();
         private Version version;
         private EventBus eventBus;
-
         /**
          * Sets aggregated configuration.
          *
@@ -127,6 +127,11 @@ public final class Environment implements com.hotels.styx.api.Environment {
 
         public Builder eventBus(EventBus eventBus) {
             this.eventBus = eventBus;
+            return this;
+        }
+
+        public Builder configStore(ConfigStore configStore) {
+            this.configStore = configStore;
             return this;
         }
 

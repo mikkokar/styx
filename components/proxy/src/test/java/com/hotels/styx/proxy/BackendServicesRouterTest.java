@@ -15,26 +15,27 @@
  */
 package com.hotels.styx.proxy;
 
+import com.google.common.collect.ImmutableList;
 import com.hotels.styx.Environment;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.extension.service.BackendService;
-import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.metrics.codahale.CodaHaleMetricRegistry;
 import com.hotels.styx.client.BackendServiceClient;
 import com.hotels.styx.client.OriginStatsFactory;
 import com.hotels.styx.client.OriginsInventory;
+import com.hotels.styx.configstore.ConfigStore;
 import com.hotels.styx.server.HttpInterceptorContext;
 import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import rx.schedulers.Schedulers;
 
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 import static com.hotels.styx.api.HttpResponseStatus.OK;
 import static com.hotels.styx.api.LiveHttpRequest.get;
@@ -44,7 +45,7 @@ import static com.hotels.styx.api.extension.service.BackendService.newBackendSer
 import static com.hotels.styx.client.StyxHeaderConfig.ORIGIN_ID_DEFAULT;
 import static com.hotels.styx.support.matchers.IsOptional.isValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -57,39 +58,42 @@ import static org.mockito.Mockito.when;
 public class BackendServicesRouterTest {
     private static final String APP_A = "appA";
     private static final String APP_B = "appB";
+    private static final String APP_C = "appC";
 
     private final BackendServiceClientFactory serviceClientFactory =
             (backendService, originsInventory, originStatsFactory) -> request -> responseWithOriginIdHeader(backendService);
     private HttpInterceptor.Context context = HttpInterceptorContext.create();
 
     private Environment environment;
+    private ConfigStore configStore;
 
     @BeforeMethod
     public void before() {
-        environment = new Environment.Builder().build();
+        configStore = new ConfigStore(Schedulers.immediate());
+        environment = new Environment.Builder()
+                .configStore(configStore)
+                .build();
     }
 
     @Test
     public void registersAllRoutes() {
-        Registry.Changes<BackendService> changes = added(
-                appA().newCopy().path("/headers").build(),
-                appB().newCopy().path("/badheaders").build(),
-                appB().newCopy().id("appB-03").path("/cookies").build());
+        configStore.set("apps.appA", appA().newCopy().path("/headers").build());
+        configStore.set("apps.appB", appB().newCopy().path("/cookies").build());
+        configStore.set("apps.appC", appC().newCopy().path("/badheaders").build());
+        configStore.set("apps", ImmutableList.of("appA", "appB", "appC"));
 
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(changes);
 
-        assertThat(router.routes().keySet(), contains("/badheaders", "/cookies", "/headers"));
+        assertThat(router.routes().keySet(), containsInAnyOrder("/cookies", "/headers", "/badheaders"));
     }
 
     @Test
-    public void selectsServiceBasedOnPath() throws Exception {
-        Registry.Changes<BackendService> changes = added(
-                appA().newCopy().path("/").build(),
-                appB().newCopy().path("/appB/hotel/details.html").build());
+    public void selectsServiceBasedOnPath() {
+        configStore.set("apps.appA", appA().newCopy().path("/").build());
+        configStore.set("apps.appB", appB().newCopy().path("/appB/hotel/details.html").build());
+        configStore.set("apps", ImmutableList.of("appA", "appB"));
 
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(changes);
 
         LiveHttpRequest request = get("/appB/hotel/details.html").build();
         Optional<HttpHandler> route = router.route(request, context);
@@ -98,13 +102,12 @@ public class BackendServicesRouterTest {
     }
 
     @Test
-    public void selectsApplicationBasedOnPathIfAppsAreProvidedInOppositeOrder() throws Exception {
-        Registry.Changes<BackendService> changes = added(
-                appB().newCopy().path("/appB/hotel/details.html").build(),
-                appA().newCopy().path("/").build());
+    public void selectsApplicationBasedOnPathIfAppsAreProvidedInOppositeOrder() {
+        configStore.set("apps.appA", appA().newCopy().path("/").build());
+        configStore.set("apps.appB", appB().newCopy().path("/appB/hotel/details.html").build());
+        configStore.set("apps", ImmutableList.of("appA", "appB"));
 
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(changes);
 
         LiveHttpRequest request = get("/appB/hotel/details.html").build();
         Optional<HttpHandler> route = router.route(request, context);
@@ -114,13 +117,27 @@ public class BackendServicesRouterTest {
 
 
     @Test
-    public void selectsUsingSingleSlashPath() throws Exception {
-        Registry.Changes<BackendService> changes = added(
-                appA().newCopy().path("/").build(),
-                appB().newCopy().path("/appB/hotel/details.html").build());
+    public void selectsUsingSingleSlashPath() {
+        configStore.set("apps.appA", appA().newCopy().path("/").build());
+        configStore.set("apps.appB", appB().newCopy().path("/appB/hotel/details.html").build());
+        configStore.set("apps", ImmutableList.of("appA", "appB"));
 
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(changes);
+
+        LiveHttpRequest request = get("/").build();
+        Optional<HttpHandler> route = router.route(request, context);
+
+        assertThat(proxyTo(route, request).header(ORIGIN_ID_DEFAULT), isValue(APP_A));
+    }
+
+    // TBD: simiolar to others?
+    @Test
+    public void selectsUsingSingleSlashPathIfAppsAreProvidedInOppositeOrder() {
+        configStore.set("apps.appA", appA().newCopy().path("/").build());
+        configStore.set("apps.appB", appB().newCopy().path("/appB/hotel/details.html").build());
+        configStore.set("apps", ImmutableList.of("appA", "appB"));
+
+        BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
 
         LiveHttpRequest request = get("/").build();
         Optional<HttpHandler> route = router.route(request, context);
@@ -129,28 +146,12 @@ public class BackendServicesRouterTest {
     }
 
     @Test
-    public void selectsUsingSingleSlashPathIfAppsAreProvidedInOppositeOrder() throws Exception {
-        Registry.Changes<BackendService> changes = added(
-                appB().newCopy().path("/appB/hotel/details.html").build(),
-                appA().newCopy().path("/").build());
+    public void selectsUsingPathWithNoSubsequentCharacters() {
+        configStore.set("apps.appA", appA().newCopy().path("/").build());
+        configStore.set("apps.appB", appB().newCopy().path("/appB/").build());
+        configStore.set("apps", ImmutableList.of("appA", "appB"));
 
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(changes);
-
-        LiveHttpRequest request = get("/").build();
-        Optional<HttpHandler> route = router.route(request, context);
-
-        assertThat(proxyTo(route, request).header(ORIGIN_ID_DEFAULT), isValue(APP_A));
-    }
-
-    @Test
-    public void selectsUsingPathWithNoSubsequentCharacters() throws Exception {
-        Registry.Changes<BackendService> changes = added(
-                appA().newCopy().path("/").build(),
-                appB().newCopy().path("/appB/").build());
-
-        BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(changes);
 
         LiveHttpRequest request = get("/appB/").build();
         Optional<HttpHandler> route = router.route(request, context);
@@ -160,8 +161,10 @@ public class BackendServicesRouterTest {
 
     @Test
     public void doesNotMatchRequestIfFinalSlashIsMissing() {
+        configStore.set("apps.appB", appB().newCopy().path("/appB/hotel/details.html").build());
+        configStore.set("apps", ImmutableList.of("appB"));
+
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(added(appB().newCopy().path("/appB/hotel/details.html").build()));
 
         LiveHttpRequest request = get("/ba/").build();
         Optional<HttpHandler> route = router.route(request, context);
@@ -172,22 +175,24 @@ public class BackendServicesRouterTest {
 
     @Test
     public void throwsExceptionWhenNoApplicationMatches() {
+        configStore.set("apps.appB", appB().newCopy().path("/appB/hotel/details.html").build());
+        configStore.set("apps", ImmutableList.of("appB"));
+
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(added(appB().newCopy().path("/appB/hotel/details.html").build()));
 
         LiveHttpRequest request = get("/qwertyuiop").build();
         assertThat(router.route(request, context), is(Optional.empty()));
     }
 
     @Test
-    public void removesExistingServicesBeforeAddingNewOnes() throws Exception {
-        BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
-        router.onChange(added(appB()));
+    public void removesExistingServicesBeforeAddingNewOnes() {
+        configStore.set("apps.appB", appB());
+        configStore.set("apps", ImmutableList.of("appB"));
 
-        router.onChange(new Registry.Changes.Builder<BackendService>()
-                .added(newBackendServiceBuilder(appB()).id("X").build())
-                .removed(appB())
-                .build());
+        BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
+
+        configStore.set("apps.X", newBackendServiceBuilder(appB()).id("X").build());
+        configStore.set("apps", ImmutableList.of("X"));
 
         LiveHttpRequest request = get("/appB/").build();
         Optional<HttpHandler> route = router.route(request, context);
@@ -195,17 +200,18 @@ public class BackendServicesRouterTest {
     }
 
     @Test
-    public void updatesRoutesOnBackendServicesChange() throws Exception {
+    public void updatesRoutesOnBackendServicesChange() {
         BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
 
         LiveHttpRequest request = get("/appB/").build();
 
-        router.onChange(added(appB()));
+        configStore.set("apps.appB", appB());
+        configStore.set("apps", ImmutableList.of("appB"));
 
         Optional<HttpHandler> route = router.route(request, context);
         assertThat(proxyTo(route, request).header(ORIGIN_ID_DEFAULT), isValue(APP_B));
 
-        router.onChange(new Registry.Changes.Builder<BackendService>().build());
+        configStore.set("apps", ImmutableList.of("appB"));
 
         Optional<HttpHandler> route2 = router.route(request, context);
         assertThat(proxyTo(route2, request).header(ORIGIN_ID_DEFAULT), isValue(APP_B));
@@ -214,7 +220,6 @@ public class BackendServicesRouterTest {
     private LiveHttpResponse proxyTo(Optional<HttpHandler> pipeline, LiveHttpRequest request) {
         return Mono.from(pipeline.get().handle(request, context)).block();
     }
-
     @Test
     public void closesClientWhenBackendServicesAreUpdated() {
         BackendServiceClient firstClient = mock(BackendServiceClient.class);
@@ -228,15 +233,14 @@ public class BackendServicesRouterTest {
         BackendServicesRouter router = new BackendServicesRouter(clientFactory, environment);
 
         BackendService bookingApp = appB();
-        router.onChange(added(bookingApp));
+        configStore.set("apps.appB", bookingApp);
+        configStore.set("apps", ImmutableList.of("appB"));
 
         ArgumentCaptor<OriginsInventory> originsInventory = forClass(OriginsInventory.class);
-
         verify(clientFactory).createClient(eq(bookingApp), originsInventory.capture(), any(OriginStatsFactory.class));
 
         BackendService bookingAppMinusOneOrigin = bookingAppMinusOneOrigin();
-
-        router.onChange(updated(bookingAppMinusOneOrigin));
+        configStore.set("apps.appB", bookingAppMinusOneOrigin);
 
         assertThat(originsInventory.getValue().closed(), is(true));
         verify(clientFactory).createClient(eq(bookingAppMinusOneOrigin), any(OriginsInventory.class), any(OriginStatsFactory.class));
@@ -256,11 +260,12 @@ public class BackendServicesRouterTest {
         BackendServicesRouter router = new BackendServicesRouter(clientFactory, environment);
 
         BackendService bookingApp = appB();
-        router.onChange(added(bookingApp));
+        configStore.set("apps.appB", bookingApp);
+        configStore.set("apps", ImmutableList.of("appB"));
 
         verify(clientFactory).createClient(eq(bookingApp), originsInventory.capture(), any(OriginStatsFactory.class));
 
-        router.onChange(removed(bookingApp));
+        configStore.set("apps", ImmutableList.of("appB"));
 
         assertThat(originsInventory.getValue().closed(), is(true));
     }
@@ -271,34 +276,24 @@ public class BackendServicesRouterTest {
         CodaHaleMetricRegistry metrics = new CodaHaleMetricRegistry();
 
         Environment environment = new Environment.Builder()
+                .configStore(configStore)
                 .metricsRegistry(metrics)
                 .build();
         BackendServicesRouter router = new BackendServicesRouter(
                 new StyxBackendServiceClientFactory(environment), environment);
 
-        router.onChange(added(backendService(APP_B, "/appB/", 9094, "appB-01", 9095, "appB-02")));
+        configStore.set("apps.appB", backendService(APP_B, "/appB/", 9094, "appB-01", 9095, "appB-02"));
+        configStore.set("apps", ImmutableList.of("appB"));
 
         assertThat(metrics.getGauges().get("origins.appB.appB-01.status").getValue(), is(1));
         assertThat(metrics.getGauges().get("origins.appB.appB-02.status").getValue(), is(1));
 
         BackendService appMinusOneOrigin = backendService(APP_B, "/appB/", 9094, "appB-01");
 
-        router.onChange(updated(appMinusOneOrigin));
+        configStore.set("apps.appB", appMinusOneOrigin);
 
         assertThat(metrics.getGauges().get("origins.appB.appB-01.status").getValue(), is(1));
         assertThat(metrics.getGauges().get("origins.appB.appB-02.status"), is(nullValue()));
-    }
-
-    private static Registry.Changes<BackendService> added(BackendService... backendServices) {
-        return new Registry.Changes.Builder<BackendService>().added(backendServices).build();
-    }
-
-    private static Registry.Changes<BackendService> updated(BackendService... backendServices) {
-        return new Registry.Changes.Builder<BackendService>().updated(backendServices).build();
-    }
-
-    private static Registry.Changes<BackendService> removed(BackendService... backendServices) {
-        return new Registry.Changes.Builder<BackendService>().removed(backendServices).build();
     }
 
     private static BackendService appA() {
@@ -316,6 +311,16 @@ public class BackendServicesRouterTest {
                 .origins(
                         newOriginBuilder("localhost", 9094).applicationId(APP_B).id("appB-01").build(),
                         newOriginBuilder("localhost", 9095).applicationId(APP_B).id("appB-02").build())
+                .build();
+    }
+
+    private static BackendService appC() {
+        return newBackendServiceBuilder()
+                .id(APP_C)
+                .path("/appC/")
+                .origins(
+                        newOriginBuilder("localhost", 9084).applicationId(APP_C).id("appC-01").build(),
+                        newOriginBuilder("localhost", 9085).applicationId(APP_C).id("appC-02").build())
                 .build();
     }
 

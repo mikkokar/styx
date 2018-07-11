@@ -23,12 +23,15 @@ import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.AbstractRegistry;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.plugins.spi.Plugin;
+import com.hotels.styx.configstore.ConfigStore;
 import com.hotels.styx.proxy.BackendServiceClientFactory;
 import com.hotels.styx.proxy.plugin.NamedPlugin;
 import com.hotels.styx.server.HttpInterceptorContext;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -48,21 +51,26 @@ public class StaticPipelineBuilderTest {
 
     private Environment environment;
     private BackendServiceClientFactory clientFactory;
-    private Registry<BackendService> registry;
-
 
     @BeforeMethod
     public void staticPipelineBuilderTest() {
-        environment = new Environment.Builder().build();
-        clientFactory = (backendService, originsInventory, originStatsFactory) -> request -> Mono.just(response(OK).build());
-        registry = backendRegistry(newBackendServiceBuilder().origins(newOriginBuilder("localhost", 0).build())
-                .path("/foo").build());
+        ConfigStore configStore = new ConfigStore(Schedulers.immediate());
+        configStore.set("apps.appX",
+                newBackendServiceBuilder()
+                        .id("appX")
+                        .origins(newOriginBuilder("localhost", 0).build())
+                        .path("/foo").build());
+        configStore.set("apps", ImmutableList.of("appX"));
+
+        environment = new Environment.Builder()
+                .configStore(configStore)
+                .build();
+        clientFactory = (backendService, originsInventory, originStatsFactory) -> request -> Flux.just(response(OK).build());
     }
 
     @Test
-    public void buildsInterceptorPipelineForBackendServices() throws Exception {
-
-        HttpHandler handler = new StaticPipelineFactory(clientFactory, environment, registry, ImmutableList.of(), false).build();
+    public void buildsInterceptorPipelineForBackendServices() {
+        HttpHandler handler = new StaticPipelineFactory(environment, ImmutableList.of(), false).build();
         LiveHttpResponse response = Mono.from(handler.handle(get("/foo").build(), HttpInterceptorContext.create())).block();
         assertThat(response.status(), is(OK));
     }
@@ -74,7 +82,7 @@ public class StaticPipelineBuilderTest {
                 interceptor("Test-B", appendResponseHeader("X-From-Plugin", "B"))
         );
 
-        HttpHandler handler = new StaticPipelineFactory(clientFactory, environment, registry, plugins, false).build();
+        HttpHandler handler = new StaticPipelineFactory(environment, plugins, false).build();
 
         LiveHttpResponse response = Mono.from(handler.handle(get("/foo").build(), HttpInterceptorContext.create())).block();
         assertThat(response.status(), is(OK));
