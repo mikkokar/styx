@@ -18,8 +18,6 @@ package com.hotels.styx.routing;
 import com.google.common.annotations.VisibleForTesting;
 import com.hotels.styx.Environment;
 import com.hotels.styx.api.HttpHandler;
-import com.hotels.styx.api.extension.service.BackendService;
-import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.proxy.BackendServiceClientFactory;
 import com.hotels.styx.proxy.BackendServicesRouter;
 import com.hotels.styx.proxy.InterceptorPipelineBuilder;
@@ -34,19 +32,17 @@ import com.hotels.styx.proxy.plugin.NamedPlugin;
 public class StaticPipelineFactory implements HttpPipelineFactory {
     private final BackendServiceClientFactory clientFactory;
     private final Environment environment;
-    private final Registry<BackendService> registry;
     private final Iterable<NamedPlugin> plugins;
 
     @VisibleForTesting
-    StaticPipelineFactory(BackendServiceClientFactory clientFactory, Environment environment, Registry<BackendService> registry, Iterable<NamedPlugin> plugins) {
+    StaticPipelineFactory(BackendServiceClientFactory clientFactory, Environment environment, Iterable<NamedPlugin> plugins) {
         this.clientFactory = clientFactory;
         this.environment = environment;
-        this.registry = registry;
         this.plugins = plugins;
     }
 
-    public StaticPipelineFactory(Environment environment, Registry<BackendService> registry, Iterable<NamedPlugin> plugins) {
-        this(createClientFactory(environment), environment, registry, plugins);
+    public StaticPipelineFactory(Environment environment, Iterable<NamedPlugin> plugins) {
+        this(createClientFactory(environment), environment, plugins);
     }
 
     private static BackendServiceClientFactory createClientFactory(Environment environment) {
@@ -56,7 +52,6 @@ public class StaticPipelineFactory implements HttpPipelineFactory {
     @Override
     public HttpHandler build() {
         BackendServicesRouter backendServicesRouter = new BackendServicesRouter(clientFactory, environment);
-        registry.addListener(backendServicesRouter);
         RouteHandlerAdapter router = new RouteHandlerAdapter(backendServicesRouter);
 
         return new InterceptorPipelineBuilder(environment, plugins, router).build();

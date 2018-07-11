@@ -40,7 +40,7 @@ public final class Environment implements com.hotels.styx.api.Environment {
 
     private Environment(Builder builder) {
         this.eventBus = firstNonNull(builder.eventBus, () -> new EventBus("Styx"));
-        this.configStore = new ConfigStore();
+        this.configStore = builder.configStore;
 
         this.aggregatedConfiguration = firstNonNull(builder.aggregatedConfiguration, () -> new AggregatedConfiguration(new StyxConfig()));
         this.version = firstNonNull(builder.version, Version::newVersion);
@@ -95,9 +95,9 @@ public final class Environment implements com.hotels.styx.api.Environment {
     public static class Builder {
         private AggregatedConfiguration aggregatedConfiguration;
         private CodaHaleMetricRegistry metricRegistry;
+        private ConfigStore configStore = new ConfigStore();
         private Version version;
         private EventBus eventBus;
-
         /**
          * Sets aggregated configuration.
          *
@@ -126,6 +126,11 @@ public final class Environment implements com.hotels.styx.api.Environment {
 
         public Builder eventBus(EventBus eventBus) {
             this.eventBus = eventBus;
+            return this;
+        }
+
+        public Builder configStore(ConfigStore configStore) {
+            this.configStore = configStore;
             return this;
         }
 
