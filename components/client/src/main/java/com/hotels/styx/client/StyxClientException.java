@@ -27,5 +27,9 @@ public class StyxClientException extends RuntimeException {
     public StyxClientException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    public StyxClientException(String message) {
+        super(message);
+    }
 }
 

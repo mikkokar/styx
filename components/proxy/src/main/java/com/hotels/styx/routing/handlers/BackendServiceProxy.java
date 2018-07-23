@@ -50,7 +50,7 @@ public class BackendServiceProxy implements HttpHandler {
     private final RouteHandlerAdapter handler;
 
     private BackendServiceProxy(BackendServiceClientFactory serviceClientFactory, Registry<BackendService> registry, Environment environment) {
-        BackendServicesRouter router = new BackendServicesRouter(serviceClientFactory, environment);
+        BackendServicesRouter router = new BackendServicesRouter(environment);
         BackendRegistryShim shim = new BackendRegistryShim(environment.configStore());
         registry.addListener(shim);
         handler = new RouteHandlerAdapter(router);

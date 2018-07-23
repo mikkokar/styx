@@ -51,7 +51,7 @@ public class StaticPipelineFactory implements HttpPipelineFactory {
 
     @Override
     public HttpHandler build() {
-        BackendServicesRouter backendServicesRouter = new BackendServicesRouter(clientFactory, environment);
+        BackendServicesRouter backendServicesRouter = new BackendServicesRouter(environment);
         RouteHandlerAdapter router = new RouteHandlerAdapter(backendServicesRouter);
 
         return new InterceptorPipelineBuilder(environment, plugins, router).build();
