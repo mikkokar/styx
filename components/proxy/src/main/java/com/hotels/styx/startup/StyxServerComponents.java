@@ -26,6 +26,8 @@ import com.hotels.styx.api.MetricRegistry;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.extension.service.spi.StyxService;
 import com.hotels.styx.api.metrics.codahale.CodaHaleMetricRegistry;
+import com.hotels.styx.proxy.BackendServiceLauncher;
+import com.hotels.styx.proxy.StyxBackendServiceClientFactory;
 import com.hotels.styx.proxy.plugin.NamedPlugin;
 
 import java.util.HashMap;
@@ -47,6 +49,7 @@ public class StyxServerComponents {
     private final Environment environment;
     private final Map<String, StyxService> services;
     private final List<NamedPlugin> plugins;
+    private final BackendServiceLauncher backendAppLauncher;
 
     private StyxServerComponents(Builder builder) {
         StyxConfig styxConfig = requireNonNull(builder.styxConfig);
@@ -60,6 +63,8 @@ public class StyxServerComponents {
                 builder.servicesLoader.load(environment),
                 builder.additionalServices
         );
+
+        this.backendAppLauncher = new BackendServiceLauncher(new StyxBackendServiceClientFactory(this.environment), this.environment);
     }
 
     public Environment environment() {
