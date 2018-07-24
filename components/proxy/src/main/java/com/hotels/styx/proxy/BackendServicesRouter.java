@@ -36,12 +36,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import static com.hotels.styx.StyxConfigStore.appsAttribute;
+import static com.hotels.styx.StyxConfigStore.routingObjectAttribute;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.APP_PENDING;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.CREATED;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.FINISHED;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.WF_APP;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.WF_ROUTE;
-import static java.lang.String.format;
 import static java.util.Comparator.comparingInt;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toList;
@@ -199,28 +200,20 @@ public class BackendServicesRouter implements HttpRouter {
         AppRecord record = new AppRecord(appId.toString(), routes, subscriptionsById);
         subscriptionsById.put(appId, record);
 
-        Subscription appWatch = configStore.<BackendService>watch(appAttributeName(appId))
+        Subscription appWatch = configStore.<BackendService>watch(appsAttribute(appId))
                 .subscribe(
                         backendService -> record.fsm.handle(new AppAvailableEvent(record, backendService)),
-                        cause -> LOGGER.error("topic error on topic={}, cause={}", appAttributeName(appId), cause),
+                        cause -> LOGGER.error("topic error on topic={}, cause={}", appsAttribute(appId), cause),
                         () -> record.fsm.handle(new AppRemovedEvent(record))
                 );
         record.appWatch(appWatch);
 
-        Subscription routeWatch = configStore.<HttpHandler>watch(routeAttributeName(appId))
+        Subscription routeWatch = configStore.<HttpHandler>watch(routingObjectAttribute(appId))
                 .subscribe(
                         handler -> record.fsm.handle(new RouteAvailableEvent(record, handler)),
-                        cause -> LOGGER.error("topic error on topic={}, cause={}", routeAttributeName(appId), cause),
+                        cause -> LOGGER.error("topic error on topic={}, cause={}", routingObjectAttribute(appId), cause),
                         () -> record.fsm.handle(new RouteRemovedEvent(record)));
         record.routeWatch(routeWatch);
-    }
-
-    private static String appAttributeName(Id id) {
-        return format("apps.%s", id.toString());
-    }
-
-    private static String routeAttributeName(Id id) {
-        return format("routing.objects.%s", id.toString());
     }
 
     private class RootEvent {

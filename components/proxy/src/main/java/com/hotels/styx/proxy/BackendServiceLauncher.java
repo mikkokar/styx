@@ -57,6 +57,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.hotels.styx.StyxConfigStore.appsAttribute;
+import static com.hotels.styx.StyxConfigStore.routingObjectAttribute;
 import static com.hotels.styx.api.StyxInternalObservables.fromRxObservable;
 import static com.hotels.styx.client.HttpRequestOperationFactory.Builder.httpRequestOperationFactoryBuilder;
 import static java.lang.String.format;
@@ -100,21 +102,17 @@ public class BackendServiceLauncher {
 
     private void start(Id appId) {
         watchesByApp.put(appId,
-                configStore.<BackendService>watch(appAttributeName(appId))
+                configStore.<BackendService>watch(appsAttribute(appId))
                         .subscribe(this::appAdded, this::appTopicError, appRemoved(appId)));
-    }
-
-    private static String appAttributeName(Id id) {
-        return format("apps.%s", id.toString());
     }
 
     private void shut(Id appId) {
         LOG.info("shut: {}", appId);
 
-        Optional<ProxyToClientPipeline> maybePipeline = configStore.get("routing.objects." + appId);
+        Optional<ProxyToClientPipeline> maybePipeline = configStore.get(routingObjectAttribute(appId));
 
         // NOTE: Pipeline is closed only AFTER announcing its removal:
-        configStore.unset("routing.objects." + appId);
+        configStore.unset(routingObjectAttribute(appId));
         maybePipeline.ifPresent(ProxyToClientPipeline::close);
 
         watchesByApp.remove(appId).unsubscribe();
@@ -182,7 +180,7 @@ public class BackendServiceLauncher {
 
         ProxyToClientPipeline pipeline = new ProxyToClientPipeline(backendService.id(), newClientHandler(backendService, inventory, originStatsFactory), inventory);
 
-        configStore.set("routing.objects." + backendService.id(), pipeline);
+        configStore.set(routingObjectAttribute(backendService.id()), pipeline);
     }
 
 
