@@ -18,7 +18,6 @@ package com.hotels.styx.proxy;
 import com.google.common.collect.Lists;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
-import com.hotels.styx.api.Id;
 import com.hotels.styx.configstore.ConfigStore;
 import org.pcollections.HashTreePSet;
 import org.pcollections.MapPSet;
@@ -27,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static java.lang.String.format;
+import static com.hotels.styx.StyxConfigStore.appsAttribute;
 import static java.util.stream.StreamSupport.stream;
 
 public class BackendRegistryShim implements Registry.ChangeListener<BackendService> {
@@ -57,14 +56,12 @@ public class BackendRegistryShim implements Registry.ChangeListener<BackendServi
                 (backends, bakend) -> backends.plus(bakend.id().toString()),
                 MapPSet::plusAll);
 
+
+        // TODO: Mikko: Changes updated?
         changes.removed().forEach(addedBs -> configStore.unset(appsAttribute(addedBs.id())));
         changes.added().forEach(addedBs -> configStore.set(appsAttribute(addedBs.id()), addedBs));
 
         configStore.set("apps", Lists.newArrayList(added));
-    }
-
-    private static String appsAttribute(Id id) {
-        return format("apps.%s", id);
     }
 
     private static void checkConsistency(MapPSet<String> initialBackends, Registry.Changes<BackendService> changes) {

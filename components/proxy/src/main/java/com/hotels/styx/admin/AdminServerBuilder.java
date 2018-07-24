@@ -44,6 +44,7 @@ import com.hotels.styx.common.http.handler.HttpMethodFilteringHandler;
 import com.hotels.styx.common.http.handler.StaticBodyHttpHandler;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
+import com.hotels.styx.proxy.BackendRegistryShim;
 import com.hotels.styx.proxy.plugin.NamedPlugin;
 import com.hotels.styx.server.HttpServer;
 import com.hotels.styx.server.StandardHttpRouter;
@@ -119,6 +120,10 @@ public class AdminServerBuilder {
         httpRouter.add("/admin/origins/status", new OriginsInventoryHandler(environment.eventBus()));
         httpRouter.add("/admin/configuration/logging", new LoggingConfigurationHandler(styxConfig.startupConfig().logConfigLocation()));
         httpRouter.add("/admin/configuration/startup", new StartupConfigHandler(styxConfig.startupConfig()));
+
+        AppsHandler appsHandler = new AppsHandler(new BackendRegistryShim(environment.configStore()), environment.configStore());
+        httpRouter.add("/admin/apps", appsHandler);
+        httpRouter.add("/admin/apps/", appsHandler);
 
         // Dashboard
         httpRouter.add("/admin/dashboard/data.json", dashboardDataHandler(styxConfig));
