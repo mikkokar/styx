@@ -49,7 +49,7 @@ trait StyxProxySpec extends StyxClientSupplier
   }
 
   override protected def beforeAll() = {
-    styxServer = styxConfig.startServer(new RegistryServiceAdapter(backendsRegistry))
+    styxServer = styxConfig.startServer()
     println("Styx http port is: [%d]".format(styxServer.httpPort))
     println("Styx https port is: [%d]".format(styxServer.secureHttpPort))
   }

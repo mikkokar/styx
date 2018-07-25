@@ -19,12 +19,14 @@ import ch.qos.logback.classic.Level
 import com.google.common.base.Charsets._
 import com.hotels.styx.api.FullHttpRequest.get
 import com.hotels.styx.api.{HttpResponse, extension}
+import com.hotels.styx.api.HttpResponseStatus.OK
+import com.hotels.styx.api.StyxInternalObservables.toRxObservable
+import com.hotels.styx.api.exceptions.ResponseTimeoutException
 import com.hotels.styx.api.extension.ActiveOrigins
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
-import com.hotels.styx.api.HttpResponseStatus.OK
-import com.hotels.styx.client.OriginsInventory.newOriginsInventoryBuilder
 import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy
 import com.hotels.styx.client.stickysession.StickySessionLoadBalancingStrategy
+import com.hotels.styx.proxy.OriginsInventory.newOriginsInventoryBuilder
 import com.hotels.styx.server.netty.connectors.HttpPipelineHandler
 import com.hotels.styx.support.NettyOrigins
 import com.hotels.styx.support.configuration.{BackendService, HttpBackend, Origins}
@@ -41,8 +43,6 @@ import io.netty.handler.codec.http._
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import rx.observers.TestSubscriber
-import com.hotels.styx.api.StyxInternalObservables.toRxObservable
-import com.hotels.styx.api.exceptions.ResponseTimeoutException
 
 import scala.compat.java8.StreamConverters._
 import scala.concurrent.duration._

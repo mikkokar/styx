@@ -17,7 +17,6 @@ package com.hotels.styx.admin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.hotels.styx.api.FullHttpRequest;
 import com.hotels.styx.api.FullHttpResponse;
 import com.hotels.styx.api.HttpHandler;
@@ -28,8 +27,11 @@ import com.hotels.styx.api.Id;
 import com.hotels.styx.api.StyxObservable;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
-import com.hotels.styx.configstore.ConfigStore;
+import com.hotels.styx.proxy.ConfigStore;
+import com.hotels.styx.api.extension.service.BackendService;
+import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.proxy.BackendRegistryShim;
+import com.hotels.styx.proxy.ConfigStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +43,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static com.hotels.styx.StyxConfigStore.appsAttribute;
 import static com.hotels.styx.api.FullHttpResponse.response;
 import static com.hotels.styx.api.HttpResponseStatus.CONFLICT;
 import static com.hotels.styx.api.HttpResponseStatus.CREATED;
@@ -69,13 +70,11 @@ public class AppsHandler implements HttpHandler {
 
     UrlPatternRouter urlRouter = new UrlPatternRouter.Builder()
             .get("/admin/apps", httpHandler((request, context) -> {
-                Optional<List<String>> appsList = configStore.get("apps");
-                List<BackendService> apps = appsList.map(
-                        strings -> strings.stream()
-                                .map(name -> configStore.<BackendService>get(appsAttribute(name)).orElse(null))
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toList()))
-                        .orElse(ImmutableList.of());
+                List<String> appsList = configStore.applications().get();
+                List<BackendService> apps = appsList.stream()
+                        .map(name -> configStore.application().get(name).orElse(null))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
 
                 String serialised = serialise(apps);
                 return StyxObservable.of(response(OK)
@@ -85,7 +84,7 @@ public class AppsHandler implements HttpHandler {
             .get("/admin/apps/:appId", httpHandler((request, context) -> {
                 Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
                 String appId = placeholders.get("appId");
-                Optional<BackendService> app = configStore.get(appsAttribute(appId));
+                Optional<BackendService> app = configStore.application().get(appId);
                 if (app.isPresent()) {
                     String serialised = serialise(app.get());
                     return StyxObservable.of(response(OK)
@@ -123,13 +122,13 @@ public class AppsHandler implements HttpHandler {
                 Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
                 String appId = placeholders.get("appId");
 
-                Optional<BackendService> existingApp = configStore.get(appsAttribute(appId));
+                Optional<BackendService> existingApp = configStore.application().get(appId);
                 BackendService newApp = deserialise(request.bodyAs(UTF_8));
 
                 if (existingApp.isPresent()) {
-                    configStore.set(appsAttribute(appId), newApp);
-                    return StyxObservable.of(response(OK)
-                            .build());
+                    Registry.Changes<BackendService> build = new Registry.Changes.Builder<BackendService>().updated(newApp).build();
+                    shim.onChange(build);
+                    return StyxObservable.of(response(OK).build());
                 } else {
                     return StyxObservable.of(response(NOT_FOUND).build());
                 }
@@ -138,21 +137,12 @@ public class AppsHandler implements HttpHandler {
                 Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
                 String appId = placeholders.get("appId");
 
-                Optional<BackendService> existingApp = configStore.get(appsAttribute(appId));
+                Optional<BackendService> existingApp = configStore.application().get(appId);
 
                 if (existingApp.isPresent()) {
-                    List<String> apps = configStore.<List<String>>get("apps").orElse(ImmutableList.of());
-
-                    List<String> apps2 = apps.stream()
-                            .filter(name -> !name.equals(appId))
-                            .collect(Collectors.toList());
-
-                    configStore.unset(appsAttribute(appId));
-
-                    configStore.set("apps", apps2);
-
-                    return StyxObservable.of(response(OK)
-                            .build());
+                    Registry.Changes<BackendService> build = new Registry.Changes.Builder<BackendService>().removed(existingApp.get()).build();
+                    shim.onChange(build);
+                    return StyxObservable.of(response(OK).build());
                 } else {
                     return StyxObservable.of(response(NOT_FOUND).build());
                 }
@@ -161,7 +151,7 @@ public class AppsHandler implements HttpHandler {
             .build();
 
     private StyxObservable<FullHttpResponse> addApp(Id appId, BackendService app) {
-        boolean existing = configStore.get(appsAttribute(appId)).isPresent();
+        boolean existing = configStore.application().get(appId.toString()).isPresent();
 
         if (existing) {
             return StyxObservable.of(response(CONFLICT).build());

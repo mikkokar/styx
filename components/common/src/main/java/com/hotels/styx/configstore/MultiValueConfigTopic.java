@@ -25,6 +25,7 @@ import rx.subjects.BehaviorSubject;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
@@ -32,18 +33,20 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
  * Stores data about the current state of the system.
  * <p>
  * All `watch` notification events are executed sequentially in a sepearate config store worker thread.
+ *
+ * @param <T> Type of the value stored in the MultiValueConfigTopic.
  */
-public class ConfigStore {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigStore.class);
+public class MultiValueConfigTopic<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiValueConfigTopic.class);
 
-    private final ConcurrentMap<String, BehaviorSubject<Object>> topics = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, BehaviorSubject<T>> topics = new ConcurrentHashMap<>();
     private final Scheduler scheduler;
 
-    public ConfigStore() {
+    public MultiValueConfigTopic() {
         this(Schedulers.from(newSingleThreadExecutor(runnable -> new Thread(runnable, "Styx-ConfigStore-Worker"))));
     }
 
-    public ConfigStore(Scheduler scheduler) {
+    public MultiValueConfigTopic(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
@@ -53,7 +56,7 @@ public class ConfigStore {
      * @param key  key
      * @return value if present, otherwise empty
      */
-    public <T> Optional<T> get(String key) {
+    public Optional<T> get(String key) {
         LOGGER.info("get({})", key);
         return Optional.ofNullable(this.topics.getOrDefault(key, null))
                 .flatMap(subject -> {
@@ -73,7 +76,7 @@ public class ConfigStore {
      * @param key   key
      * @param value new value
      */
-    public void set(String key, Object value) {
+    public void set(String key, T value) {
         LOGGER.info("set({}, {})", key, value);
 
         this.topics.putIfAbsent(key, BehaviorSubject.create());
@@ -89,12 +92,21 @@ public class ConfigStore {
         }
     }
 
-    public <T> Observable<T> watch(String key) {
+    public Observable<T> watch(String key) {
         LOGGER.info("watch({})", key);
 
         this.topics.putIfAbsent(key, BehaviorSubject.create());
-        Observable<T> subject = (BehaviorSubject<T>) this.topics.get(key);
+        Observable<T> subject = this.topics.get(key);
 
         return subject.observeOn(scheduler);
+    }
+
+    public void update(String key, Function<Optional<T>, T> update) {
+        LOGGER.info("update({})", key);
+
+        this.topics.putIfAbsent(key, BehaviorSubject.create());
+        BehaviorSubject<T> topic = this.topics.get(key);
+
+        topic.onNext(update.apply(Optional.ofNullable(topic.getValue())));
     }
 }

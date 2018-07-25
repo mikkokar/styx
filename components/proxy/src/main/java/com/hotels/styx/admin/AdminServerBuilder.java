@@ -115,7 +115,7 @@ public class AdminServerBuilder {
         httpRouter.add("/admin/metrics", metricsHandler);
         httpRouter.add("/admin/metrics/", metricsHandler);
         httpRouter.add("/admin/configuration", new StyxConfigurationHandler(staticConfiguration()));
-        httpRouter.add("/admin/configuration/origins", new OriginsHandler(backendServicesRegistry));
+        httpRouter.add("/admin/configuration/origins", new OriginsHandler(environment.configStore()));
         httpRouter.add("/admin/jvm", new JVMMetricsHandler(environment.metricRegistry(), metricsCacheExpiration));
         httpRouter.add("/admin/origins/status", new OriginsInventoryHandler(environment.eventBus()));
         httpRouter.add("/admin/configuration/logging", new LoggingConfigurationHandler(styxConfig.startupConfig().logConfigLocation()));
@@ -130,6 +130,7 @@ public class AdminServerBuilder {
         httpRouter.add("/admin/dashboard/", new ClassPathResourceHandler("/admin/dashboard/"));
 
         // Tasks
+
         httpRouter.add("/admin/tasks/origins/reload", new HttpMethodFilteringHandler(POST, new OriginsReloadCommandHandler(backendServicesRegistry)));
         httpRouter.add("/admin/tasks/origins", new HttpMethodFilteringHandler(POST, new OriginsCommandHandler(environment.eventBus())));
         httpRouter.add("/admin/tasks/plugin/", new PluginToggleHandler(plugins));
@@ -146,7 +147,7 @@ public class AdminServerBuilder {
     }
 
     private JsonHandler<DashboardData> dashboardDataHandler(StyxConfig styxConfig) {
-        return new JsonHandler<>(new DashboardDataSupplier(backendServicesRegistry, environment, styxConfig),
+        return new JsonHandler<>(new DashboardDataSupplier(environment, styxConfig),
                 Optional.of(Duration.ofSeconds(10)),
                 new MetricsModule(SECONDS, MILLISECONDS, false));
     }

@@ -15,21 +15,24 @@
  */
 package com.hotels.styx.client
 
+import java.lang
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH
-import com.hotels.styx.api.{HttpRequest, RequestCookie}
 import com.hotels.styx.api.HttpRequest.get
-import com.hotels.styx.api.Id.id
-import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
-import com.hotels.styx.api.extension.{ActiveOrigins, Origin}
-import com.hotels.styx.api.RequestCookie.requestCookie
 import com.hotels.styx.api.HttpResponseStatus.OK
+import com.hotels.styx.api.Id.id
+import com.hotels.styx.api.RequestCookie.requestCookie
+import com.hotels.styx.api.StyxInternalObservables.fromRxObservable
+import com.hotels.styx.api.{HttpRequest, _}
+import com.hotels.styx.api.extension.loadbalancing.spi.{LoadBalancer, LoadBalancingMetric, LoadBalancingMetricSupplier}
 import com.hotels.styx.api.extension.service.{BackendService, StickySessionConfig}
-import com.hotels.styx.api.extension.service.BackendService
-import com.hotels.styx.client.OriginsInventory.newOriginsInventoryBuilder
+import com.hotels.styx.api.extension.{ActiveOrigins, Origin, RemoteHost}
+import com.hotels.styx.api.metrics.codahale.CodaHaleMetricRegistry
+import com.hotels.styx.client.connectionpool.ConnectionPool
+import com.hotels.styx.client.connectionpool.ConnectionPools.simplePoolFactory
 import com.hotels.styx.client.StyxHttpClient.newHttpClientBuilder
 import com.hotels.styx.client.loadbalancing.strategies.RoundRobinStrategy
 import com.hotels.styx.client.stickysession.StickySessionLoadBalancingStrategy
@@ -92,8 +95,33 @@ class StickySessionSpec extends FunSuite with BeforeAndAfter with ShouldMatchers
     server2.stop
   }
 
-  def activeOrigins(backendService: BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService).build()
 
+  private def activeOrigins(backendService: BackendService) = new ActiveOrigins {
+    private def clientHandler(client: StyxHostHttpClient) = new HttpHandler {
+      override def handle(request: HttpRequest, context: HttpInterceptor.Context): StyxObservable[HttpResponse] = {
+        fromRxObservable(client.sendRequest(request))
+      }
+    }
+
+    private def remoteHostClient(backendService: BackendService, origin: Origin, pool: ConnectionPool) =
+      StyxHostHttpClient.create(origin.applicationId(), origin.id(), "hey ho", pool)
+
+    private def newRemoteHost(backendService: BackendService, origin: Origin) = {
+      val pool = simplePoolFactory(backendService, new CodaHaleMetricRegistry).create(origin)
+
+      val lbMetricSupplier = new LoadBalancingMetricSupplier {
+        override def loadBalancingMetric(): LoadBalancingMetric = new LoadBalancingMetric(pool.stats().busyConnectionCount())
+      }
+
+      RemoteHost.remoteHost(origin, clientHandler(remoteHostClient(backendService, origin, pool)), lbMetricSupplier)
+    }
+
+    override def snapshot(): lang.Iterable[RemoteHost] =
+      backendService.origins().asScala
+        .map(origin => newRemoteHost(backendService, origin))
+        .toList
+        .asJava
+  }
   def roundRobinStrategy(activeOrigins: ActiveOrigins): LoadBalancer = new RoundRobinStrategy(activeOrigins, activeOrigins.snapshot())
 
   def stickySessionStrategy(activeOrigins: ActiveOrigins) = new StickySessionLoadBalancingStrategy(activeOrigins, roundRobinStrategy(activeOrigins))

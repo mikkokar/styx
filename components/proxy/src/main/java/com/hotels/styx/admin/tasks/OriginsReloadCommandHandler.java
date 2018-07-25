@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.hotels.styx.api.FullHttpResponse;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpInterceptor;
+import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.StyxObservable;
 import com.hotels.styx.api.HttpResponseStatus;
@@ -45,7 +46,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.slf4j.LoggerFactory.getLogger;
-import com.hotels.styx.api.HttpRequest;
 
 /**
  * Handler for the origins reloading command.
@@ -68,24 +68,28 @@ public class OriginsReloadCommandHandler implements HttpHandler {
     }
 
     private void reload(Subscriber<? super HttpResponse> subscriber) {
-        backendServicesRegistry.reload()
-                .handle((result, exception) -> {
-                    if (exception == null) {
-                        if (result.outcome() == RELOADED) {
-                            subscriber.onNext(okResponse("Origins reloaded successfully.\n"));
-                            subscriber.onCompleted();
-                        } else if (result.outcome() == UNCHANGED) {
-                            subscriber.onNext(okResponse(format("Origins were not reloaded because %s.\n", result.message())));
-                            subscriber.onCompleted();
+        if (backendServicesRegistry == null) {
+            subscriber.onError(new RuntimeException("BackendServicesRegistry is not configured."));
+        } else {
+            backendServicesRegistry.reload()
+                    .handle((result, exception) -> {
+                        if (exception == null) {
+                            if (result.outcome() == RELOADED) {
+                                subscriber.onNext(okResponse("Origins reloaded successfully.\n"));
+                                subscriber.onCompleted();
+                            } else if (result.outcome() == UNCHANGED) {
+                                subscriber.onNext(okResponse(format("Origins were not reloaded because %s.\n", result.message())));
+                                subscriber.onCompleted();
+                            } else {
+                                subscriber.onError(mapError(result));
+                            }
                         } else {
-                            subscriber.onError(mapError(result));
+                            subscriber.onNext(errorResponse(exception));
+                            subscriber.onCompleted();
                         }
-                    } else {
-                        subscriber.onNext(errorResponse(exception));
-                        subscriber.onCompleted();
-                    }
-                    return null;
-                });
+                        return null;
+                    });
+        }
     }
 
     private Throwable mapError(Registry.ReloadResult result) {

@@ -42,6 +42,7 @@ public class StyxHostHttpClient implements HttpClient, LoadBalancingMetricSuppli
         this.transport = requireNonNull(transport);
     }
 
+    // TODO: Mikko: Only one ID would be enough:
     public static StyxHostHttpClient create(Id appId, Id originId, CharSequence headerName, ConnectionPool pool) {
         return new StyxHostHttpClient(originId, pool, new Transport(appId, headerName));
     }

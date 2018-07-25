@@ -22,8 +22,7 @@ import com.hotels.styx.api.Id.id
 import com.hotels.styx.api.extension.ActiveOrigins
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
 import com.hotels.styx.api.HttpResponseStatus._
-import com.hotels.styx.api.extension.service
-import com.hotels.styx.client.OriginsInventory.newOriginsInventoryBuilder
+import com.hotels.styx.proxy.OriginsInventory.newOriginsInventoryBuilder
 import com.hotels.styx.client.StyxHttpClient
 import com.hotels.styx.client.StyxHttpClient._
 import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy

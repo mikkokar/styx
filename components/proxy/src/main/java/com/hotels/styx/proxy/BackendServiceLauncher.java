@@ -22,21 +22,21 @@ import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.Id;
-import com.hotels.styx.api.StyxObservable;
-import com.hotels.styx.api.extension.service.ConnectionPoolSettings;
-import com.hotels.styx.client.Connection;
-import com.hotels.styx.client.connectionpool.ConnectionPool;
 import com.hotels.styx.api.MetricRegistry;
+import com.hotels.styx.api.StyxObservable;
+import com.hotels.styx.api.extension.ActiveOrigins;
 import com.hotels.styx.api.extension.service.BackendService;
+import com.hotels.styx.api.extension.service.ConnectionPoolSettings;
 import com.hotels.styx.api.extension.service.HealthCheckConfig;
 import com.hotels.styx.api.extension.service.TlsSettings;
+import com.hotels.styx.client.Connection;
 import com.hotels.styx.client.ConnectionSettings;
 import com.hotels.styx.client.OriginStatsFactory;
-import com.hotels.styx.client.OriginsInventory;
 import com.hotels.styx.client.SimpleHttpClient;
 import com.hotels.styx.client.StyxClientException;
 import com.hotels.styx.client.StyxHeaderConfig;
 import com.hotels.styx.client.StyxHostHttpClient;
+import com.hotels.styx.client.connectionpool.ConnectionPool;
 import com.hotels.styx.client.connectionpool.ConnectionPoolFactory;
 import com.hotels.styx.client.connectionpool.ExpiringConnectionFactory;
 import com.hotels.styx.client.healthcheck.OriginHealthCheckFunction;
@@ -44,7 +44,6 @@ import com.hotels.styx.client.healthcheck.OriginHealthStatusMonitor;
 import com.hotels.styx.client.healthcheck.OriginHealthStatusMonitorFactory;
 import com.hotels.styx.client.healthcheck.UrlRequestHealthCheck;
 import com.hotels.styx.client.netty.connectionpool.NettyConnectionFactory;
-import com.hotels.styx.configstore.ConfigStore;
 import org.pcollections.HashTreePSet;
 import org.pcollections.MapPSet;
 import org.slf4j.Logger;
@@ -57,8 +56,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.hotels.styx.StyxConfigStore.appsAttribute;
-import static com.hotels.styx.StyxConfigStore.routingObjectAttribute;
 import static com.hotels.styx.api.StyxInternalObservables.fromRxObservable;
 import static com.hotels.styx.client.HttpRequestOperationFactory.Builder.httpRequestOperationFactoryBuilder;
 import static java.lang.String.format;
@@ -87,7 +84,7 @@ public class BackendServiceLauncher {
 
         this.clientWorkerThreadsCount = environment.styxConfig().proxyServerConfig().clientWorkerThreadsCount();
 
-        this.configStore.<List<String>>watch("apps")
+        this.configStore.applications().watch()
                 .subscribe(this::appsHandlerHandler);
     }
 
@@ -102,17 +99,18 @@ public class BackendServiceLauncher {
 
     private void start(Id appId) {
         watchesByApp.put(appId,
-                configStore.<BackendService>watch(appsAttribute(appId))
+                configStore.application().watch(appId.toString())
                         .subscribe(this::appAdded, this::appTopicError, appRemoved(appId)));
     }
 
     private void shut(Id appId) {
         LOG.info("shut: {}", appId);
 
-        Optional<ProxyToClientPipeline> maybePipeline = configStore.get(routingObjectAttribute(appId));
+        Optional<ProxyToClientPipeline> maybePipeline = configStore.routingObject().get(appId.toString())
+                .map(handler -> (ProxyToClientPipeline) handler);
 
         // NOTE: Pipeline is closed only AFTER announcing its removal:
-        configStore.unset(routingObjectAttribute(appId));
+        configStore.routingObject().unset(appId.toString());
         maybePipeline.ifPresent(ProxyToClientPipeline::close);
 
         watchesByApp.remove(appId).unsubscribe();
@@ -168,21 +166,24 @@ public class BackendServiceLauncher {
             return StyxHostHttpClient.create(backendService.id(), connectionPool.getOrigin().id(), headerConfig.originIdHeaderName(), connectionPool);
         };
 
-        //TODO: origins inventory builder assumes that appId/originId tuple is unique and it will fail on metrics registration.
+        // Inventory: creates per host clients and stores them under originClients topic in config store.
         OriginsInventory inventory = new OriginsInventory.Builder(backendService.id())
-                .eventBus(environment.eventBus())
-                .metricsRegistry(environment.metricRegistry())
+                .configStore(configStore)
                 .connectionPoolFactory(connectionPoolFactory)
-                .originHealthMonitor(healthStatusMonitor)
-                .initialOrigins(backendService.origins())
                 .hostClientFactory(hostClientFactory)
                 .build();
 
-        ProxyToClientPipeline pipeline = new ProxyToClientPipeline(backendService.id(), newClientHandler(backendService, inventory, originStatsFactory), inventory);
+        // ActiveOrigins: monitors originClients topic and exposes currently active clients to load balancer
+        ActiveOrigins activeOrigins = new com.hotels.styx.proxy.ActiveOrigins(backendService.id().toString(), configStore);
 
-        configStore.set(routingObjectAttribute(backendService.id()), pipeline);
+        HttpClient client = clientFactory.createClient(backendService, activeOrigins, originStatsFactory);
+
+        HttpHandler httpClient = newClientHandler(client);
+
+        ProxyToClientPipeline pipeline = new ProxyToClientPipeline(backendService.id(), httpClient, inventory);
+
+        configStore.routingObject().set(backendService.id().toString(), pipeline);
     }
-
 
     private Connection.Factory connectionFactory(
             BackendService backendService,
@@ -212,8 +213,7 @@ public class BackendServiceLauncher {
         }
     }
 
-    private HttpHandler newClientHandler(BackendService backendService, OriginsInventory originsInventory, OriginStatsFactory originStatsFactory) {
-        HttpClient client = clientFactory.createClient(backendService, originsInventory, originStatsFactory);
+    private static HttpHandler newClientHandler(HttpClient client) {
         return (request, context) -> fromRxObservable(client.sendRequest(request));
     }
 
@@ -266,7 +266,7 @@ public class BackendServiceLauncher {
 
         public void close() {
             closed = true;
-            originsInventory.close();
+//            originsInventory.close();
         }
     }
 }

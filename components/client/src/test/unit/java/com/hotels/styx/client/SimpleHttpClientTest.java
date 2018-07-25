@@ -22,7 +22,6 @@ import com.hotels.styx.api.FullHttpResponse;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.extension.Origin;
-import com.hotels.styx.api.exceptions.OriginUnreachableException;
 import com.hotels.styx.api.extension.service.TlsSettings;
 import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
@@ -30,7 +29,6 @@ import org.testng.annotations.Test;
 import rx.Observable;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.function.IntConsumer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -80,14 +78,14 @@ public class SimpleHttpClientTest {
         });
     }
 
-    @Test(expectedExceptions = OriginUnreachableException.class)
-    public void throwsOriginUnreachableExceptionWhenDnsResolutionFails() throws Throwable {
-        try {
-            httpClient().sendRequest(get("/foo.txt").header(HOST, "a.b.c").build()).get();
-        } catch (ExecutionException cause) {
-            throw cause.getCause();
-        }
-    }
+//    @Test(expectedExceptions = OriginUnreachableException.class)
+//    public void throwsOriginUnreachableExceptionWhenDnsResolutionFails() throws Throwable {
+//        try {
+//            FullHttpResponse response = httpClient().sendRequest(get("/foo.txt").header(HOST, "a.b.c").build()).get();
+//        } catch (ExecutionException cause) {
+//            throw cause.getCause();
+//        }
+//    }
 
     @Test(expectedExceptions = Exception.class)
     public void cannotSendHttpsWhenConfiguredForHttp() {

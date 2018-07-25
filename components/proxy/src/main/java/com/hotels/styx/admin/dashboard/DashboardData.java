@@ -22,54 +22,44 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.hotels.styx.Version;
 import com.hotels.styx.api.MetricRegistry;
-import com.hotels.styx.api.extension.OriginsChangeListener;
 import com.hotels.styx.api.extension.OriginsSnapshot;
 import com.hotels.styx.api.extension.service.BackendService;
-import com.hotels.styx.api.extension.service.spi.Registry;
+import com.hotels.styx.proxy.ConfigStore;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.transform;
 import static com.hotels.styx.admin.dashboard.ResponseCodeSupplier.StatusMetricType.COUNTER;
 import static com.hotels.styx.admin.dashboard.ResponseCodeSupplier.StatusMetricType.METER;
 import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.StreamSupport.stream;
 
 /**
  * Data to be converted to JSON for the dashboard.
  */
 public class DashboardData {
-    private final MetricRegistry metrics;
     private final Server server;
     private final Downstream downstream;
-    private final String serverId;
-    private final String version;
-    private final EventBus eventBus;
-    private final Registry<BackendService> backendServicesRegistry;
 
-    public DashboardData(MetricRegistry metrics, Registry<BackendService> backendServicesRegistry, String serverId, Version version, EventBus eventBus) {
-        this.backendServicesRegistry = requireNonNull(backendServicesRegistry);
+    public DashboardData(Server server, Downstream downstream) {
+        this.server = server;
+        this.downstream = downstream;
+    }
 
-        this.serverId = requireNonNull(serverId);
-        this.metrics = requireNonNull(metrics);
-        this.version = version.releaseVersion();
-        this.eventBus = requireNonNull(eventBus);
-
-        this.server = new Server();
-        this.downstream = new Downstream();
+    static DashboardData create(MetricRegistry metrics, String serverId, String version, ConfigStore configStore) {
+        Server server = new Server(metrics, serverId, version);
+        Downstream downstream = Downstream.create(serverId, metrics, configStore);
+        return new DashboardData(server, downstream);
     }
 
     @JsonProperty("server")
@@ -90,19 +80,19 @@ public class DashboardData {
         return System.currentTimeMillis();
     }
 
-    void unregister() {
-        this.downstream.unregister();
-    }
-
     /**
      * Styx-related data.
      */
-    public final class Server {
-        private final Gauge<String> uptimeGauge;
+    public static final class Server {
         private final Supplier<Map<String, Integer>> responsesSupplier;
+        private final Gauge<String> uptimeGauge;
+        private final String serverId;
+        private final String version;
 
-        private Server() {
+        private Server(MetricRegistry metrics, String serverId, String version) {
+            this.serverId = serverId;
             this.uptimeGauge = metrics.getGauges().get("jvm.uptime.formatted");
+            this.version = version;
             this.responsesSupplier = new ResponseCodeSupplier(metrics, COUNTER, "styx.response.status", false);
         }
 
@@ -130,15 +120,27 @@ public class DashboardData {
     /**
      * Data related to all origins.
      */
-    public final class Downstream implements Registry.ChangeListener<BackendService> {
-        private Collection<Backend> backends;
+    public static final class Downstream {
+        private final Collection<Backend> backends;
         private final Supplier<Map<String, Integer>> responsesSupplier;
 
-        private Downstream() {
-            this.backends = updateBackendsFromRegistry();
+        private Downstream(Supplier<Map<String, Integer>> responsesSupplier, Collection<Backend> backends) {
+            this.responsesSupplier = responsesSupplier;
+            this.backends = backends;
+        }
 
-            this.responsesSupplier = new ResponseCodeSupplier(metrics, COUNTER, "origins.response.status", false);
-            backendServicesRegistry.addListener(this);
+        static Downstream create(String serverId, MetricRegistry metrics, ConfigStore configStore) {
+            Supplier<Map<String, Integer>> responsesSupplier = new ResponseCodeSupplier(metrics, COUNTER, "origins.response.status", false);
+
+            List<Backend> backends = configStore.applications().get()
+                    .stream()
+                    .map(appName -> configStore.application().get(appName))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .map(app -> new Backend(metrics, app, serverId))
+                    .collect(Collectors.toList());
+
+            return new Downstream(responsesSupplier, backends);
         }
 
         @JsonProperty("responses")
@@ -168,31 +170,12 @@ public class DashboardData {
                     .findFirst().orElseThrow(() ->
                             new IllegalStateException(format("No origin with id %s in %s", backendId, backendIds())));
         }
-
-        @Override
-        public void onChange(Registry.Changes<BackendService> changes) {
-            this.backends = updateBackendsFromRegistry();
-        }
-
-        private List<Backend> updateBackendsFromRegistry() {
-            unregister();
-
-            return stream(backendServicesRegistry.get().spliterator(), false)
-                    .map(Backend::new)
-                    .collect(toList());
-        }
-
-        void unregister() {
-            if (backends != null) {
-                backends.forEach(Backend::unregister);
-            }
-        }
     }
 
     /**
      * Application-related data.
      */
-    public final class Backend {
+    public static final class Backend {
         private final String id;
         private final String name;
         private final List<Origin> origin;
@@ -203,18 +186,12 @@ public class DashboardData {
         private final List<String> status;
         private final ConnectionsPoolsAggregate connectionsPoolsAggregate;
 
-        private Backend(BackendService application) {
+        private Backend(MetricRegistry metrics, BackendService application, String serverId) {
             this.name = application.id().toString();
             this.id = serverId + "-" + name;
-            this.requests = new Requests("origins." + application.id());
+            this.requests = new Requests(metrics, "origins." + application.id());
 
-            this.origin = application.origins().stream().map(Origin::new).collect(toList());
-            this.registeredOrigins = new ArrayList<>();
-
-            this.origin.forEach(origin -> {
-                eventBus.register(origin);
-                registeredOrigins.add(origin);
-            });
+            this.origin = application.origins().stream().map(o -> new Origin(metrics, o)).collect(toList());
 
             /* IMPORTANT NOTE: We are using guava transforms here instead of java 8 stream-map-collect because
               the guava transforms are backed by the original objects and reflect changes in them. */
@@ -223,13 +200,6 @@ public class DashboardData {
 
             String prefix = format("origins.%s.requests.response.status", name);
             this.responsesSupplier = new ResponseCodeSupplier(metrics, METER, prefix, true);
-        }
-
-        void unregister() {
-            registeredOrigins.forEach(origin -> {
-                eventBus.unregister(origin);
-            });
-            registeredOrigins = new ArrayList<>();
         }
 
         @JsonProperty("id")
@@ -268,14 +238,6 @@ public class DashboardData {
         }
 
         @VisibleForTesting
-        List<String> originsStatuses() {
-            return origins()
-                    .stream()
-                    .map(origin -> origin.id() + "=" + origin.status())
-                    .collect(toList());
-        }
-
-        @VisibleForTesting
         Map<String, String> statusesByOriginId() {
             return origins().stream().collect(toMap(Origin::id, Origin::status));
         }
@@ -297,12 +259,12 @@ public class DashboardData {
     /**
      * Requests-related data.
      */
-    public final class Requests {
+    public static final class Requests {
         private final SuccessRate successRate;
         private final ErrorRate errorRate;
         private final Latency latency;
 
-        private Requests(String prefix) {
+        private Requests(MetricRegistry metrics, String prefix) {
             successRate = new SuccessRate(metrics.meter(prefix + ".requests.success-rate"));
             errorRate = new ErrorRate(metrics.meter(prefix + ".requests.error-rate"));
             latency = new Latency(metrics.timer(prefix + ".requests.latency"));
@@ -492,25 +454,24 @@ public class DashboardData {
     /**
      * Origin-related data.
      */
-    public final class Origin implements OriginsChangeListener {
+    public static final class Origin {
         private final com.hotels.styx.api.extension.Origin origin;
         private final Supplier<Map<String, Integer>> responsesSupplier;
         private final Requests requests;
         private final ConnectionsPool connectionsPool;
         private String status = "unknown";
 
-        private Origin(com.hotels.styx.api.extension.Origin origin) {
+        private Origin(MetricRegistry metrics, com.hotels.styx.api.extension.Origin origin) {
             this.origin = origin;
-            connectionsPool = new ConnectionsPool();
+            connectionsPool = new ConnectionsPool(metrics.getGauges());
 
             String prefix = format("origins.%s.%s.requests.response.status", origin.applicationId(), origin.id());
             this.responsesSupplier = new ResponseCodeSupplier(metrics, METER, prefix, true);
 
-            this.requests = new Requests(format("origins.%s.%s", origin.applicationId(), origin.id()));
+            this.requests = new Requests(metrics, format("origins.%s.%s", origin.applicationId(), origin.id()));
         }
 
         @Subscribe
-        @Override
         public void originsChanged(OriginsSnapshot snapshot) {
             if (snapshot.activeOrigins().contains(origin)) {
                 status = "active";
@@ -559,10 +520,8 @@ public class DashboardData {
             private final Gauge<Integer> busyGauge;
             private final Gauge<Integer> pendingGauge;
 
-            private ConnectionsPool() {
+            private ConnectionsPool(SortedMap<String, Gauge> gauges) {
                 String prefix = format("origins.%s.%s.connectionspool", origin.applicationId(), origin.id());
-
-                SortedMap<String, Gauge> gauges = metrics.getGauges();
 
                 availableGauge = gauges.get(prefix + ".available-connections");
                 busyGauge = gauges.get(prefix + ".busy-connections");

@@ -15,31 +15,41 @@
  */
 package com.hotels.styx.client
 
+import java.lang
+
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.google.common.base.Charsets._
 import com.hotels.styx.api.HttpRequest.get
+import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.api.extension.Origin._
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
 import com.hotels.styx.api.extension.{ActiveOrigins, Origin}
+import com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH
+import com.hotels.styx.api.StyxInternalObservables.fromRxObservable
 import com.hotels.styx.api.exceptions.ResponseTimeoutException
-import com.hotels.styx.api.HttpResponseStatus.OK
+import com.hotels.styx.api.extension.RemoteHost
+import com.hotels.styx.api.extension.loadbalancing.spi.{LoadBalancingMetric, LoadBalancingMetricSupplier}
 import com.hotels.styx.api.extension.service.BackendService
-import com.hotels.styx.client.OriginsInventory.newOriginsInventoryBuilder
+import com.hotels.styx.api.metrics.codahale.CodaHaleMetricRegistry
+import com.hotels.styx.api.{HttpRequest => StyxHttpRequest, HttpResponse => StyxHttpResponse, _}
 import com.hotels.styx.client.StyxHttpClient._
+import com.hotels.styx.client.connectionpool.ConnectionPool
+import com.hotels.styx.client.connectionpool.ConnectionPools.simplePoolFactory
 import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy
-import com.hotels.styx.support.api.BlockingObservables.{waitForResponse, waitForStreamingResponse}
+import com.hotels.styx.support.api.BlockingObservables.waitForResponse
 import com.hotels.styx.support.server.FakeHttpServer
 import com.hotels.styx.support.server.UrlMatchingStrategies._
 import io.netty.buffer.Unpooled._
 import io.netty.channel.ChannelFutureListener.CLOSE
 import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.http.HttpHeaders.Names._
 import io.netty.handler.codec.http.HttpVersion._
-import io.netty.handler.codec.http._
+import io.netty.handler.codec.http.{DefaultFullHttpResponse, HttpResponseStatus, LastHttpContent}
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
 import rx.observers.TestSubscriber
+
+import scala.collection.JavaConverters._
 
 class HttpClientSpec extends FunSuite with BeforeAndAfterAll with ShouldMatchers with BeforeAndAfter with Matchers with MockitoSugar {
   var webappOrigin: Origin = _
@@ -61,7 +71,32 @@ class HttpClientSpec extends FunSuite with BeforeAndAfterAll with ShouldMatchers
     originOneServer.stop()
   }
 
-  def activeOrigins(backendService: BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService).build()
+  private def activeOrigins(backendService: BackendService) = new ActiveOrigins {
+    private def clientHandler(client: StyxHostHttpClient) = new HttpHandler {
+      override def handle(request: StyxHttpRequest, context: HttpInterceptor.Context): StyxObservable[StyxHttpResponse] = {
+        fromRxObservable(client.sendRequest(request))
+      }
+    }
+
+    private def remoteHostClient(backendService: BackendService, origin: Origin, pool: ConnectionPool) =
+      StyxHostHttpClient.create(origin.applicationId(), origin.id(), "hey ho", pool)
+
+    private def newRemoteHost(backendService: BackendService, origin: Origin) = {
+      val pool = simplePoolFactory(backendService, new CodaHaleMetricRegistry).create(origin)
+
+      val lbMetricSupplier = new LoadBalancingMetricSupplier {
+        override def loadBalancingMetric(): LoadBalancingMetric = new LoadBalancingMetric(pool.stats().busyConnectionCount())
+      }
+
+      RemoteHost.remoteHost(origin, clientHandler(remoteHostClient(backendService, origin, pool)), lbMetricSupplier)
+    }
+
+    override def snapshot(): lang.Iterable[RemoteHost] =
+      backendService.origins().asScala
+        .map(origin => newRemoteHost(backendService, origin))
+        .toList
+        .asJava
+  }
 
   def busyConnectionStrategy(activeOrigins: ActiveOrigins): LoadBalancer = new BusyConnectionsStrategy(activeOrigins)
 
@@ -130,7 +165,7 @@ class HttpClientSpec extends FunSuite with BeforeAndAfterAll with ShouldMatchers
   private def response200OkWithContentLengthHeader(content: String): ResponseDefinitionBuilder = {
     return aResponse
       .withStatus(OK.code())
-      .withHeader(CONTENT_LENGTH, content.length.toString)
+      .withHeader(CONTENT_LENGTH.toString, content.length.toString)
       .withBody(content)
   }
 

@@ -31,7 +31,7 @@ class StyxServerStartupSpec extends FunSpec
   val fileBasedBackendsRegistry = FileBackedBackendServicesRegistry.create(origins.toString)
 
   it ("should not start up when incorrect origins file is encountered") {
-    an [IllegalStateException] should be thrownBy StyxConfig().startServer(fileBasedBackendsRegistry)
+    an [IllegalStateException] should be thrownBy StyxConfig().startServer()
   }
 
 }

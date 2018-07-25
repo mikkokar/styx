@@ -22,14 +22,15 @@ import com.hotels.styx.Environment
 import com.hotels.styx.api.extension.Origin.newOriginBuilder
 import com.hotels.styx.api.extension.service.BackendService
 import com.hotels.styx.api.extension.service.spi.{AbstractRegistry, Registry}
-import com.hotels.styx.api.extension.service.spi.{AbstractRegistry, Registry}
 import com.hotels.styx.api.{HttpClient, HttpRequest, HttpResponse, HttpResponseStatus}
-import com.hotels.styx.client.{OriginStatsFactory, OriginsInventory}
 import com.hotels.styx.api.extension.service.spi.Registry.ReloadResult.reloaded
 import com.hotels.styx.api.extension.service.spi.Registry.{Changes, ReloadResult}
+import com.hotels.styx.api.extension.ActiveOrigins
+import com.hotels.styx.api.{HttpClient, HttpRequest, HttpResponse}
+import com.hotels.styx.client.OriginStatsFactory
 import com.hotels.styx.common.StyxFutures
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
-import com.hotels.styx.proxy.BackendServiceClientFactory
+import com.hotels.styx.proxy.{BackendServiceClientFactory, ConfigStore, OriginsInventory}
 import com.hotels.styx.routing.config.RouteHandlerDefinition
 import com.hotels.styx.server.HttpInterceptorContext
 import com.hotels.styx.support.api.BlockingObservables
@@ -38,7 +39,7 @@ import org.scalatest.{FunSpec, ShouldMatchers}
 import rx.Observable
 import com.hotels.styx.api.HttpResponseStatus
 import com.hotels.styx.api.extension.service.BackendService.newBackendServiceBuilder
-import com.hotels.styx.configstore.ConfigStore
+import com.hotels.styx.proxy.ConfigStore
 import rx.schedulers.Schedulers
 
 import scala.collection.JavaConversions._
@@ -49,7 +50,7 @@ class BackendServiceProxySpec extends FunSpec with ShouldMatchers with MockitoSu
   val laRequest = HttpRequest.get("/lp/x").build()
   val baRequest = HttpRequest.get("/ba/x").build()
 
-  val configStore = new ConfigStore(Schedulers.immediate());
+  val configStore = new ConfigStore();
 
   val environment = new Environment.Builder()
     .configStore(configStore)
@@ -124,7 +125,7 @@ class BackendServiceProxySpec extends FunSpec with ShouldMatchers with MockitoSu
   private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
 
   private def clientFactory() = new BackendServiceClientFactory() {
-    override def createClient(backendService: BackendService, originsInventory: OriginsInventory, originStatsFactory: OriginStatsFactory): HttpClient = new HttpClient {
+    override def createClient(backendService: BackendService, originsInventory: ActiveOrigins, originStatsFactory: OriginStatsFactory): HttpClient = new HttpClient {
       override def sendRequest(request: HttpRequest): Observable[HttpResponse] = Observable
         .just(HttpResponse
           .response(HttpResponseStatus.OK)

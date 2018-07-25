@@ -15,7 +15,6 @@
  */
 package com.hotels.styx.proxy;
 
-import com.google.common.collect.ImmutableList;
 import com.hotels.styx.Environment;
 import com.hotels.styx.api.FullHttpRequest;
 import com.hotels.styx.api.FullHttpResponse;
@@ -24,7 +23,6 @@ import com.hotels.styx.api.StyxObservable;
 import com.hotels.styx.api.HttpResponseStatus;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.common.StyxFutures;
-import com.hotels.styx.configstore.ConfigStore;
 import com.hotels.styx.server.HttpInterceptorContext;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -70,20 +68,18 @@ public class BackendServiceLauncherTest {
     public void createsApplications() {
         BackendServiceLauncher launcher = new BackendServiceLauncher(serviceClientFactory, environment);
 
-        configStore.set("apps.a", app("a", "/"));
-        configStore.set("apps", ImmutableList.of("a"));
+        configStore.addNewApplication("a", app("a", "/"));
 
-        assertThat(configStore.get("routing.objects.a").orElse(null), instanceOf(HttpHandler.class));
+        assertThat(configStore.routingObject().get("a").orElse(null), instanceOf(HttpHandler.class));
 
-        configStore.set("apps.b", app("b", "/b"));
-        configStore.set("apps", ImmutableList.of("a", "b"));
+        configStore.addNewApplication("b", app("b", "/b"));
 
-        assertThat(configStore.<HttpHandler>get("routing.objects.a")
+        assertThat(configStore.routingObject().get("a")
                         .map(handler -> ping(handler, request))
                         .orElse(NOT_FOUND),
                 is(OK));
 
-        assertThat(configStore.<HttpHandler>get("routing.objects.b")
+        assertThat(configStore.routingObject().get("b")
                         .map(handler -> ping(handler, request))
                         .orElse(NOT_FOUND),
                 is(OK));
@@ -93,16 +89,14 @@ public class BackendServiceLauncherTest {
     public void removesApplications() {
         BackendServiceLauncher launcher = new BackendServiceLauncher(serviceClientFactory, environment);
 
-        configStore.set("apps.a", app("a", "/"));
-        configStore.set("apps", ImmutableList.of("a"));
+        configStore.addNewApplication("a", app("a", "/"));
 
-        HttpHandler handler = configStore.<HttpHandler>get("routing.objects.a")
+        HttpHandler handler = configStore.routingObject().get("a")
                 .orElse(internalServerErrorHandler);
 
-        configStore.unset("apps.a");
-        configStore.set("apps", ImmutableList.of());
+        configStore.removeApplication("a");
 
-        assertThat(configStore.get("routing.objects.a"), is(empty()));
+        assertThat(configStore.routingObject().get("a"), is(empty()));
         assertThat(ping(handler, request), is(BAD_GATEWAY));
     }
 
