@@ -198,7 +198,7 @@ object SharedStyx extends BackendServicesRegistrySupplier with ImplicitOriginCon
 
   private val styxStartOp = Future {
     val backendsRegistry = new MemoryBackedRegistry[BackendService]
-    val styxServer = StyxConfig().startServer(new RegistryServiceAdapter(backendsRegistry))
+    val styxServer = StyxConfig().startServer()
 
     setBackends(backendsRegistry, "/download" -> HttpBackend("myapp", Origins(SharedOrigins.fileServer), responseTimeout = 25.seconds))
 

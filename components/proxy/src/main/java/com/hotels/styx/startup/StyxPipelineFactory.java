@@ -122,8 +122,11 @@ public final class StyxPipelineFactory implements PipelineFactory {
             };
         } else {
             Registry<BackendService> backendServicesRegistry = (Registry<BackendService>) servicesFromConfig.get("backendServiceRegistry");
-            BackendRegistryShim shim = new BackendRegistryShim(environment.configStore());
-            backendServicesRegistry.addListener(shim);
+
+            if (backendServicesRegistry != null) {
+                BackendRegistryShim shim = new BackendRegistryShim(environment.configStore());
+                backendServicesRegistry.addListener(shim);
+            }
 
             pipelineBuilder = new StaticPipelineFactory(environment, plugins, requestTracking);
         }

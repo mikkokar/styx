@@ -15,20 +15,18 @@
  */
 package com.hotels.styx.proxy;
 
-import com.google.common.collect.Lists;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
-import com.hotels.styx.configstore.ConfigStore;
 import org.pcollections.HashTreePSet;
 import org.pcollections.MapPSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
-import static com.hotels.styx.StyxConfigStore.appsAttribute;
 import static java.util.stream.StreamSupport.stream;
 
+/**
+ * Backend registry shim.
+ */
 public class BackendRegistryShim implements Registry.ChangeListener<BackendService> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BackendRegistryShim.class);
 
@@ -40,28 +38,21 @@ public class BackendRegistryShim implements Registry.ChangeListener<BackendServi
 
     @Override
     public void onChange(Registry.Changes<BackendService> changes) {
-        MapPSet<String> initialBackends = configStore.<List<String>>get("apps")
-                .map(HashTreePSet::from)
-                .orElse(HashTreePSet.empty());
-
+        MapPSet<String> initialBackends = HashTreePSet.from(configStore.applications().get());
         checkConsistency(initialBackends, changes);
 
-        MapPSet<String> removed = stream(changes.removed().spliterator(), false).reduce(
-                initialBackends,
-                (backends, backend) -> backends.minus(backend.id().toString()),
-                MapPSet::plusAll);
-
-        MapPSet<String> added = stream(changes.added().spliterator(), false).reduce(
-                removed,
-                (backends, bakend) -> backends.plus(bakend.id().toString()),
-                MapPSet::plusAll);
-
-
         // TODO: Mikko: Changes updated?
-        changes.removed().forEach(addedBs -> configStore.unset(appsAttribute(addedBs.id())));
-        changes.added().forEach(addedBs -> configStore.set(appsAttribute(addedBs.id()), addedBs));
+        changes.removed().forEach(app -> configStore.removeApplication(app.id().toString()));
+        changes.added().forEach(app -> configStore.addNewApplication(app.id().toString(), app));
+        changes.updated().forEach(this::update);
+    }
 
-        configStore.set("apps", Lists.newArrayList(added));
+    // TODO: Mikko: Populate this:
+    private void update(BackendService app) {
+        // if origins update only ...
+        configStore.application().set(app.id().toString(), app);
+
+        // if other attributes changes ...
     }
 
     private static void checkConsistency(MapPSet<String> initialBackends, Registry.Changes<BackendService> changes) {

@@ -18,7 +18,7 @@ package com.hotels.styx;
 import com.google.common.eventbus.EventBus;
 import com.hotels.styx.api.MetricRegistry;
 import com.hotels.styx.api.metrics.codahale.CodaHaleMetricRegistry;
-import com.hotels.styx.configstore.ConfigStore;
+import com.hotels.styx.proxy.ConfigStore;
 import com.hotels.styx.proxy.HttpErrorStatusCauseLogger;
 import com.hotels.styx.proxy.HttpErrorStatusMetrics;
 import com.hotels.styx.server.HttpErrorStatusListener;

@@ -46,7 +46,7 @@ class OriginsPathDuplicationOnReloadSpec extends FunSpec
 
   it("Responds with INTERNAL_SERVER_ERROR when the backend-services have a duplicate path") {
     val fileBasedBackendsRegistry = FileBackedBackendServicesRegistry.create(styxOriginsFile.toString)
-    styxServer = StyxConfig().startServer(fileBasedBackendsRegistry)
+    styxServer = StyxConfig().startServer()
 
     styxServer.isRunning should be(true)
 

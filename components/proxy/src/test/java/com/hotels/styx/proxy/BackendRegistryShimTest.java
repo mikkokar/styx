@@ -18,14 +18,12 @@ package com.hotels.styx.proxy;
 import com.google.common.collect.ImmutableList;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry.Changes;
-import com.hotels.styx.configstore.ConfigStore;
 import com.hotels.styx.support.matchers.LoggingTestSupport;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static ch.qos.logback.classic.Level.WARN;
 import static com.hotels.styx.api.extension.service.BackendService.newBackendServiceBuilder;
@@ -59,7 +57,7 @@ public class BackendRegistryShimTest {
 
     @Test
     public void warnOnInconsistentInputRemovedNonExistingBackend() {
-        configStore.set("apps", ImmutableList.of("shopping"));
+        configStore.applications().set(ImmutableList.of("shopping"));
 
         shim.onChange(new Changes.Builder<BackendService>()
                 .removed(landingApp)
@@ -71,7 +69,7 @@ public class BackendRegistryShimTest {
 
     @Test
     public void warnOnInconsistentInputAddedBackendServiceAlreadyExists() {
-        configStore.set("apps", ImmutableList.of("landing", "shopping"));
+        configStore.applications().set(ImmutableList.of("landing", "shopping"));
 
         shim.onChange(new Changes.Builder<BackendService>()
                 .added(shoppingApp)
@@ -83,7 +81,7 @@ public class BackendRegistryShimTest {
 
     @Test
     public void warnOnInconsistentInputUpdatedNonExistingBackend() {
-        configStore.set("apps", ImmutableList.of("shopping"));
+        configStore.applications().set(ImmutableList.of("shopping"));
 
         shim.onChange(new Changes.Builder<BackendService>()
                 .updated(landingApp)
@@ -99,20 +97,18 @@ public class BackendRegistryShimTest {
                 .added(landingApp, shoppingApp)
                 .build());
 
-        List<String> apps = configStore.<List<String>>get("apps").orElse(null);
+        List<String> apps = configStore.applications().get();
         assertThat(apps, containsInAnyOrder("shopping", "landing"));
 
-        BackendService landing = configStore.<BackendService>get("apps.landing").orElse(null);
+        BackendService landing = configStore.application().get("landing").orElse(null);
         assertThat(landing, is(landingApp));
 
-        BackendService shopping = configStore.<BackendService>get("apps.shopping").orElse(null);
+        BackendService shopping = configStore.application().get("shopping").orElse(null);
         assertThat(shopping, is(shoppingApp));
     }
 
     @Test
     public void removesAppsFromConfiguration() {
-        configStore.set("apps", ImmutableList.of("shopping", "landing"));
-
         shim.onChange(new Changes.Builder<BackendService>()
                 .added(landingApp, shoppingApp)
                 .build());
@@ -121,13 +117,13 @@ public class BackendRegistryShimTest {
                 .removed(landingApp)
                 .build());
 
-        Optional<List<String>> result = configStore.get("apps");
-        assertThat(result.get(), containsInAnyOrder("shopping"));
+        List<String> result = configStore.applications().get();
+        assertThat(result, containsInAnyOrder("shopping"));
 
-        BackendService landing = configStore.<BackendService>get("apps.landing").orElse(null);
+        BackendService landing = configStore.application().get("landing").orElse(null);
         assertThat(landing, nullValue());
 
-        BackendService shopping = configStore.<BackendService>get("apps.shopping").orElse(null);
+        BackendService shopping = configStore.application().get("shopping").orElse(null);
         assertThat(shopping, is(shoppingApp));
     }
 

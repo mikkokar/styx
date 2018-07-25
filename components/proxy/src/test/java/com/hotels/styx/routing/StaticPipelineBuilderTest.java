@@ -15,37 +15,28 @@
  */
 package com.hotels.styx.routing;
 
-import com.google.common.collect.ImmutableList;
 import com.hotels.styx.Environment;
-import com.hotels.styx.api.HttpHandler;
-import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.AbstractRegistry;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.plugins.spi.Plugin;
-import com.hotels.styx.configstore.ConfigStore;
 import com.hotels.styx.proxy.BackendServiceClientFactory;
+import com.hotels.styx.proxy.ConfigStore;
 import com.hotels.styx.proxy.plugin.NamedPlugin;
-import com.hotels.styx.server.HttpInterceptorContext;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CompletableFuture;
 
 import static com.hotels.styx.api.HttpResponseStatus.OK;
-import static com.hotels.styx.api.LiveHttpRequest.get;
 import static com.hotels.styx.api.LiveHttpResponse.response;
 import static com.hotels.styx.api.extension.Origin.newOriginBuilder;
 import static com.hotels.styx.api.extension.service.BackendService.newBackendServiceBuilder;
 import static com.hotels.styx.api.extension.service.spi.Registry.ReloadResult.reloaded;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
+
 
 public class StaticPipelineBuilderTest {
 
@@ -55,12 +46,11 @@ public class StaticPipelineBuilderTest {
     @BeforeMethod
     public void staticPipelineBuilderTest() {
         ConfigStore configStore = new ConfigStore(Schedulers.immediate());
-        configStore.set("apps.appX",
+        configStore.addNewApplication("apps.appX",
                 newBackendServiceBuilder()
                         .id("appX")
                         .origins(newOriginBuilder("localhost", 0).build())
                         .path("/foo").build());
-        configStore.set("apps", ImmutableList.of("appX"));
 
         environment = new Environment.Builder()
                 .configStore(configStore)

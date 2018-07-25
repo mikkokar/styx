@@ -22,7 +22,6 @@ import com.hotels.styx.api.Id;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.common.StateMachine;
-import com.hotels.styx.configstore.ConfigStore;
 import com.hotels.styx.server.HttpRouter;
 import org.pcollections.HashTreePSet;
 import org.pcollections.MapPSet;
@@ -36,8 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import static com.hotels.styx.StyxConfigStore.appsAttribute;
-import static com.hotels.styx.StyxConfigStore.routingObjectAttribute;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.APP_PENDING;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.CREATED;
 import static com.hotels.styx.proxy.BackendServicesRouter.State.FINISHED;
@@ -91,7 +88,7 @@ public class BackendServicesRouter implements HttpRouter {
                     event.record.app = null;
                     event.record.appWatch.unsubscribe();
                     event.record.routeWatch.unsubscribe();
-                    event.record.subscriptionsById.remove(event.record.app.id());
+                    event.record.subscriptionsById.remove(Id.id(event.record.appId));
                     return FINISHED;
                 })
                 .transition(WF_APP, AppAvailableEvent.class, event -> {
@@ -116,6 +113,8 @@ public class BackendServicesRouter implements HttpRouter {
                     return FINISHED;
                 })
                 .transition(CREATED, RouteRemovedEvent.class, event -> {
+                    LOGGER.debug("process event: " + event);
+
                     String pathPrefix = event.record.app.path();
                     event.record.handler = null;
                     event.record.routes.remove(pathPrefix);
@@ -171,7 +170,7 @@ public class BackendServicesRouter implements HttpRouter {
 
         this.subscriptionsById = new ConcurrentHashMap<>();
 
-        this.configStore.<List<String>>watch("apps")
+        this.configStore.applications().watch()
                 .subscribe(this::appsHandlerHandler);
     }
 
@@ -200,24 +199,28 @@ public class BackendServicesRouter implements HttpRouter {
         AppRecord record = new AppRecord(appId.toString(), routes, subscriptionsById);
         subscriptionsById.put(appId, record);
 
-        Subscription appWatch = configStore.<BackendService>watch(appsAttribute(appId))
+        Subscription appWatch = configStore.application().watch(appId.toString())
                 .subscribe(
                         backendService -> record.fsm.handle(new AppAvailableEvent(record, backendService)),
-                        cause -> LOGGER.error("topic error on topic={}, cause={}", appsAttribute(appId), cause),
+                        cause -> LOGGER.error("topic error on topic={}, cause={}", appId.toString(), cause),
                         () -> record.fsm.handle(new AppRemovedEvent(record))
                 );
         record.appWatch(appWatch);
 
-        Subscription routeWatch = configStore.<HttpHandler>watch(routingObjectAttribute(appId))
+        Subscription routeWatch = configStore.routingObject().watch(appId.toString())
                 .subscribe(
                         handler -> record.fsm.handle(new RouteAvailableEvent(record, handler)),
-                        cause -> LOGGER.error("topic error on topic={}, cause={}", routingObjectAttribute(appId), cause),
-                        () -> record.fsm.handle(new RouteRemovedEvent(record)));
+                        cause -> LOGGER.error("topic error on topic={}, cause={}", appId.toString(), cause),
+                        () -> {
+                            RouteRemovedEvent event = new RouteRemovedEvent(record);
+                            LOGGER.debug("submit event: " + event);
+                            record.fsm.handle(event);
+                        });
         record.routeWatch(routeWatch);
     }
 
     private class RootEvent {
-        protected AppRecord record;
+        protected final AppRecord record;
 
         private RootEvent(AppRecord record) {
             this.record = record;
@@ -249,8 +252,6 @@ public class BackendServicesRouter implements HttpRouter {
     }
 
     private class RouteRemovedEvent extends RootEvent {
-        private AppRecord record;
-
         public RouteRemovedEvent(AppRecord record) {
             super(record);
         }

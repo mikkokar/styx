@@ -17,13 +17,13 @@ package com.hotels.styx.proxy;
 
 import com.hotels.styx.Environment;
 import com.hotels.styx.api.configuration.Configuration;
+import com.hotels.styx.api.extension.ActiveOrigins;
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer;
 import com.hotels.styx.api.extension.retrypolicy.spi.RetryPolicy;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.client.BackendServiceClient;
 import com.hotels.styx.client.OriginRestrictionLoadBalancingStrategy;
 import com.hotels.styx.client.OriginStatsFactory;
-import com.hotels.styx.client.OriginsInventory;
 import com.hotels.styx.client.StyxBackendServiceClient;
 import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy;
 import com.hotels.styx.client.retry.RetryNTimes;
@@ -48,7 +48,7 @@ public class StyxBackendServiceClientFactory implements BackendServiceClientFact
     }
 
     @Override
-    public BackendServiceClient createClient(BackendService backendService, OriginsInventory originsInventory, OriginStatsFactory originStatsFactory) {
+    public BackendServiceClient createClient(BackendService backendService, ActiveOrigins originsSnapshot, OriginStatsFactory originStatsFactory) {
         Configuration styxConfig = environment.configuration();
 
         String originRestrictionCookie = styxConfig.get("originRestrictionCookie").orElse(null);
@@ -58,17 +58,13 @@ public class StyxBackendServiceClientFactory implements BackendServiceClientFact
                 .orElseGet(() -> defaultRetryPolicy(environment));
 
         LoadBalancer configuredLbStrategy = loadLoadBalancer(
-                styxConfig, environment, "loadBalancing.strategy.factory", LoadBalancer.class, originsInventory)
-                .orElseGet(() -> new BusyConnectionsStrategy(originsInventory));
-
-        // TODO: Ensure that listeners are also unregistered:
-        // We are going to revamp how we handle origins, https://github.com/HotelsDotCom/styx/issues/197
-        originsInventory.addOriginsChangeListener(configuredLbStrategy);
+                styxConfig, environment, "loadBalancing.strategy.factory", LoadBalancer.class, originsSnapshot)
+                .orElseGet(() -> new BusyConnectionsStrategy(originsSnapshot));
 
         LoadBalancer loadBalancingStrategy = decorateLoadBalancer(
                 configuredLbStrategy,
                 stickySessionEnabled,
-                originsInventory,
+                originsSnapshot,
                 originRestrictionCookie
         );
 
@@ -85,7 +81,7 @@ public class StyxBackendServiceClientFactory implements BackendServiceClientFact
                 .build();
     }
 
-    private LoadBalancer decorateLoadBalancer(LoadBalancer configuredLbStrategy, boolean stickySessionEnabled, OriginsInventory originsInventory, String originRestrictionCookie) {
+    private LoadBalancer decorateLoadBalancer(LoadBalancer configuredLbStrategy, boolean stickySessionEnabled, ActiveOrigins originsInventory, String originRestrictionCookie) {
         if (stickySessionEnabled) {
             return new StickySessionLoadBalancingStrategy(originsInventory, configuredLbStrategy);
         } else if (originRestrictionCookie == null) {

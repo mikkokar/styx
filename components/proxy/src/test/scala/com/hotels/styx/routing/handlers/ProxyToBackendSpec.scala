@@ -19,9 +19,9 @@ import com.hotels.styx.Environment
 import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.api.Id.id
 import com.hotels.styx.api._
+import com.hotels.styx.api.extension.ActiveOrigins
 import com.hotels.styx.api.extension.service.BackendService
-import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory, OriginsInventory}
-import com.hotels.styx.common.StyxFutures
+import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.proxy.BackendServiceClientFactory
 import com.hotels.styx.routing.config.RouteHandlerDefinition
@@ -104,8 +104,8 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
   private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
 
   private def clientFactory() = new BackendServiceClientFactory() {
-    override def createClient(backendService: BackendService, originsInventory: OriginsInventory, originStatsFactory: OriginStatsFactory): BackendServiceClient = new BackendServiceClient {
-      override def sendRequest(request: LiveHttpRequest): Publisher[LiveHttpResponse] = {
+    override def createClient(backendService: BackendService, originsInventory: ActiveOrigins, originStatsFactory: OriginStatsFactory): BackendServiceClient = new BackendServiceClient {
+      override def sendRequest(request: LiveHttpRequest): Publisher[HttpResponse] = {
         backendService.id() should be (id("ba"))
         backendService.connectionPoolConfig().maxConnectionsPerHost() should be (45)
         backendService.connectionPoolConfig().maxPendingConnectionsPerHost() should be (15)
@@ -116,7 +116,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
             .response(OK)
             .addHeader("X-Backend-Service", backendService.id())
             .build()
-          )
+          ).asInstanceOf[Publisher[HttpResponse]]
       }
     }
   }

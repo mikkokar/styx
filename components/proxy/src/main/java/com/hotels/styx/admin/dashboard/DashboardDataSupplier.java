@@ -18,11 +18,12 @@ package com.hotels.styx.admin.dashboard;
 import com.hotels.styx.Environment;
 import com.hotels.styx.StyxConfig;
 import com.hotels.styx.Version;
-import com.hotels.styx.api.extension.service.BackendService;
-import com.hotels.styx.client.origincommands.GetOriginsInventorySnapshot;
-import com.hotels.styx.api.extension.service.spi.Registry;
+import com.hotels.styx.proxy.ConfigStore;
 import org.slf4j.Logger;
+import rx.Subscription;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static com.hotels.styx.StyxConfig.NO_JVM_ROUTE_SET;
@@ -32,43 +33,26 @@ import static org.slf4j.LoggerFactory.getLogger;
 /**
  * Supplier of the {@link com.hotels.styx.admin.dashboard.DashboardData}.
  */
-public class DashboardDataSupplier implements Supplier<DashboardData>, Registry.ChangeListener<BackendService> {
+public class DashboardDataSupplier implements Supplier<DashboardData> {
     private static final Logger LOG = getLogger(DashboardDataSupplier.class);
 
     private volatile DashboardData data;
-    private final Registry<BackendService> backendServicesRegistry;
     private final Environment environment;
+    private final ConfigStore configStore;
     private final String jvmRouteName;
     private final Version buildInfo;
+    private final Map<String, Subscription> subscsriptions = new ConcurrentHashMap<>();
 
-    public DashboardDataSupplier(Registry<BackendService> backendServicesRegistry, Environment environment, StyxConfig styxConfig) {
-        this.backendServicesRegistry = requireNonNull(backendServicesRegistry);
+
+    public DashboardDataSupplier(Environment environment, StyxConfig styxConfig) {
         this.environment = requireNonNull(environment);
         this.jvmRouteName = styxConfig.get("jvmRouteName", String.class).orElse(NO_JVM_ROUTE_SET);
         this.buildInfo = environment.buildInfo();
-        this.data = updateDashboardData(backendServicesRegistry);
-
-        this.backendServicesRegistry.addListener(this);
-    }
-
-    @Override
-    public void onChange(Registry.Changes<BackendService> changes) {
-        LOG.info("received new services changes set {}", changes);
-        data = updateDashboardData(backendServicesRegistry);
-        environment.eventBus().post(new GetOriginsInventorySnapshot());
-    }
-
-    private DashboardData updateDashboardData(Registry<BackendService> backendServices) {
-        if (this.data != null) {
-            this.data.unregister();
-        }
-
-        return new DashboardData(environment.metricRegistry(), backendServices, jvmRouteName, buildInfo, environment.eventBus());
+        this.configStore = environment.configStore();
     }
 
     @Override
     public DashboardData get() {
-        return data;
+        return DashboardData.create(environment.metricRegistry(), jvmRouteName, buildInfo.releaseVersion(), configStore);
     }
-
 }

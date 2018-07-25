@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture.completedFuture
 
 import com.hotels.styx.Environment
 import com.hotels.styx.api.HttpResponseStatus.OK
+import com.hotels.styx.api.extension.ActiveOrigins
 import com.hotels.styx.api.extension.Origin.newOriginBuilder
 import com.hotels.styx.api.extension.service.BackendService
 import com.hotels.styx.api.extension.service.BackendService.newBackendServiceBuilder
@@ -27,17 +28,15 @@ import com.hotels.styx.api.extension.service.spi.Registry.ReloadResult.reloaded
 import com.hotels.styx.api.extension.service.spi.Registry.{Changes, ReloadResult}
 import com.hotels.styx.api.extension.service.spi.{AbstractRegistry, Registry}
 import com.hotels.styx.api.{LiveHttpRequest, LiveHttpResponse}
-import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory, OriginsInventory}
-import com.hotels.styx.configstore.ConfigStore
+import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
-import com.hotels.styx.proxy.BackendServiceClientFactory
+import com.hotels.styx.proxy.{BackendServiceClientFactory, ConfigStore}
 import com.hotels.styx.routing.config.RouteHandlerDefinition
 import com.hotels.styx.server.HttpInterceptorContext
 import org.reactivestreams.Publisher
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FunSpec, Matchers}
 import reactor.core.publisher.Mono
-import rx.schedulers.Schedulers
 
 import scala.collection.JavaConversions._
 
@@ -47,7 +46,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
   val laRequest = LiveHttpRequest.get("/lp/x").build()
   val baRequest = LiveHttpRequest.get("/ba/x").build()
 
-  val configStore = new ConfigStore(Schedulers.immediate());
+  val configStore = new ConfigStore();
 
   val environment = new Environment.Builder()
     .configStore(configStore)
@@ -122,7 +121,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
   private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
 
   private def clientFactory() = new BackendServiceClientFactory() {
-    override def createClient(backendService: BackendService, originsInventory: OriginsInventory, originStatsFactory: OriginStatsFactory): BackendServiceClient = new BackendServiceClient {
+    override def createClient(backendService: BackendService, originsInventory: ActiveOrigins, originStatsFactory: OriginStatsFactory): BackendServiceClient = new BackendServiceClient {
       override def sendRequest(request: LiveHttpRequest): Publisher[LiveHttpResponse] = Mono.just(
         LiveHttpResponse
           .response(OK)

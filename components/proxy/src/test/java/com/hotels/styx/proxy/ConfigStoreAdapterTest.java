@@ -13,26 +13,19 @@
   See the License for the specific language governing permissions and
   limitations under the License.
  */
-package com.hotels.styx;
+package com.hotels.styx.proxy;
 
+import org.testng.annotations.Test;
 
-import com.hotels.styx.api.Id;
+import static org.testng.Assert.*;
 
-import static java.lang.String.format;
+public class ConfigStoreAdapterTest {
 
-/**
- * A helper class to access ConfigStore attributes.
- */
-public class StyxConfigStore {
-    public static String appsAttribute(Id id) {
-        return format("apps.%s", id.toString());
-    }
+//    private ConfigStore configStore = new ConfigStore();
+//    private ConfigStoreAdapter actor = new ConfigStoreAdapter(configStore);
+//
+    @Test
+    public void testName() {
 
-    public static String appsAttribute(String id) {
-        return appsAttribute(Id.id(id));
-    }
-
-    public static String routingObjectAttribute(Id id) {
-        return format("routing.objects.%s", id.toString());
     }
 }

@@ -71,7 +71,7 @@ class ErrorMetricsSpec extends FunSpec
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     backendsRegistry = new MemoryBackedRegistry[BackendService]
-    styxServer = styxConfig.startServer(new RegistryServiceAdapter(backendsRegistry))
+    styxServer = styxConfig.startServer()
     setBackends(
       backendsRegistry,
       "/" -> HttpBackend(

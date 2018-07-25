@@ -46,7 +46,7 @@ class OriginsReloadCommandSpec extends FunSpec
 
   it("Responds with INTERNAL_SERVER_ERROR when the origins cannot be read") {
     val fileBasedBackendsRegistry = FileBackedBackendServicesRegistry.create(styxOriginsFile.toString)
-    styxServer = StyxConfig().startServer(fileBasedBackendsRegistry)
+    styxServer = StyxConfig().startServer()
 
     Files.copy(originsNok, styxOriginsFile, REPLACE_EXISTING)
 

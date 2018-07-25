@@ -22,18 +22,20 @@ import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
+import com.hotels.styx.api.extension.ActiveOrigins;
+import com.hotels.styx.api.extension.RemoteHost;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.ConnectionPoolSettings;
 import com.hotels.styx.client.BackendServiceClient;
 import com.hotels.styx.client.Connection;
 import com.hotels.styx.client.OriginStatsFactory;
-import com.hotels.styx.client.OriginsInventory;
 import com.hotels.styx.client.connectionpool.ConnectionPool;
 import com.hotels.styx.client.connectionpool.ExpiringConnectionFactory;
 import com.hotels.styx.client.connectionpool.SimpleConnectionPoolFactory;
 import com.hotels.styx.client.netty.connectionpool.NettyConnectionFactory;
 import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.proxy.BackendServiceClientFactory;
+import com.hotels.styx.proxy.OriginsInventory;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RouteHandlerDefinition;
 import com.hotels.styx.routing.config.RouteHandlerFactory;
@@ -121,12 +123,19 @@ public class ProxyToBackend implements HttpHandler {
                     .build();
 
             OriginsInventory inventory = new OriginsInventory.Builder(backendService.id())
-                    .eventBus(environment.eventBus())
-                    .metricsRegistry(environment.metricRegistry())
+                    .configStore(environment.configStore())
                     .connectionPoolFactory(connectionPoolFactory)
-                    .initialOrigins(backendService.origins())
                     .build();
-            return new ProxyToBackend(clientFactory.createClient(backendService, inventory, originStatsFactory));
+
+            ActiveOrigins activeOrigins = new ActiveOrigins() {
+
+                @Override
+                public Iterable<RemoteHost> snapshot() {
+                    return null;
+                }
+            };
+
+            return new ProxyToBackend(clientFactory.createClient(backendService, activeOrigins, originStatsFactory));
         }
 
     }
