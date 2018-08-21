@@ -28,6 +28,14 @@ import com.hotels.styx.client.StyxBackendServiceClient._
 import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy
 import com.hotels.styx.client.stickysession.StickySessionLoadBalancingStrategy
 import com.hotels.styx.proxy.OriginsInventory.newOriginsInventoryBuilder
+import com.hotels.styx.api.HttpResponseStatus._
+import com.hotels.styx.api.extension.ActiveOrigins
+import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
+import com.hotels.styx.client.StyxHttpClient
+import com.hotels.styx.client.StyxHttpClient._
+import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy
+import com.hotels.styx.client.stickysession.StickySessionLoadBalancingStrategy
+import com.hotels.styx.support.ActiveOriginsProvider.activeOrigins
 import com.hotels.styx.support.NettyOrigins
 import com.hotels.styx.support.configuration.{BackendService, ImplicitOriginConversions, Origins}
 import io.netty.buffer.Unpooled._
@@ -89,6 +97,42 @@ class HttpResponseSpec extends FunSuite
 //    assert(response.status() == OK, s"\nDid not get response with 200 OK status.\n$response\n")
 //    assert(response.bodyAs(UTF_8) == "Test message body.", s"\nIncorrect response body.")
 //  }
+//=======
+//  var testSubscriber: TestSubscriber[com.hotels.styx.api.HttpResponse] = _
+//
+//  override protected def afterAll(): Unit = {
+//    originOneServer.stopAsync().awaitTerminated()
+//  }
+//
+//  before {
+//    testSubscriber = new TestSubscriber[com.hotels.styx.api.HttpResponse]()
+//
+//    val backendService = BackendService(
+//      origins = Origins(originOne),
+//      responseTimeout = responseTimeout)
+//
+//    client = newHttpClientBuilder(id(backendService.appId))
+//      .loadBalancer(busyConnectionStrategy(activeOrigins(backendService.asJava)))
+//      .build
+//  }
+//
+////  def activeOrigins(backendService: BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService.asJava).build()
+//
+//
+//  def busyConnectionStrategy(activeOrigins: ActiveOrigins): LoadBalancer = new BusyConnectionsStrategy(activeOrigins)
+//
+//  def stickySessionStrategy(activeOrigins: ActiveOrigins) = new StickySessionLoadBalancingStrategy(activeOrigins, busyConnectionStrategy(activeOrigins))
+//
+//
+//  test("Determines response content length from server closing the connection.") {
+//    originRespondingWith(response200OkFollowedFollowedByServerConnectionClose("Test message body."))
+//
+//    val response = waitForResponse(client.sendRequest(get("/foo/3").build()))
+//
+//    assert(response.status() == OK, s"\nDid not get response with 200 OK status.\n$response\n")
+//    assert(response.bodyAs(UTF_8) == "Test message body.", s"\nIncorrect response body.")
+//  }
+//>>>>>>> BackendServicesRouter: Remove dependency to BackendService class.
 
   def response200OkFollowedFollowedByServerConnectionClose(content: String): (ChannelHandlerContext, Any) => Any = {
     (ctx: ChannelHandlerContext, msg: scala.Any) => {

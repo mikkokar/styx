@@ -24,7 +24,6 @@ import com.hotels.styx.api.extension.Origin.newOriginBuilder
 import com.hotels.styx.api.extension.service.BackendService
 import com.hotels.styx.client.StyxBackendServiceClient.newHttpClientBuilder
 import com.hotels.styx.client.loadbalancing.strategies.RoundRobinStrategy
-import com.hotels.styx.proxy.OriginsInventory.newOriginsInventoryBuilder
 import com.hotels.styx.support.backends.FakeHttpServer
 import com.hotels.styx.support.configuration.{ConnectionPoolSettings, HttpBackend, Origins}
 import com.hotels.styx.support.server.UrlMatchingStrategies._
@@ -96,6 +95,30 @@ class ExpiringConnectionSpec extends FunSpec
 //  }
 
 //  def activeOrigins(backendService: BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService.id()).build()
+//=======
+//  it("Should expire connection after 1 second") {
+//    val request = get(styxServer.routerURL("/app1")).build()
+//
+//    val response1 = waitForResponse(pooledClient.sendRequest(request))
+//
+//    assertThat(response1.status(), is(OK))
+//
+//    eventually(timeout(1.seconds)) {
+//      styxServer.metricsSnapshot.gauge(s"origins.appOne.generic-app-01.connectionspool.available-connections").get should be(1)
+//      styxServer.metricsSnapshot.gauge(s"origins.appOne.generic-app-01.connectionspool.connections-closed").get should be(0)
+//    }
+//
+//    Thread.sleep(1000)
+//
+//    val response2 = waitForResponse(pooledClient.sendRequest(request))
+//    assertThat(response2.status(), is(OK))
+//
+//    eventually(timeout(2.seconds)) {
+//      styxServer.metricsSnapshot.gauge(s"origins.appOne.generic-app-01.connectionspool.available-connections").get should be(1)
+//      styxServer.metricsSnapshot.gauge(s"origins.appOne.generic-app-01.connectionspool.connections-terminated").get should be(1)
+//    }
+//  }
+//>>>>>>> BackendServicesRouter: Remove dependency to BackendService class.
 
   def roundRobinStrategy(activeOrigins: ActiveOrigins): RoundRobinStrategy = new RoundRobinStrategy(activeOrigins, activeOrigins.snapshot())
 }
