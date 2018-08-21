@@ -19,7 +19,6 @@ import com.hotels.styx.Environment;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.Id;
-import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.common.StateMachine;
 import com.hotels.styx.server.HttpRouter;
 import org.pcollections.HashTreePSet;
@@ -71,7 +70,7 @@ public class BackendServicesRouter implements HttpRouter {
         return new StateMachine.Builder<State>()
                 .initialState(APP_PENDING)
                 .transition(APP_PENDING, AppAvailableEvent.class, event -> {
-                    event.record.app = event.backendService;
+                    event.record.pathPrefix = event.pathPrefix;
                     return WF_ROUTE;
                 })
                 .transition(APP_PENDING, RouteAvailableEvent.class, event -> {
@@ -80,19 +79,19 @@ public class BackendServicesRouter implements HttpRouter {
                 })
                 .transition(WF_ROUTE, RouteAvailableEvent.class, event -> {
                     event.record.handler = event.handler;
-                    event.record.routes.putIfAbsent(event.record.app.path(), event.handler);
+                    event.record.routes.putIfAbsent(event.record.pathPrefix, event.handler);
                     return CREATED;
                 })
                 .transition(WF_ROUTE, AppRemovedEvent.class, event -> {
-                    event.record.app = null;
+                    event.record.pathPrefix = null;
                     event.record.appWatch.unsubscribe();
                     event.record.routeWatch.unsubscribe();
                     event.record.subscriptionsById.remove(Id.id(event.record.appId));
                     return FINISHED;
                 })
                 .transition(WF_APP, AppAvailableEvent.class, event -> {
-                    event.record.app = event.backendService;
-                    event.record.routes.putIfAbsent(event.record.app.path(), event.record.handler);
+                    event.record.pathPrefix = event.pathPrefix;
+                    event.record.routes.putIfAbsent(event.record.pathPrefix, event.record.handler);
                     return CREATED;
                 })
                 .transition(WF_APP, RouteRemovedEvent.class, event -> {
@@ -102,21 +101,19 @@ public class BackendServicesRouter implements HttpRouter {
                 .transition(CREATED, AppRemovedEvent.class, event -> {
                     event.record.appWatch.unsubscribe();
                     event.record.routeWatch.unsubscribe();
-                    event.record.subscriptionsById.remove(event.record.app.id());
+                    event.record.subscriptionsById.remove(event.record.appId.toString());
 
-                    String pathPrefix = event.record.app.path();
-                    event.record.routes.remove(pathPrefix);
+                    event.record.routes.remove(event.record.pathPrefix);
 
-                    event.record.app = null;
+                    event.record.pathPrefix = null;
                     event.record.handler = null;
                     return FINISHED;
                 })
                 .transition(CREATED, RouteRemovedEvent.class, event -> {
                     LOGGER.debug("process event: " + event);
 
-                    String pathPrefix = event.record.app.path();
                     event.record.handler = null;
-                    event.record.routes.remove(pathPrefix);
+                    event.record.routes.remove(event.record.pathPrefix);
                     return WF_ROUTE;
                 })
 
@@ -136,7 +133,6 @@ public class BackendServicesRouter implements HttpRouter {
         private Subscription appWatch;
         private Subscription routeWatch;
         private String pathPrefix;
-        private BackendService app;
         private HttpHandler handler;
         private ConcurrentMap<String, HttpHandler> routes;
         private final ConcurrentMap<Id, AppRecord> subscriptionsById;
@@ -200,7 +196,7 @@ public class BackendServicesRouter implements HttpRouter {
 
         Subscription appWatch = configStore.application().watch(appId.toString())
                 .subscribe(
-                        backendService -> record.fsm.handle(new AppAvailableEvent(record, backendService)),
+                        backendService -> record.fsm.handle(new AppAvailableEvent(record, backendService.path())),
                         cause -> LOGGER.error("topic error on topic={}, cause={}", appId.toString(), cause),
                         () -> record.fsm.handle(new AppRemovedEvent(record))
                 );
@@ -227,11 +223,11 @@ public class BackendServicesRouter implements HttpRouter {
     }
 
     private class AppAvailableEvent extends RootEvent {
-        private BackendService backendService;
+        private String pathPrefix;
 
-        public AppAvailableEvent(AppRecord record, BackendService backendService) {
+        public AppAvailableEvent(AppRecord record, String pathPrefix) {
             super(record);
-            this.backendService = backendService;
+            this.pathPrefix = pathPrefix;
         }
     }
 

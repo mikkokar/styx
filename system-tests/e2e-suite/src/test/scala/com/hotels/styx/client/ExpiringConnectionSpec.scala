@@ -23,7 +23,7 @@ import com.hotels.styx.api.extension.Origin.newOriginBuilder
 import com.hotels.styx.api.extension.service.BackendService
 import com.hotels.styx.client.StyxHttpClient.newHttpClientBuilder
 import com.hotels.styx.client.loadbalancing.strategies.RoundRobinStrategy
-import com.hotels.styx.proxy.OriginsInventory.newOriginsInventoryBuilder
+import com.hotels.styx.support.ActiveOriginsProvider.activeOrigins
 import com.hotels.styx.support.api.BlockingObservables.waitForResponse
 import com.hotels.styx.support.backends.FakeHttpServer
 import com.hotels.styx.support.configuration.{ConnectionPoolSettings, HttpBackend, Origins}
@@ -93,8 +93,6 @@ class ExpiringConnectionSpec extends FunSpec
       styxServer.metricsSnapshot.gauge(s"origins.appOne.generic-app-01.connectionspool.connections-terminated").get should be(1)
     }
   }
-
-  def activeOrigins(backendService: BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService.id()).build()
 
   def roundRobinStrategy(activeOrigins: ActiveOrigins): RoundRobinStrategy = new RoundRobinStrategy(activeOrigins, activeOrigins.snapshot())
 }

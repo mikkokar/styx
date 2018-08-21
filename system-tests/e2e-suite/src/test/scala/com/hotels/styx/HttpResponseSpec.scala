@@ -19,14 +19,14 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.hotels.styx.api.HttpRequest.get
 import com.hotels.styx.api.Id.id
+import com.hotels.styx.api.HttpResponseStatus._
 import com.hotels.styx.api.extension.ActiveOrigins
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
-import com.hotels.styx.api.HttpResponseStatus._
-import com.hotels.styx.proxy.OriginsInventory.newOriginsInventoryBuilder
 import com.hotels.styx.client.StyxHttpClient
 import com.hotels.styx.client.StyxHttpClient._
 import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy
 import com.hotels.styx.client.stickysession.StickySessionLoadBalancingStrategy
+import com.hotels.styx.support.ActiveOriginsProvider.activeOrigins
 import com.hotels.styx.support.NettyOrigins
 import com.hotels.styx.support.api.BlockingObservables.waitForResponse
 import com.hotels.styx.support.configuration.{BackendService, ImplicitOriginConversions, Origins}
@@ -72,7 +72,8 @@ class HttpResponseSpec extends FunSuite
       .build
   }
 
-  def activeOrigins(backendService: service.BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService).build()
+//  def activeOrigins(backendService: BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService.asJava).build()
+
 
   def busyConnectionStrategy(activeOrigins: ActiveOrigins): LoadBalancer = new BusyConnectionsStrategy(activeOrigins)
 

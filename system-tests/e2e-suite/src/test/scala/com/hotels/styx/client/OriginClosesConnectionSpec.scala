@@ -26,7 +26,7 @@ import com.hotels.styx.api.extension.ActiveOrigins
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
 import com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy
 import com.hotels.styx.client.stickysession.StickySessionLoadBalancingStrategy
-import com.hotels.styx.proxy.OriginsInventory.newOriginsInventoryBuilder
+import com.hotels.styx.support.ActiveOriginsProvider.activeOrigins
 import com.hotels.styx.server.netty.connectors.HttpPipelineHandler
 import com.hotels.styx.support.NettyOrigins
 import com.hotels.styx.support.configuration.{BackendService, HttpBackend, Origins}
@@ -97,8 +97,6 @@ class OriginClosesConnectionSpec extends FunSuite
 
     errorCount should be(0)
   }
-
-  def activeOrigins(backendService: extension.service.BackendService): ActiveOrigins = newOriginsInventoryBuilder(backendService).build()
 
   def busyConnectionStrategy(activeOrigins: ActiveOrigins): LoadBalancer = new BusyConnectionsStrategy(activeOrigins)
 
