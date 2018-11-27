@@ -16,21 +16,21 @@
 package com.hotels.styx.admin;
 
 import com.google.common.collect.ImmutableList;
-import com.hotels.styx.api.FullHttpResponse;
+import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.proxy.BackendRegistryShim;
 import com.hotels.styx.proxy.ConfigStore;
 import com.hotels.styx.server.HttpInterceptorContext;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
-import static com.hotels.styx.api.FullHttpRequest.delete;
-import static com.hotels.styx.api.FullHttpRequest.get;
-import static com.hotels.styx.api.FullHttpRequest.post;
-import static com.hotels.styx.api.FullHttpRequest.put;
+import static com.hotels.styx.api.HttpRequest.delete;
+import static com.hotels.styx.api.HttpRequest.get;
+import static com.hotels.styx.api.HttpRequest.post;
+import static com.hotels.styx.api.HttpRequest.put;
 import static com.hotels.styx.api.HttpResponseStatus.CONFLICT;
 import static com.hotels.styx.api.HttpResponseStatus.CREATED;
 import static com.hotels.styx.api.HttpResponseStatus.NOT_FOUND;
@@ -104,12 +104,12 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void post_newApplicationIdWithDefaults() throws Exception {
-        FullHttpResponse response = appsHandler.handle(
-                post("/admin/apps/myapp").build().toStreamingRequest(),
+    public void post_newApplicationIdWithDefaults() {
+        HttpResponse response = Mono.from(appsHandler.handle(
+                post("/admin/apps/myapp").build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(CREATED));
 
@@ -118,15 +118,15 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void post_newApplicationFromJsonObjectWithAppId() throws Exception {
-        FullHttpResponse response = appsHandler.handle(
+    public void post_newApplicationFromJsonObjectWithAppId() {
+        HttpResponse response = Mono.from(appsHandler.handle(
                 post("/admin/apps/x")
                         .body(fullAppX, UTF_8)
                         .build()
-                        .toStreamingRequest(),
+                        .stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(CREATED));
 
@@ -138,15 +138,15 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void post_newApplicationFromJsonObject() throws Exception {
-        FullHttpResponse response = appsHandler.handle(
+    public void post_newApplicationFromJsonObject() {
+        HttpResponse response = Mono.from(appsHandler.handle(
                 post("/admin/apps")
                         .body(fullAppX, UTF_8)
                         .build()
-                        .toStreamingRequest(),
+                        .stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(CREATED));
 
@@ -158,15 +158,15 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void post_newApplicationFromMinimalJsonObject() throws Exception {
-        FullHttpResponse response = appsHandler.handle(
+    public void post_newApplicationFromMinimalJsonObject() {
+        HttpResponse response = Mono.from(appsHandler.handle(
                 post("/admin/apps/x")
                         .body(minimalAppX, UTF_8)
                         .build()
-                        .toStreamingRequest(),
+                        .stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(CREATED));
 
@@ -178,33 +178,33 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void post_createApplictionWithConflictingId() throws Exception {
+    public void post_createApplictionWithConflictingId() {
         BackendService existing = newBackendServiceBuilder().id("existing").build();
         configStore.addNewApplication("x", existing);
 
-        FullHttpResponse response = appsHandler.handle(
+        HttpResponse response = Mono.from(appsHandler.handle(
                 post("/admin/apps")
                         .body(fullAppX, UTF_8)
                         .build()
-                        .toStreamingRequest(),
+                        .stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(CONFLICT));
         assertThat(configStore.applications().get(), is(ImmutableList.of("x")));
     }
 
     @Test
-    public void post_createApplicationWithConflictingId2() throws Exception {
+    public void post_createApplicationWithConflictingId2() {
         BackendService existing = newBackendServiceBuilder().id("existing").build();
         configStore.addNewApplication("existing", existing);
 
-        FullHttpResponse response = appsHandler.handle(
-                post("/admin/apps/existing").build().toStreamingRequest(),
+        HttpResponse response = Mono.from(appsHandler.handle(
+                post("/admin/apps/existing").build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(CONFLICT));
 
@@ -213,15 +213,15 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void get_allApps() throws ExecutionException, InterruptedException {
+    public void get_allApps() {
         configStore.addNewApplication("app-x", newBackendServiceBuilder().id("app-x").build());
         configStore.addNewApplication("app-y", newBackendServiceBuilder().id("app-y").build());
 
-        FullHttpResponse response = appsHandler.handle(
-                get("/admin/apps").build().toStreamingRequest(),
+        HttpResponse response = Mono.from(appsHandler.handle(
+                get("/admin/apps").build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(OK));
 
@@ -231,15 +231,15 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void get_specificApp() throws ExecutionException, InterruptedException {
+    public void get_specificApp() {
         configStore.addNewApplication("app-x", newBackendServiceBuilder().id("app-x").build());
         configStore.addNewApplication("app-y", newBackendServiceBuilder().id("app-y").build());
 
-        FullHttpResponse response = appsHandler.handle(
-                get("/admin/apps/app-y").build().toStreamingRequest(),
+        HttpResponse response = Mono.from(appsHandler.handle(
+                get("/admin/apps/app-y").build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(OK));
 
@@ -249,70 +249,70 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void get_specificApp_notFound() throws ExecutionException, InterruptedException {
+    public void get_specificApp_notFound() {
         configStore.addNewApplication("app-x", newBackendServiceBuilder().id("app-x").build());
         configStore.addNewApplication("app-y", newBackendServiceBuilder().id("app-y").build());
 
-        FullHttpResponse response = appsHandler.handle(
-                get("/admin/apps/app-z").build().toStreamingRequest(),
+        HttpResponse response = Mono.from(appsHandler.handle(
+                get("/admin/apps/app-z").build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(NOT_FOUND));
     }
 
     // NOTE: The PUT updates *all* attributes. Not just those that are present in the update:
     @Test
-    public void put_updatesApp() throws ExecutionException, InterruptedException {
+    public void put_updatesApp() {
         configStore.addNewApplication("app-x", newBackendServiceBuilder().id("app-x").build());
         configStore.addNewApplication("app-y", newBackendServiceBuilder().id("app-y").build());
 
-        FullHttpResponse response = appsHandler.handle(
+        HttpResponse response = Mono.from(appsHandler.handle(
                 put("/admin/apps/app-x")
                         .body("{" +
                                 "    \"id\": \"app-x\"," +
                                 "    \"path\": \"/updatedPath/\"" +
                                 "},", UTF_8)
-                        .build().toStreamingRequest(),
+                        .build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(OK));
         assertThat(configStore.application().get("app-x").get().path(), is("/updatedPath/"));
     }
 
     @Test
-    public void put_updatesToUnknownApp() throws ExecutionException, InterruptedException {
+    public void put_updatesToUnknownApp() {
         configStore.addNewApplication("app-x", newBackendServiceBuilder().id("app-x").build());
         configStore.addNewApplication("app-y", newBackendServiceBuilder().id("app-y").build());
 
-        FullHttpResponse response = appsHandler.handle(
+        HttpResponse response = Mono.from(appsHandler.handle(
                 put("/admin/apps/app-z")
                         .body("{" +
                                 "    \"id\": \"x\"," +
                                 "    \"path\": \"/updatedPath/\"" +
                                 "},", UTF_8)
-                        .build().toStreamingRequest(),
+                        .build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(NOT_FOUND));
     }
 
     @Test
-    public void delete_removeApp() throws ExecutionException, InterruptedException {
+    public void delete_removeApp() {
         configStore.addNewApplication("app-x", newBackendServiceBuilder().id("app-x").build());
         configStore.addNewApplication("app-y", newBackendServiceBuilder().id("app-y").build());
 
-        FullHttpResponse response = appsHandler.handle(
+        HttpResponse response = Mono.from(appsHandler.handle(
                 delete("/admin/apps/app-x")
-                        .build().toStreamingRequest(),
+                        .build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(OK));
         assertThat(configStore.applications().get(), is(ImmutableList.of("app-y")));
@@ -321,16 +321,16 @@ public class AppsHandlerTest {
     }
 
     @Test
-    public void delete_attemptToRemoveUnknownApp() throws ExecutionException, InterruptedException {
+    public void delete_attemptToRemoveUnknownApp() {
         configStore.addNewApplication("app-x", newBackendServiceBuilder().id("app-x").build());
         configStore.addNewApplication("app-y", newBackendServiceBuilder().id("app-y").build());
 
-        FullHttpResponse response = appsHandler.handle(
+        HttpResponse response = Mono.from(appsHandler.handle(
                 delete("/admin/apps/app-z")
-                        .build().toStreamingRequest(),
+                        .build().stream(),
                 HttpInterceptorContext.create())
-                .flatMap(r -> r.toFullResponse(10000))
-                .asCompletableFuture().get();
+                .flatMap(r -> r.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), is(NOT_FOUND));
     }

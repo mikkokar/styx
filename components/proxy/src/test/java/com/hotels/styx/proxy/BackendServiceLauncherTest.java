@@ -16,24 +16,25 @@
 package com.hotels.styx.proxy;
 
 import com.hotels.styx.Environment;
-import com.hotels.styx.api.FullHttpRequest;
-import com.hotels.styx.api.FullHttpResponse;
+import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
-import com.hotels.styx.api.StyxObservable;
+import com.hotels.styx.api.HttpRequest;
+import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.HttpResponseStatus;
 import com.hotels.styx.api.extension.service.BackendService;
-import com.hotels.styx.common.StyxFutures;
 import com.hotels.styx.server.HttpInterceptorContext;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import rx.schedulers.Schedulers;
 
-import static com.hotels.styx.api.HttpResponse.response;
-import static com.hotels.styx.api.extension.Origin.newOriginBuilder;
 import static com.hotels.styx.api.HttpResponseStatus.BAD_GATEWAY;
 import static com.hotels.styx.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static com.hotels.styx.api.HttpResponseStatus.NOT_FOUND;
 import static com.hotels.styx.api.HttpResponseStatus.OK;
+import static com.hotels.styx.api.LiveHttpResponse.response;
+import static com.hotels.styx.api.extension.Origin.newOriginBuilder;
 import static com.hotels.styx.api.extension.service.BackendService.newBackendServiceBuilder;
 import static com.hotels.styx.client.StyxHeaderConfig.ORIGIN_ID_DEFAULT;
 import static java.lang.String.format;
@@ -41,20 +42,19 @@ import static java.util.Optional.empty;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static rx.Observable.just;
 
 public class BackendServiceLauncherTest {
     private Environment environment;
     private ConfigStore configStore;
 
     private final BackendServiceClientFactory serviceClientFactory =
-            (backendService, originsInventory, originStatsFactory) -> request -> just(response(OK)
+            (backendService, originsInventory, originStatsFactory) -> request -> Flux.just(response(OK)
                     .header(ORIGIN_ID_DEFAULT, backendService.id())
                     .build());
-    private FullHttpRequest request = FullHttpRequest.get("/").build();
+    private HttpRequest request = HttpRequest.get("/").build();
 
-    private FullHttpResponse internalServerError = FullHttpResponse.response(INTERNAL_SERVER_ERROR).build();
-    private HttpHandler internalServerErrorHandler = (request, context) -> StyxObservable.of(internalServerError.toStreamingResponse());
+    private HttpResponse internalServerError = HttpResponse.response(INTERNAL_SERVER_ERROR).build();
+    private HttpHandler internalServerErrorHandler = (request, context) -> Eventual.of(internalServerError.stream());
 
     @BeforeMethod
     public void before() {
@@ -108,14 +108,13 @@ public class BackendServiceLauncherTest {
                 .build();
     }
 
-    private static HttpResponseStatus ping(HttpHandler handler, FullHttpRequest request) {
-        return StyxFutures.await(
-                handler.handle(request.toStreamingRequest(), HttpInterceptorContext.create())
-                        .flatMap(response -> response.toFullResponse(100000))
-                        .map(FullHttpResponse::status)
-                        .onError(cause -> StyxObservable.of(BAD_GATEWAY))
-                        .asCompletableFuture()
-        );
+    private static HttpResponseStatus ping(HttpHandler handler, HttpRequest request) {
+        return Mono.from(
+                handler.handle(request.stream(), HttpInterceptorContext.create())
+                        .flatMap(response -> response.aggregate(100000))
+                        .map(HttpResponse::status)
+                        .onError(cause -> Eventual.of(BAD_GATEWAY)))
+                .block();
     }
 
 }

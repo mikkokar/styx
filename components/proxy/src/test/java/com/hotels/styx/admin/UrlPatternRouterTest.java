@@ -16,25 +16,26 @@
 package com.hotels.styx.admin;
 
 import ch.qos.logback.classic.Level;
-import com.hotels.styx.api.FullHttpResponse;
+import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpInterceptor;
-import com.hotels.styx.api.StyxObservable;
+import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.server.HttpInterceptorContext;
 import com.hotels.styx.support.matchers.LoggingTestSupport;
 import org.hamcrest.Matchers;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hotels.styx.api.HttpRequest.post;
-import static com.hotels.styx.api.HttpResponse.response;
 import static com.hotels.styx.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static com.hotels.styx.api.HttpResponseStatus.OK;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static com.hotels.styx.api.LiveHttpRequest.post;
+import static com.hotels.styx.api.LiveHttpResponse.response;
 import static com.hotels.styx.support.matchers.LoggingEventMatcher.loggingEvent;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UrlPatternRouterTest {
 
@@ -46,20 +47,18 @@ public class UrlPatternRouterTest {
     }
 
     @Test
-    public void exposesPlaceholdersInContext() throws ExecutionException, InterruptedException {
+    public void exposesPlaceholdersInContext() {
         AtomicReference<HttpInterceptor.Context> contextCapture = new AtomicReference<>();
 
         UrlPatternRouter router = new UrlPatternRouter.Builder()
                 .post("/admin/apps/:appId/:originId", (request, context) -> {
                     contextCapture.set(context);
-                    return StyxObservable.of(response(OK).build());
+                    return Eventual.of(response(OK).build());
                 })
                 .build();
 
-        FullHttpResponse response = router.handle(post("/admin/apps/appx/appx-01").build(), HttpInterceptorContext.create())
-                .flatMap(x -> x.toFullResponse(10000))
-                .asCompletableFuture()
-                .get();
+        HttpResponse response = Mono.from(router.handle(post("/admin/apps/appx/appx-01").build(), HttpInterceptorContext.create())
+                .flatMap(x -> x.aggregate(10000))).block();
 
         assertThat(response.status(), Matchers.is(OK));
 
@@ -78,10 +77,9 @@ public class UrlPatternRouterTest {
                 })
                 .build();
 
-        FullHttpResponse response = router.handle(post("/admin/apps/appx/appx-01").build(), HttpInterceptorContext.create())
-                .flatMap(x -> x.toFullResponse(10000))
-                .asCompletableFuture()
-                .get();
+        HttpResponse response = Mono.from(router.handle(post("/admin/apps/appx/appx-01").build(), HttpInterceptorContext.create())
+                .flatMap(x -> x.aggregate(10000)))
+                .block();
 
         assertThat(response.status(), Matchers.is(INTERNAL_SERVER_ERROR));
         assertThat(LOGGER.lastMessage(), Matchers.is(

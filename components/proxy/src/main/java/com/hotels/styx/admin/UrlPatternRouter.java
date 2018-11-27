@@ -15,12 +15,12 @@
  */
 package com.hotels.styx.admin;
 
+import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpInterceptor;
-import com.hotels.styx.api.HttpRequest;
-import com.hotels.styx.api.HttpResponse;
-import com.hotels.styx.api.StyxObservable;
 import com.hotels.styx.api.HttpMethod;
+import com.hotels.styx.api.LiveHttpRequest;
+import com.hotels.styx.api.LiveHttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +32,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.hotels.styx.api.HttpResponse.response;
 import static com.hotels.styx.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static com.hotels.styx.api.HttpResponseStatus.NOT_FOUND;
+import static com.hotels.styx.api.LiveHttpResponse.response;
 
 class UrlPatternRouter implements HttpHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(UrlPatternRouter.class);
@@ -47,7 +47,7 @@ class UrlPatternRouter implements HttpHandler {
     }
 
     @Override
-    public StyxObservable<HttpResponse> handle(HttpRequest request, HttpInterceptor.Context context) {
+    public Eventual<LiveHttpResponse> handle(LiveHttpRequest request, HttpInterceptor.Context context) {
         for (RouteDescriptor route : alternatives) {
             if (request.method().equals(route.method())) {
                 Matcher match = route.pattern().matcher(request.path());
@@ -62,13 +62,13 @@ class UrlPatternRouter implements HttpHandler {
                         return route.handler().handle(request, context);
                     } catch (Exception cause) {
                         LOGGER.error("ERROR: {} {}", new Object[] {request.method(), request.path(), cause});
-                        return StyxObservable.of(response(INTERNAL_SERVER_ERROR).build());
+                        return Eventual.of(response(INTERNAL_SERVER_ERROR).build());
                     }
                 }
             }
         }
 
-        return StyxObservable.of(response(NOT_FOUND).build());
+        return Eventual.of(response(NOT_FOUND).build());
     }
 
     public static Map<String, String> placeholders(HttpInterceptor.Context context) {

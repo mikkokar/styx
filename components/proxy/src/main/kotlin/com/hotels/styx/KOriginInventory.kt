@@ -1,7 +1,7 @@
 import com.hotels.styx.api.Id
-import com.hotels.styx.api.client.Origin
+import com.hotels.styx.api.extension.Origin
 import com.hotels.styx.client.StyxHostHttpClient
-import com.hotels.styx.client.connectionpool.ConnectionPoolFactory
+import com.hotels.styx.client.connectionpool.SimpleConnectionPoolFactory
 import com.hotels.styx.common.EventProcessor
 import com.hotels.styx.proxy.ConfigStore
 
@@ -24,7 +24,7 @@ import com.hotels.styx.proxy.ConfigStore
 class KOriginInventory(
         val appId: Id,
         val configStore: ConfigStore,
-        val hostConnectionPoolFactory: ConnectionPoolFactory,
+        val hostConnectionPoolFactory: SimpleConnectionPoolFactory,
         val hostClientFactory: StyxHostHttpClient.Factory) : EventProcessor {
 
     // Todo:

@@ -105,7 +105,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
 
   private def clientFactory() = new BackendServiceClientFactory() {
     override def createClient(backendService: BackendService, originsInventory: ActiveOrigins, originStatsFactory: OriginStatsFactory): BackendServiceClient = new BackendServiceClient {
-      override def sendRequest(request: LiveHttpRequest): Publisher[HttpResponse] = {
+      override def sendRequest(request: LiveHttpRequest): Publisher[LiveHttpResponse] = {
         backendService.id() should be (id("ba"))
         backendService.connectionPoolConfig().maxConnectionsPerHost() should be (45)
         backendService.connectionPoolConfig().maxPendingConnectionsPerHost() should be (15)
@@ -116,7 +116,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
             .response(OK)
             .addHeader("X-Backend-Service", backendService.id())
             .build()
-          ).asInstanceOf[Publisher[HttpResponse]]
+        )
       }
     }
   }

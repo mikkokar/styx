@@ -144,12 +144,13 @@ public final class StyxServer extends AbstractService {
 
         registerCoreMetrics(config.environment().buildInfo(), config.environment().metricRegistry());
 
+        Map<String, StyxService> servicesFromConfig = config.services();
+
         ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(new StyxPipelineFactory());
 
         this.proxyServer = proxyServerSetUp.createProxyServer(config);
         this.adminServer = createAdminServer(config);
 
-        Map<String, StyxService> servicesFromConfig = config.services();
         this.serviceManager = new ServiceManager(new ArrayList<Service>() {
             {
                 add(proxyServer);

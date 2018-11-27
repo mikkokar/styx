@@ -17,14 +17,14 @@ package com.hotels.styx.admin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hotels.styx.api.FullHttpRequest;
-import com.hotels.styx.api.FullHttpResponse;
+import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.Id;
-import com.hotels.styx.api.StyxObservable;
+import com.hotels.styx.api.LiveHttpRequest;
+import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.proxy.BackendRegistryShim;
@@ -40,7 +40,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static com.hotels.styx.api.FullHttpResponse.response;
+import static com.hotels.styx.api.HttpResponse.response;
 import static com.hotels.styx.api.HttpResponseStatus.CONFLICT;
 import static com.hotels.styx.api.HttpResponseStatus.CREATED;
 import static com.hotels.styx.api.HttpResponseStatus.NOT_FOUND;
@@ -74,7 +74,7 @@ public class AppsHandler implements HttpHandler {
                         .collect(Collectors.toList());
 
                 String serialised = serialise(apps);
-                return StyxObservable.of(response(OK)
+                return Eventual.of(response(OK)
                         .body(serialised, UTF_8)
                         .build());
             }))
@@ -84,11 +84,11 @@ public class AppsHandler implements HttpHandler {
                 Optional<BackendService> app = configStore.application().get(appId);
                 if (app.isPresent()) {
                     String serialised = serialise(app.get());
-                    return StyxObservable.of(response(OK)
+                    return Eventual.of(response(OK)
                             .body(serialised, UTF_8)
                             .build());
                 } else {
-                    return StyxObservable.of(response(NOT_FOUND).build());
+                    return Eventual.of(response(NOT_FOUND).build());
                 }
             }))
             .post("/admin/apps",
@@ -125,9 +125,9 @@ public class AppsHandler implements HttpHandler {
                 if (existingApp.isPresent()) {
                     Registry.Changes<BackendService> build = new Registry.Changes.Builder<BackendService>().updated(newApp).build();
                     shim.onChange(build);
-                    return StyxObservable.of(response(OK).build());
+                    return Eventual.of(response(OK).build());
                 } else {
-                    return StyxObservable.of(response(NOT_FOUND).build());
+                    return Eventual.of(response(NOT_FOUND).build());
                 }
             }))
             .delete("/admin/apps/:appId", httpHandler((request, context) -> {
@@ -139,23 +139,23 @@ public class AppsHandler implements HttpHandler {
                 if (existingApp.isPresent()) {
                     Registry.Changes<BackendService> build = new Registry.Changes.Builder<BackendService>().removed(existingApp.get()).build();
                     shim.onChange(build);
-                    return StyxObservable.of(response(OK).build());
+                    return Eventual.of(response(OK).build());
                 } else {
-                    return StyxObservable.of(response(NOT_FOUND).build());
+                    return Eventual.of(response(NOT_FOUND).build());
                 }
             }))
 
             .build();
 
-    private StyxObservable<FullHttpResponse> addApp(Id appId, BackendService app) {
+    private Eventual<HttpResponse> addApp(Id appId, BackendService app) {
         boolean existing = configStore.application().get(appId.toString()).isPresent();
 
         if (existing) {
-            return StyxObservable.of(response(CONFLICT).build());
+            return Eventual.of(response(CONFLICT).build());
         } else {
             Registry.Changes<BackendService> build = new Registry.Changes.Builder<BackendService>().added(app).build();
             shim.onChange(build);
-            return StyxObservable.of(response(CREATED).build());
+            return Eventual.of(response(CREATED).build());
         }
     }
 
@@ -176,17 +176,17 @@ public class AppsHandler implements HttpHandler {
     }
 
     interface FullHttpHandler {
-        StyxObservable<FullHttpResponse> handle(FullHttpRequest request, HttpInterceptor.Context context);
+        Eventual<HttpResponse> handle(HttpRequest request, HttpInterceptor.Context context);
     }
 
     private HttpHandler httpHandler(FullHttpHandler delegate) {
-        return (request, context) -> request.toFullRequest(1000000)
+        return (request, context) -> request.aggregate(1000000)
                 .flatMap(fullRequest -> delegate.handle(fullRequest, context))
-                .map(FullHttpResponse::toStreamingResponse);
+                .map(HttpResponse::stream);
     }
 
     @Override
-    public StyxObservable<HttpResponse> handle(HttpRequest request, HttpInterceptor.Context context) {
+    public Eventual<LiveHttpResponse> handle(LiveHttpRequest request, HttpInterceptor.Context context) {
         return urlRouter.handle(request, context);
     }
 }

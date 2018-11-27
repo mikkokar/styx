@@ -19,7 +19,7 @@ import com.hotels.styx.api.extension.Origin;
 import com.hotels.styx.api.metrics.codahale.CodaHaleMetricRegistry;
 import com.hotels.styx.client.StyxHostHttpClient;
 import com.hotels.styx.client.connectionpool.ConnectionPool;
-import com.hotels.styx.client.connectionpool.ConnectionPoolFactory;
+import com.hotels.styx.client.connectionpool.SimpleConnectionPoolFactory;
 import com.hotels.styx.client.connectionpool.stubs.StubConnectionFactory;
 import com.hotels.styx.support.matchers.LoggingTestSupport;
 import org.testng.annotations.AfterMethod;
@@ -136,8 +136,8 @@ public class OriginsInventoryTest {
         assertThat(configStore.remoteHost().get("generic-app.acme-02").isPresent(), is(false));
     }
 
-    private static ConnectionPoolFactory connectionPoolFactory() {
-        return new ConnectionPoolFactory.Builder()
+    private static SimpleConnectionPoolFactory connectionPoolFactory() {
+        return new SimpleConnectionPoolFactory.Builder()
                 .connectionFactory(new StubConnectionFactory())
                 .connectionPoolSettings(defaultConnectionPoolSettings())
                 .metricRegistry(new CodaHaleMetricRegistry())

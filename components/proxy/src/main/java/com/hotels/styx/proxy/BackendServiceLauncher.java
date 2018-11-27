@@ -16,29 +16,29 @@
 package com.hotels.styx.proxy;
 
 import com.hotels.styx.Environment;
-import com.hotels.styx.api.HttpClient;
+import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpInterceptor;
-import com.hotels.styx.api.HttpRequest;
-import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.Id;
+import com.hotels.styx.api.LiveHttpRequest;
+import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.MetricRegistry;
-import com.hotels.styx.api.StyxObservable;
 import com.hotels.styx.api.extension.ActiveOrigins;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.ConnectionPoolSettings;
 import com.hotels.styx.api.extension.service.HealthCheckConfig;
 import com.hotels.styx.api.extension.service.TlsSettings;
+import com.hotels.styx.client.BackendServiceClient;
 import com.hotels.styx.client.Connection;
 import com.hotels.styx.client.ConnectionSettings;
 import com.hotels.styx.client.OriginStatsFactory;
-import com.hotels.styx.client.SimpleHttpClient;
 import com.hotels.styx.client.StyxClientException;
 import com.hotels.styx.client.StyxHeaderConfig;
 import com.hotels.styx.client.StyxHostHttpClient;
+import com.hotels.styx.client.StyxHttpClient;
 import com.hotels.styx.client.connectionpool.ConnectionPool;
-import com.hotels.styx.client.connectionpool.ConnectionPoolFactory;
 import com.hotels.styx.client.connectionpool.ExpiringConnectionFactory;
+import com.hotels.styx.client.connectionpool.SimpleConnectionPoolFactory;
 import com.hotels.styx.client.healthcheck.OriginHealthCheckFunction;
 import com.hotels.styx.client.healthcheck.OriginHealthStatusMonitor;
 import com.hotels.styx.client.healthcheck.OriginHealthStatusMonitorFactory;
@@ -56,9 +56,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.hotels.styx.api.StyxInternalObservables.fromRxObservable;
 import static com.hotels.styx.client.HttpRequestOperationFactory.Builder.httpRequestOperationFactoryBuilder;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -143,46 +143,66 @@ public class BackendServiceLauncher {
                 originStatsFactory,
                 poolSettings.connectionExpirationSeconds());
 
-        ConnectionPool.Factory connectionPoolFactory = new ConnectionPoolFactory.Builder()
+        ConnectionPool.Factory connectionPoolFactory = new SimpleConnectionPoolFactory.Builder()
                 .connectionFactory(connectionFactory)
                 .connectionPoolSettings(backendService.connectionPoolConfig())
                 .metricRegistry(environment.metricRegistry())
                 .build();
+        StyxHttpClient healthCheckClient = healthCheckClient(backendService);
 
-        OriginHealthStatusMonitor healthStatusMonitor = new OriginHealthStatusMonitorFactory()
+        OriginHealthStatusMonitor healthStatusMonitor = healthStatusMonitor(backendService, healthCheckClient);
+
+
+        StyxHostHttpClient.Factory hostClientFactory = (ConnectionPool connectionPool) -> {
+            StyxHeaderConfig headerConfig = environment.styxConfig().styxHeaderConfig();
+            return StyxHostHttpClient.create(connectionPool);
+        };
+
+        OriginsInventory inventory = new OriginsInventory.Builder(backendService.id())
+//                .eventBus(environment.eventBus())
+//                .metricsRegistry(environment.metricRegistry())
+//                .connectionPoolFactory(connectionPoolFactory)
+//                .originHealthMonitor(healthStatusMonitor)
+//                .initialOrigins(backendService.origins())
+                .hostClientFactory(hostClientFactory)
+                .build();
+
+        ActiveOrigins activeOrigins = new com.hotels.styx.proxy.ActiveOrigins(backendService.id().toString(), configStore);
+
+        BackendServiceClient client = clientFactory.createClient(backendService, activeOrigins, originStatsFactory);
+        HttpHandler httpClient = newClientHandler(client);
+        ProxyToClientPipeline pipeline = new ProxyToClientPipeline(backendService.id(), httpClient, inventory);
+        configStore.routingObject().set(backendService.id().toString(), pipeline);
+    }
+
+    private StyxHttpClient healthCheckClient(BackendService backendService) {
+        StyxHttpClient.Builder builder = new StyxHttpClient.Builder()
+                .connectTimeout(backendService.connectionPoolConfig().connectTimeoutMillis(), MILLISECONDS)
+                .threadName("Health-Check-Monitor-" + backendService.id())
+                .userAgent("Styx/" + environment.buildInfo().releaseVersion());
+        backendService.tlsSettings().ifPresent(builder::tlsSettings);
+        return builder.build();
+    }
+
+    private OriginHealthStatusMonitor healthStatusMonitor(BackendService backendService, StyxHttpClient healthCheckClient) {
+        return new OriginHealthStatusMonitorFactory()
                 .create(backendService.id(),
                         backendService.healthCheckConfig(),
                         () -> originHealthCheckFunction(
                                 backendService.id(),
                                 environment.metricRegistry(),
-                                backendService.tlsSettings(),
-                                backendService.connectionPoolConfig(),
-                                backendService.healthCheckConfig(),
-                                environment.buildInfo().releaseVersion()
-                        ));
+                                backendService.healthCheckConfig()),
+                        healthCheckClient);
+    }
 
-        StyxHostHttpClient.Factory hostClientFactory = (ConnectionPool connectionPool) -> {
-            StyxHeaderConfig headerConfig = environment.styxConfig().styxHeaderConfig();
-            return StyxHostHttpClient.create(backendService.id(), connectionPool.getOrigin().id(), headerConfig.originIdHeaderName(), connectionPool);
-        };
-
-        // Inventory: creates per host clients and stores them under originClients topic in config store.
-        OriginsInventory inventory = new OriginsInventory.Builder(backendService.id())
-                .configStore(configStore)
-                .connectionPoolFactory(connectionPoolFactory)
-                .hostClientFactory(hostClientFactory)
-                .build();
-
-        // ActiveOrigins: monitors originClients topic and exposes currently active clients to load balancer
-        ActiveOrigins activeOrigins = new com.hotels.styx.proxy.ActiveOrigins(backendService.id().toString(), configStore);
-
-        HttpClient client = clientFactory.createClient(backendService, activeOrigins, originStatsFactory);
-
-        HttpHandler httpClient = newClientHandler(client);
-
-        ProxyToClientPipeline pipeline = new ProxyToClientPipeline(backendService.id(), httpClient, inventory);
-
-        configStore.routingObject().set(backendService.id().toString(), pipeline);
+    private static OriginHealthCheckFunction originHealthCheckFunction(
+            Id appId,
+            MetricRegistry metricRegistry,
+            HealthCheckConfig healthCheckConfig) {
+        String healthCheckUri = healthCheckConfig
+                .uri()
+                .orElseThrow(() -> new IllegalArgumentException("Health check URI missing for " + appId));
+        return new UrlRequestHealthCheck(healthCheckUri, metricRegistry);
     }
 
     private Connection.Factory connectionFactory(
@@ -213,8 +233,8 @@ public class BackendServiceLauncher {
         }
     }
 
-    private static HttpHandler newClientHandler(HttpClient client) {
-        return (request, context) -> fromRxObservable(client.sendRequest(request));
+    private static HttpHandler newClientHandler(BackendServiceClient client) {
+        return (request, context) -> new Eventual<>(client.sendRequest(request));
     }
 
     private static OriginHealthCheckFunction originHealthCheckFunction(
@@ -228,18 +248,11 @@ public class BackendServiceLauncher {
         ConnectionSettings connectionSettings = new ConnectionSettings(
                 connectionPoolSettings.connectTimeoutMillis());
 
-        SimpleHttpClient client = new SimpleHttpClient.Builder()
-                .connectionSettings(connectionSettings)
-                .threadName("Health-Check-Monitor-" + appId)
-                .userAgent("Styx/" + styxVersion)
-                .tlsSettings(tlsSettings.orElse(null))
-                .build();
-
         String healthCheckUri = healthCheckConfig
                 .uri()
                 .orElseThrow(() -> new IllegalArgumentException("Health check URI missing for " + appId));
 
-        return new UrlRequestHealthCheck(healthCheckUri, client, metricRegistry);
+        return new UrlRequestHealthCheck(healthCheckUri, metricRegistry);
     }
 
     private static class ProxyToClientPipeline implements HttpHandler {
@@ -256,9 +269,9 @@ public class BackendServiceLauncher {
         }
 
         @Override
-        public StyxObservable<HttpResponse> handle(HttpRequest request, HttpInterceptor.Context context) {
+        public Eventual<LiveHttpResponse> handle(LiveHttpRequest request, HttpInterceptor.Context context) {
             if (closed) {
-                return StyxObservable.error(new StyxClientException(format("Client is closed. AppId='%s'", appId)));
+                return Eventual.error(new StyxClientException(format("Client is closed. AppId='%s'", appId)));
             } else {
                 return client.handle(request, context);
             }
