@@ -15,12 +15,13 @@
  */
 package com.hotels.styx.configstore;
 
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.ReplayProcessor;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,11 +40,11 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 public class MultiValueConfigTopic<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiValueConfigTopic.class);
 
-    private final ConcurrentMap<String, BehaviorSubject<T>> topics = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ReplayProcessor<T>> topics = new ConcurrentHashMap<>();
     private final Scheduler scheduler;
 
     public MultiValueConfigTopic() {
-        this(Schedulers.from(newSingleThreadExecutor(runnable -> new Thread(runnable, "Styx-ConfigStore-Worker"))));
+        this(Schedulers.fromExecutor(newSingleThreadExecutor(runnable -> new Thread(runnable, "Styx-ConfigStore-Worker"))));
     }
 
     public MultiValueConfigTopic(Scheduler scheduler) {
@@ -62,7 +63,7 @@ public class MultiValueConfigTopic<T> {
                 .flatMap(subject -> {
                     LOGGER.info("got {}", subject);
                     try {
-                        return Optional.ofNullable((T) subject.getValue());
+                        return Optional.ofNullable((T) subject.blockFirst());
                     } catch (NullPointerException e) {
                         LOGGER.info("NPE");
                         throw e;
@@ -79,34 +80,40 @@ public class MultiValueConfigTopic<T> {
     public void set(String key, T value) {
         LOGGER.info("set({}, {})", key, value);
 
-        this.topics.putIfAbsent(key, BehaviorSubject.create());
+        this.topics.putIfAbsent(key, ReplayProcessor.cacheLast());
         this.topics.get(key).onNext(value);
     }
 
     public void unset(String key) {
         LOGGER.info("unset({})", key);
 
-        BehaviorSubject<?> subject = this.topics.remove(key);
+        ReplayProcessor<?> subject = this.topics.remove(key);
         if (subject != null) {
-            subject.onCompleted();
+            subject.onComplete();
         }
     }
 
-    public Observable<T> watch(String key) {
+    public Publisher<T> watch(String key) {
         LOGGER.info("watch({})", key);
 
-        this.topics.putIfAbsent(key, BehaviorSubject.create());
-        Observable<T> subject = this.topics.get(key);
+        this.topics.putIfAbsent(key, ReplayProcessor.create());
+        Publisher<T> subject = this.topics.get(key);
 
-        return subject.observeOn(scheduler);
+        return Flux.from(subject).subscribeOn(scheduler);
     }
 
     public void update(String key, Function<Optional<T>, T> update) {
         LOGGER.info("update({})", key);
 
-        this.topics.putIfAbsent(key, BehaviorSubject.create());
-        BehaviorSubject<T> topic = this.topics.get(key);
+        this.topics.compute(key, (ignore, topic) -> {
+            if (topic == null) {
+                topic = ReplayProcessor.create();
+                topic.onNext(update.apply(Optional.empty()));
+            } else {
+                topic.onNext(update.apply(Optional.ofNullable(topic.blockFirst())));
+            }
 
-        topic.onNext(update.apply(Optional.ofNullable(topic.getValue())));
+            return topic;
+        });
     }
 }

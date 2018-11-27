@@ -18,8 +18,9 @@ package com.hotels.styx.configstore;
 import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import rx.observers.TestSubscriber;
-import rx.schedulers.Schedulers;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static rx.Notification.Kind.OnCompleted;
 
 public class MultiValueConfigTopicTest {
     private MultiValueConfigTopic<String> configStore;
@@ -54,7 +54,7 @@ public class MultiValueConfigTopicTest {
         AtomicReference<Object> state = new AtomicReference<>();
         CountDownLatch waitingForEvent = new CountDownLatch(1);
 
-        configStore.watch("foo")
+        Flux.from(configStore.watch("foo"))
                 .subscribe(value -> {
                     state.set(value);
                     waitingForEvent.countDown();
@@ -70,7 +70,7 @@ public class MultiValueConfigTopicTest {
         configStore.set("apps", "sh");
         configStore.set("apps", "ph");
 
-        configStore.<List<String>>watch("apps").subscribe(list::add);
+        Flux.from(configStore.<List<String>>watch("apps")).subscribe(list::add);
 
         assertThat(list.get(0), is("ph"));
         assertThat(list.size(), is(1));
@@ -78,15 +78,11 @@ public class MultiValueConfigTopicTest {
 
     @Test
     public void clearsAttributeSubscriber() {
-        TestSubscriber<String> subscriber = new TestSubscriber<>();
-
         configStore.set("apps.la", "x");
-        configStore.<String>watch("apps.la").subscribe(subscriber);
-
-        configStore.unset("apps.la");
-
-        subscriber.awaitTerminalEvent();
-        assertThat(subscriber.getOnCompletedEvents().get(0).getKind(), is(OnCompleted));
+        StepVerifier.create(configStore.<String>watch("apps.la"))
+                .expectNext("x")
+                .then(() -> configStore.unset("apps.la"))
+                .verifyComplete();
     }
 
     @Test
@@ -111,7 +107,8 @@ public class MultiValueConfigTopicTest {
         MultiValueConfigTopic<List<String>> originNames = new MultiValueConfigTopic<>(Schedulers.immediate());
 
         originNames.update("apps.x.origins",
-                (maybeValue) -> maybeValue.map(actual -> ImmutableList.<String>of())
+                (maybeValue) -> maybeValue
+                        .map(actual -> ImmutableList.<String>of())
                         .orElse(ImmutableList.of("x-01")));
 
         assertThat(originNames.get("apps.x.origins"), is(Optional.of(ImmutableList.of("x-01"))));

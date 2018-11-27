@@ -16,8 +16,8 @@
 package com.hotels.styx.configstore;
 
 import org.testng.annotations.Test;
-import rx.schedulers.Schedulers;
-
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 import java.util.ArrayList;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +45,7 @@ public class ConfigTopicTest {
         topic.set("sh");
         topic.set("ph");
 
-        topic.watch().subscribe(list::add);
+        Flux.from(topic.watch()).subscribe(list::add);
 
         assertThat(list.get(0), is("ph"));
         assertThat(list.size(), is(1));

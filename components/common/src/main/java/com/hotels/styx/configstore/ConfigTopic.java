@@ -15,12 +15,12 @@
  */
 package com.hotels.styx.configstore;
 
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
+import reactor.core.publisher.ReplayProcessor;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
@@ -34,18 +34,18 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 public class ConfigTopic<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigTopic.class);
 
-    private final BehaviorSubject<T> topic;
+    private final ReplayProcessor<T> topic;
     private final Scheduler scheduler;
     private final String name;
 
     public ConfigTopic(T initialValue) {
-        this("", Schedulers.from(newSingleThreadExecutor(runnable -> new Thread(runnable, "Styx-ConfigStore-Worker"))), initialValue);
+        this("", Schedulers.fromExecutor(newSingleThreadExecutor(runnable -> new Thread(runnable, "Styx-ConfigStore-Worker"))), initialValue);
     }
 
     public ConfigTopic(String name, Scheduler scheduler, T initialValue) {
         this.name = name;
         this.scheduler = scheduler;
-        this.topic = BehaviorSubject.create();
+        this.topic = ReplayProcessor.cacheLastOrDefault(initialValue);
         this.topic.onNext(initialValue);
     }
 
@@ -56,7 +56,7 @@ public class ConfigTopic<T> {
      */
     public T get() {
         LOGGER.info("get({})", name);
-        return this.topic.getValue();
+        return this.topic.blockFirst();
     }
 
     /**
@@ -69,9 +69,8 @@ public class ConfigTopic<T> {
         topic.onNext(value);
     }
 
-    public Observable<T> watch() {
+    public Publisher<T> watch() {
         LOGGER.info("watch({})", name);
-
-        return topic.observeOn(scheduler);
+        return topic.subscribeOn(scheduler);
     }
 }
