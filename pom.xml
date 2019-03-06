@@ -215,6 +215,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>com.hotels.styx</groupId>
+        <artifactId>styx-web-ui</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- Netty -->
       <dependency>
         <groupId>io.netty</groupId>
@@ -1000,7 +1006,9 @@
           <excludes>
             <exclude>**/README</exclude>
             <exclude>src/test/resources/**</exclude>
-            <exclude>src/main/resources/**</exclude>
+            <exclude>**/node/**</exclude>
+            <exclude>**/node_modules/**</exclude>
+            <exclude>**/AdminInterface/build/**</exclude>
             <exclude>**/*.xml</exclude>
             <exclude>**/*.yaml</exclude>
             <exclude>**/*.yml</exclude>

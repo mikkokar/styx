@@ -36,6 +36,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.hotels.styx</groupId>
+      <artifactId>styx-web-ui</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.reactivex</groupId>
       <artifactId>rxjava-reactive-streams</artifactId>
     </dependency>
@@ -244,6 +249,51 @@
           </execution>
         </executions>
       </plugin>
+
+      <!--<plugin>-->
+        <!--<groupId>com.github.eirslett</groupId>-->
+        <!--<artifactId>frontend-maven-plugin</artifactId>-->
+        <!--<version>1.7.5</version>-->
+        <!--<executions>-->
+          <!--<execution>-->
+            <!--<id>install node and npm</id>-->
+            <!--<goals>-->
+              <!--<goal>install-node-and-npm</goal>-->
+            <!--</goals>-->
+            <!--<phase>generate-resources</phase>-->
+          <!--</execution>-->
+          <!--<execution>-->
+            <!--<id>npm install</id>-->
+            <!--<goals>-->
+              <!--<goal>npm</goal>-->
+            <!--</goals>-->
+            <!--<phase>generate-resources</phase>-->
+            <!--<configuration>-->
+              <!--<arguments>install</arguments>-->
+            <!--</configuration>-->
+          <!--</execution>-->
+          <!--<execution>-->
+            <!--<id>npm run build</id>-->
+            <!--<goals>-->
+              <!--<goal>npm</goal>-->
+            <!--</goals>-->
+            <!--<configuration>-->
+              <!--<arguments>run build</arguments>-->
+            <!--</configuration>-->
+          <!--</execution>-->
+        <!--</executions>-->
+        <!--<configuration>-->
+          <!--<nodeVersion>v7.9.0</nodeVersion>-->
+          <!--<npmVersion>4.2.0</npmVersion>-->
+          <!--<workingDirectory>src/main/js/AdminInterface</workingDirectory>-->
+          <!--<installDirectory>target/AdminInterface</installDirectory>-->
+          <!--<environmentVariables>-->
+            <!--<PUBLIC_URL>/admin/ui</PUBLIC_URL>-->
+          <!--</environmentVariables>-->
+        <!--</configuration>-->
+      <!--</plugin>-->
+
+
     </plugins>
   </build>
 

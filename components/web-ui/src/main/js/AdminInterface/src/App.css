@@ -1,0 +1,46 @@
+.App {
+  text-align: center;
+  margin-top: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  border: 2px solid brown;
+  border-radius: 5px;
+  min-width: 370px;
+  
+}
+.header{
+  background-color: #ffa07a;
+  margin-top: 4px;
+  margin-bottom: 10px;
+  margin-left: 20px;
+  margin-right: 20px;
+  height: 50px;
+  text-align: center;
+  border: 1px solid #ffa07a;
+  border-radius: 5px;
+  box-shadow: 5px 5px 4px;
+    
+
+   
+}
+
+tr,td{
+  border:1px solid black;
+  border-collapse: collapse;
+  margin: 2px;
+  width: 150px;
+  
+  
+}
+
+.active{
+  background: green
+}
+
+.inactive{
+  background: red;
+}
+
+.disable{
+  background:#ff8c00;
+}

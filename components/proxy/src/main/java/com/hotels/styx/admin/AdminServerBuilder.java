@@ -39,6 +39,7 @@ import com.hotels.styx.admin.handlers.VersionTextHandler;
 import com.hotels.styx.admin.tasks.OriginsCommandHandler;
 import com.hotels.styx.admin.tasks.OriginsReloadCommandHandler;
 import com.hotels.styx.api.HttpHandler;
+import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
@@ -62,6 +63,7 @@ import java.util.function.BiFunction;
 
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static com.hotels.styx.admin.handlers.IndexHandler.Link.link;
+import static com.hotels.styx.api.HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static com.hotels.styx.api.HttpMethod.POST;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -136,10 +138,17 @@ public class AdminServerBuilder {
 
         httpRouter.add("/admin/plugins", new PluginListHandler(environment.configStore()));
 
+        // Web UI
+        httpRouter.add("/admin/ui/", new ClassPathResourceHandler("/admin/ui/"));
+
         return new NettyServerBuilderSpec("Admin", environment.serverEnvironment(), new WebServerConnectorFactory())
                 .toNettyServerBuilder(adminServerConfig)
-                .httpHandler(httpRouter)
+                .httpHandler((request, ctx) -> httpRouter.handle(request, ctx).map(this::addCorsHeader))
                 .build();
+    }
+
+    private LiveHttpResponse addCorsHeader(LiveHttpResponse response) {
+        return response.newBuilder().addHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*").build();
     }
 
     private JsonHandler<DashboardData> dashboardDataHandler(StyxConfig styxConfig) {
@@ -161,6 +170,7 @@ public class AdminServerBuilder {
                 link("Startup Configuration", "/admin/configuration/startup"),
                 link("JVM", "/admin/jvm?pretty"),
                 link("Origins Status", "/admin/origins/status?pretty"),
+                link("Origins Status UI", "/admin/ui/index.html"),
                 link("Dashboard", "/admin/dashboard/index.html"),
                 link("Plugins", "/admin/plugins"));
     }
