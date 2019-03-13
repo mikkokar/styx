@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.startup;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.hotels.styx.Environment;
@@ -24,6 +25,7 @@ import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.extension.service.spi.StyxService;
+import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.proxy.StyxBackendServiceClientFactory;
 import com.hotels.styx.proxy.interceptors.ConfigurationContextResolverInterceptor;
 import com.hotels.styx.proxy.interceptors.HopByHopHeadersRemovingInterceptor;
@@ -37,6 +39,7 @@ import com.hotels.styx.routing.HttpPipelineFactory;
 import com.hotels.styx.routing.StaticPipelineFactory;
 import com.hotels.styx.routing.config.BuiltinInterceptorsFactory;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
+import com.hotels.styx.routing.config.HttpInterceptorFactory;
 import com.hotels.styx.routing.config.RouteHandlerDefinition;
 import com.hotels.styx.routing.config.RouteHandlerFactory;
 import com.hotels.styx.routing.handlers.BackendServiceProxy;
@@ -46,8 +49,9 @@ import com.hotels.styx.routing.handlers.ProxyToBackend;
 import com.hotels.styx.routing.handlers.StaticResponseHandler;
 import com.hotels.styx.routing.interceptors.RewriteInterceptor;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.hotels.styx.api.configuration.ConfigurationContextResolver.EMPTY_CONFIGURATION_CONTEXT_RESOLVER;
 import static java.util.stream.Collectors.toMap;
@@ -56,29 +60,72 @@ import static java.util.stream.Collectors.toMap;
  * Produces the pipeline for the Styx proxy server.
  */
 public final class StyxPipelineFactory implements PipelineFactory {
+
+    private static final ImmutableMap<String, HttpInterceptorFactory> INTERCEPTOR_FACTORIES =
+            ImmutableMap.of("Rewrite", new RewriteInterceptor.ConfigFactory());
+
+
     public StyxPipelineFactory() {
     }
 
     @Override
     public HttpHandler create(StyxServerComponents config) {
-        BuiltinInterceptorsFactory builtinInterceptorsFactory = new BuiltinInterceptorsFactory(
-                ImmutableMap.of("Rewrite", new RewriteInterceptor.ConfigFactory()));
-
         boolean requestTracking = config.environment().configuration().get("requestTracking", Boolean.class).orElse(false);
 
-        Map<String, HttpHandlerFactory> objectFactories = createBuiltinRoutingObjectFactories(
-                config.environment(),
-                config.services(),
-                config.plugins(),
-                builtinInterceptorsFactory,
-                requestTracking);
-
-        RouteHandlerFactory routeHandlerFactory = new RouteHandlerFactory(objectFactories, new ConcurrentHashMap<>());
+        Map<String, HttpHandler> httpHandlers = config.environment().configuration().get("httpHandlers", JsonNode.class)
+                .map(chandlerBlock -> readHttpHandlers(chandlerBlock,
+                        config.environment(),
+                        config.services(),
+                        config.plugins()))
+                .orElse(ImmutableMap.of());
 
         return styxHttpPipeline(
                 config.environment().styxConfig(),
-                configuredPipeline(config.environment(), config.services(), config.plugins(), routeHandlerFactory),
+                configuredPipeline(
+                        config.environment(),
+                        config.services(),
+                        config.plugins(),
+                        newRouteHandlerFactory(
+                                config.environment(),
+                                config.services(),
+                                config.plugins(),
+                                requestTracking,
+                                httpHandlers)),
                 requestTracking);
+    }
+
+    public static Map<String, HttpHandler> readHttpHandlers(JsonNode root, Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
+        Map<String, HttpHandler> handlers = new HashMap<>();
+
+        root.fields().forEachRemaining(
+                (entry) -> {
+                    String name = entry.getKey();
+                    RouteHandlerDefinition handlerDef = new JsonNodeConfig(entry.getValue()).as(RouteHandlerDefinition.class);
+
+                    RouteHandlerFactory factory = newRouteHandlerFactory(environment, services, plugins, false, handlers);
+                    handlers.put(name, factory.build(ImmutableList.of(), handlerDef));
+                }
+        );
+
+        return handlers;
+    }
+
+    private static RouteHandlerFactory newRouteHandlerFactory(
+            Environment environment,
+            Map<String, StyxService> services,
+            List<NamedPlugin> plugins,
+            boolean requestTracking,
+            Map<String, HttpHandler> handlers) {
+        BuiltinInterceptorsFactory builtinInterceptorsFactory = new BuiltinInterceptorsFactory(INTERCEPTOR_FACTORIES);
+
+        Map<String, HttpHandlerFactory> objectFactories = createBuiltinRoutingObjectFactories(
+                environment,
+                services,
+                plugins,
+                builtinInterceptorsFactory,
+                requestTracking);
+
+        return new RouteHandlerFactory(objectFactories, handlers);
     }
 
     private static HttpHandler styxHttpPipeline(StyxConfig config, HttpHandler interceptorsPipeline, boolean requestTracking) {

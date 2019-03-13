@@ -91,7 +91,7 @@ quality: clean
 quality-no-tests:
 	mvn -Dmaven.test.skip=true clean install -Pquality -Dmaven.test.skip=true
 
-STYX_BUILD_ARTIFACT = $(shell find  distribution/target -name "styx*.zip" -depth 1)
+STYX_BUILD_ARTIFACT = $(shell find  distribution/target -name "styx*linux-x86_64.zip" -depth 1)
 STYX_HOME = $(CURRENT_DIR)/distribution/target/styx/styx
 DOCKER_CONTEXT = $(CURRENT_DIR)/distribution/target/styx/docker
 CONFIG_ROOT := $(STYX_HOME)/conf/env-$(STACK)
