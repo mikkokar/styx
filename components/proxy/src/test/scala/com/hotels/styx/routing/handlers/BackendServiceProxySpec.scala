@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory, Origins
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.proxy.BackendServiceClientFactory
 import com.hotels.styx.routing.config.RouteHandlerDefinition
+import com.hotels.styx.routing.handlers.BackendServiceProxy.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.reactivestreams.Publisher
 import org.scalatest.mock.MockitoSugar
@@ -62,7 +63,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
 
     val services: Map[String, Registry[BackendService]] = Map("backendServicesRegistry" -> backendRegistry)
 
-    val handler = new BackendServiceProxy.ConfigFactory(environment, clientFactory(), services).build(List(), null, config)
+    val handler = new Factory(environment, clientFactory(), services).build(List(), null, config)
     backendRegistry.reload()
 
     val hwaResponse = Mono.from(handler.handle(hwaRequest, HttpInterceptorContext.create)).block()
@@ -87,7 +88,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
     val registries: Map[String, Registry[BackendService]] = Map.empty
 
     val e = intercept[IllegalArgumentException] {
-      val handler = new BackendServiceProxy.ConfigFactory(environment, clientFactory(), registries).build(List("config", "config"), null, config)
+      val handler = new Factory(environment, clientFactory(), registries).build(List("config", "config"), null, config)
     }
     e.getMessage should be("Routing object definition of type 'BackendServiceProxy', attribute='config.config', is missing a mandatory 'backendProvider' attribute.")
   }
@@ -103,7 +104,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
 
     val e = intercept[IllegalArgumentException] {
       val registries: Map[String, Registry[BackendService]] = Map.empty
-      val handler = new BackendServiceProxy.ConfigFactory(environment, clientFactory(), registries).build(List("config", "config"), null, config)
+      val handler = new Factory(environment, clientFactory(), registries).build(List("config", "config"), null, config)
     }
     e.getMessage should be("No such backend service provider exists, attribute='config.config.backendProvider', name='bar'")
   }

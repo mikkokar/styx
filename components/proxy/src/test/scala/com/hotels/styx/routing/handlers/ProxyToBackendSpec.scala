@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hotels.styx.common.StyxFutures
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.proxy.BackendServiceClientFactory
 import com.hotels.styx.routing.config.RouteHandlerDefinition
+import com.hotels.styx.routing.handlers.ProxyToBackend.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.reactivestreams.Publisher
 import org.scalatest.{FunSpec, Matchers}
@@ -54,7 +55,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
       |""".stripMargin)
 
   it("builds ProxyToBackend handler") {
-    val handler = new ProxyToBackend.ConfigFactory(environment, clientFactory()).build(List().asJava, null, config)
+    val handler = new Factory(environment, clientFactory()).build(List().asJava, null, config)
 
     val response = Mono.from(handler.handle(LiveHttpRequest.get("/foo").build(), HttpInterceptorContext.create)).block()
     response.status should be (OK)
@@ -71,7 +72,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
         |""".stripMargin)
 
     val e = intercept[IllegalArgumentException] {
-      val handler = new ProxyToBackend.ConfigFactory(environment, clientFactory())
+      val handler = new Factory(environment, clientFactory())
               .build(List("config", "config").asJava, null, config)
     }
 
@@ -94,7 +95,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
         |""".stripMargin)
 
     val e = intercept[IllegalArgumentException] {
-      val handler = new ProxyToBackend.ConfigFactory(environment, clientFactory())
+      val handler = new Factory(environment, clientFactory())
               .build(List("config", "config").asJava, null, config)
     }
 

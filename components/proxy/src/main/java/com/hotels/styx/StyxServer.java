@@ -148,9 +148,9 @@ public final class StyxServer extends AbstractService {
 
         Map<String, StyxService> servicesFromConfig = components.services();
 
-        ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(new StyxPipelineFactory());
-
         components.plugins().forEach(plugin -> components.environment().configStore().set("plugins." + plugin.name(), plugin));
+
+        ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(new StyxPipelineFactory(components.environment(), components.services(), components.plugins()));
 
         this.proxyServer = proxyServerSetUp.createProxyServer(components);
         this.adminServer = createAdminServer(components);

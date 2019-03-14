@@ -43,10 +43,10 @@ class StyxPipelineFactorySpec extends FunSpec with Matchers {
       |
         """.stripMargin)
 
-  it ("Builds a new handler as per RouteHandlerDefinition") {
-    val map = StyxPipelineFactory.readHttpHandlers(jsonNode, new Environment.Builder().build(), Map[String, StyxService]().asJava, List.empty.asJava)
-    println("map: " + map)
-  }
+//  it ("Builds a new handler as per RouteHandlerDefinition") {
+//    val map = StyxPipelineFactory.readHttpHandlers(jsonNode, new Environment.Builder().build(), Map[String, StyxService]().asJava, List.empty.asJava)
+//    println("map: " + map)
+//  }
 
   private def jsonNodeFromConfig(text: String) = new YamlConfig(text).get("httpHandlers", classOf[JsonNode]).get()
 
