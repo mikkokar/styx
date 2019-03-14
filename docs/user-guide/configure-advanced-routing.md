@@ -31,68 +31,20 @@ backends.
           - bad-cookie-fixer
         handler:
           name: protocol-router
-          destination: protocolCheck
-
- ----- 
-
-    routingObjects:
-      proxyToSecure:
-         type: BackendServiceProxy
-         config:
-           backendProvider: "https-backends"
-
-      proxyToInsecure:
-         type: BackendServiceProxy
-         config:
-           backendProvider: "http-backends"
-           
-           
-      proxyToEdgeAuthSrv:
-         type: BackendServiceProxy
-         config:
-           ..
-           connectionPool:
-             ...
-           tlsSettings:
-             ...
-           healthCheck:
-             ...
-
-      proxyToErrorLoggingService:
-         type: BackendServiceProxy
-         config:
-           ..
-           connectionPool:
-             ...
-           tlsSettings:
-             ...
-           healthCheck:
-             ...
-
-      pathPrefixForSecureApps:
-         type: PathPrefix
-         config:
-
-      pathPrefixForInsecureApps:
-         type: PathPrefix
-         config:
-
-      protocolCheck:
           type: ConditionRouter
           config:
-            choice:
+            routes:
               - condition: protocol() == "https"
-                destination: pathPrefixForSecureApps
-            default:
-              destination: proxyToErrorLoggingService
-
-      trySecureFirst:
-          type: Duplicate
-          config:
-            copyTo: errorLogger
-            next: protocolCheck 
-              
-
+                destination:
+                  name: secure-backends
+                  type: BackendServiceProxy
+                  config:
+                    backendProvider: "https-backends"
+            fallback:
+              name: insecure-backends
+              type: BackendServiceProxy
+              config:
+                backendProvider: "http-backends"
 
 Without going too much into details (specifics will be explained later)
 a hierarchical structure should be apparent. The pipeline itself is an
