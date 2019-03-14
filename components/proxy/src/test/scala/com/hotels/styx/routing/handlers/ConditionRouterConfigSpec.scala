@@ -20,7 +20,8 @@ import com.hotels.styx.api.LiveHttpResponse.response
 import com.hotels.styx.api.{Eventual, HttpHandler, LiveHttpRequest}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.routing.HttpHandlerAdapter
-import com.hotels.styx.routing.config.{HttpHandlerFactory, RouteHandlerConfig, RouteHandlerDefinition, RouteHandlerFactory}
+import com.hotels.styx.routing.config._
+import com.hotels.styx.routing.db.RouteDatabase
 import com.hotels.styx.routing.handlers.StaticResponseHandler.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.mockito.Matchers.{any, eq => meq}
@@ -34,7 +35,7 @@ import scala.collection.JavaConversions._
 class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar {
 
   private val request = LiveHttpRequest.get("/foo").build
-  private val routeHandlerFactory = new RouteHandlerFactory(Map("StaticResponseHandler" -> new Factory), Map[String, HttpHandler]())
+  private val routeHandlerFactory = new RoutingObjectFactory(Map("StaticResponseHandler" -> new Factory), new RouteDatabase())
 
   private val config = configBlock(
     """
@@ -86,12 +87,11 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
   }
 
   it("Fallback handler can be specified as a handler reference") {
-    val routeHandlerFactory = new RouteHandlerFactory(
-      Map[String, HttpHandlerFactory](),
-      Map(
-      "secureHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())),
-      "fallbackHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build()))
-    ))
+    val routeDatabase = new RouteDatabase()
+    routeDatabase.setHandler("secureHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())))
+    routeDatabase.setHandler("fallbackHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build())))
+
+    val routeHandlerFactory = new RoutingObjectFactory(Map[String, HttpHandlerFactory](), routeDatabase)
 
     val router = new ConditionRouter.Factory().build(List(), routeHandlerFactory, configWithReferences)
 
@@ -101,18 +101,20 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
   }
 
   it("Route destination can be specified as a handler reference") {
-    val routeHandlerFactory = new RouteHandlerFactory(
+    val routeDatabase = new RouteDatabase()
+
+    val routeHandlerFactory = new RoutingObjectFactory(
       Map[String, HttpHandlerFactory](),
-      Map(
+      new RouteDatabase(Map(
         "secureHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())),
         "fallbackHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build()))
-      ))
+      )))
 
     val router = new ConditionRouter.Factory().build(
       List(),
       routeHandlerFactory,
       configWithReferences
-      )
+    )
 
     val resp = Mono.from(router.handle(request, new HttpInterceptorContext(true))).block()
 
@@ -241,17 +243,17 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
         |          content: "secure"
         |""".stripMargin)
 
-    val builtinsFactory = mock[RouteHandlerFactory]
-    when(builtinsFactory.build(any[java.util.List[String]], any[RouteHandlerConfig]))
+    val builtinsFactory = mock[RoutingObjectFactory]
+    when(builtinsFactory.build(any[java.util.List[String]], any[RoutingObjectConfig]))
       .thenReturn(new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).build())))
 
     val router = new ConditionRouter.Factory().build(List("config", "config"), builtinsFactory, config)
 
-    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[0]")), any[RouteHandlerConfig])
-    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[1]")), any[RouteHandlerConfig])
-    verify(builtinsFactory).build(meq(List("config", "config", "fallback")), any[RouteHandlerConfig])
+    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[0]")), any[RoutingObjectConfig])
+    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[1]")), any[RoutingObjectConfig])
+    verify(builtinsFactory).build(meq(List("config", "config", "fallback")), any[RoutingObjectConfig])
   }
 
-  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
+  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RoutingObjectDefinition]).get()
 
 }

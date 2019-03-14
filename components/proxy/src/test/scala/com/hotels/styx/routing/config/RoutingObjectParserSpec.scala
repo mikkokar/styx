@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import org.scalatest.{FunSpec, Matchers}
 
 
-class RoutingConfigParserSpec extends FunSpec with Matchers {
+class RoutingObjectParserSpec extends FunSpec with Matchers {
 
   it("Parses strings as RoutingConfigReferences") {
     val jsonNode = jsonNodeFromConfig(
@@ -28,10 +28,10 @@ class RoutingConfigParserSpec extends FunSpec with Matchers {
         |config: aString
       """.stripMargin)
 
-    val routingObjectRef = RoutingConfigParser.toRoutingConfigNode(jsonNode)
+    val routingObjectRef = RoutingObjectParser.toRoutingConfigNode(jsonNode)
 
-    routingObjectRef shouldBe a[RouteHandlerReference]
-    routingObjectRef.asInstanceOf[RouteHandlerReference].name() should be("aString")
+    routingObjectRef shouldBe a[RoutingObjectReference]
+    routingObjectRef.asInstanceOf[RoutingObjectReference].name() should be("aString")
   }
 
   it("Parses routing object definitions") {
@@ -64,12 +64,12 @@ class RoutingConfigParserSpec extends FunSpec with Matchers {
         |
         """.stripMargin)
 
-    val routingObjectDef = RoutingConfigParser.toRoutingConfigNode(jsonNode)
+    val routingObjectDef = RoutingObjectParser.toRoutingConfigNode(jsonNode)
 
-    routingObjectDef shouldBe a[RouteHandlerDefinition]
-    routingObjectDef.asInstanceOf[RouteHandlerDefinition].name() should be("main-router")
-    routingObjectDef.asInstanceOf[RouteHandlerDefinition].`type`() should be("ConditionRouter")
-    routingObjectDef.asInstanceOf[RouteHandlerDefinition].config() shouldBe a[JsonNode]
+    routingObjectDef shouldBe a[RoutingObjectDefinition]
+    routingObjectDef.asInstanceOf[RoutingObjectDefinition].name() should be("main-router")
+    routingObjectDef.asInstanceOf[RoutingObjectDefinition].`type`() should be("ConditionRouter")
+    routingObjectDef.asInstanceOf[RoutingObjectDefinition].config() shouldBe a[JsonNode]
   }
 
   it("Routing object name is optional") {
@@ -82,12 +82,12 @@ class RoutingConfigParserSpec extends FunSpec with Matchers {
         |
         """.stripMargin)
 
-    val routingObjectDef = RoutingConfigParser.toRoutingConfigNode(jsonNode)
+    val routingObjectDef = RoutingObjectParser.toRoutingConfigNode(jsonNode)
 
-    routingObjectDef shouldBe a[RouteHandlerDefinition]
-    routingObjectDef.asInstanceOf[RouteHandlerDefinition].name() should be("")
-    routingObjectDef.asInstanceOf[RouteHandlerDefinition].`type`() should be("ConditionRouter")
-    routingObjectDef.asInstanceOf[RouteHandlerDefinition].config() shouldBe a[JsonNode]
+    routingObjectDef shouldBe a[RoutingObjectDefinition]
+    routingObjectDef.asInstanceOf[RoutingObjectDefinition].name() should be("")
+    routingObjectDef.asInstanceOf[RoutingObjectDefinition].`type`() should be("ConditionRouter")
+    routingObjectDef.asInstanceOf[RoutingObjectDefinition].config() shouldBe a[JsonNode]
   }
 
   it("Routing object type is mandatory") {
@@ -101,7 +101,7 @@ class RoutingConfigParserSpec extends FunSpec with Matchers {
         """.stripMargin)
 
     val e = intercept[IllegalArgumentException] {
-      val routingObjectDef = RoutingConfigParser.toRoutingConfigNode(jsonNode)
+      val routingObjectDef = RoutingObjectParser.toRoutingConfigNode(jsonNode)
     }
     e.getMessage should be("Routing config definition must have a 'type' attribute in def='foo'")
   }

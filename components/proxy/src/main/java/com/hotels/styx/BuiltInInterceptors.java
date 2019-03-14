@@ -13,11 +13,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
  */
-package com.hotels.styx.startup;
+package com.hotels.styx;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.hotels.styx.StyxConfig;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.proxy.interceptors.ConfigurationContextResolverInterceptor;
 import com.hotels.styx.proxy.interceptors.HopByHopHeadersRemovingInterceptor;
@@ -40,7 +39,7 @@ final class BuiltInInterceptors {
     static final ImmutableMap<String, HttpInterceptorFactory> INTERCEPTOR_FACTORIES =
             ImmutableMap.of("Rewrite", new RewriteInterceptor.ConfigFactory());
 
-    static List<HttpInterceptor> builtInInterceptors(StyxConfig config) {
+    static List<HttpInterceptor> internalStyxInterceptors(StyxConfig config) {
         ImmutableList.Builder<HttpInterceptor> builder = ImmutableList.builder();
 
         boolean loggingEnabled = config.get("request-logging.inbound.enabled", Boolean.class)

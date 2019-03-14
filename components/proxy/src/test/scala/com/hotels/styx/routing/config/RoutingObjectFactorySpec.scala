@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,28 +18,28 @@ package com.hotels.styx.routing.config
 import com.fasterxml.jackson.databind.JsonNode
 import com.hotels.styx.api.HttpHandler
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
+import com.hotels.styx.routing.db.RouteDatabase
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FunSpec, Matchers}
 
-import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
-class RouteHandlerFactorySpec extends FunSpec with Matchers with MockitoSugar {
+class RoutingObjectFactorySpec extends FunSpec with Matchers with MockitoSugar {
 
   private val mockHandler = mock[HttpHandler]
   private val aHandlerInstance = mock[HttpHandler]
 
-  val handlers = Map[String, HttpHandler](
-    "aHandler" -> aHandlerInstance
-  )
+  val routeDatabase = new RouteDatabase
 
-  it ("Builds a new handler as per RouteHandlerDefinition") {
-    val routeDef = new RouteHandlerDefinition("handler-def", "DelegateHandler", mock[JsonNode])
+  routeDatabase.setHandler("aHandler", aHandlerInstance)
+
+  it ("Builds a new handler as per RoutingObjectDefinition") {
+    val routeDef = new RoutingObjectDefinition("handler-def", "DelegateHandler", mock[JsonNode])
     val handlerFactory = httpHandlerFactory()
 
-    val routeFactory = new RouteHandlerFactory(Map("DelegateHandler" -> handlerFactory).asJava, handlers)
+    val routeFactory = new RoutingObjectFactory(Map("DelegateHandler" -> handlerFactory).asJava, routeDatabase)
 
     val delegateHandler = routeFactory.build(List("parents").asJava, routeDef)
 
@@ -48,8 +48,8 @@ class RouteHandlerFactorySpec extends FunSpec with Matchers with MockitoSugar {
   }
 
   it ("Doesn't accept unregistered types") {
-    val config = new RouteHandlerDefinition("foo", "ConfigType", mock[JsonNode])
-    val routeFactory = new RouteHandlerFactory(Map.empty[String, HttpHandlerFactory].asJava, handlers)
+    val config = new RoutingObjectDefinition("foo", "ConfigType", mock[JsonNode])
+    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava, routeDatabase)
 
     val e = intercept[IllegalArgumentException] {
       routeFactory.build(List().asJava, config)
@@ -59,18 +59,18 @@ class RouteHandlerFactorySpec extends FunSpec with Matchers with MockitoSugar {
   }
 
   it ("Returns handler from a configuration reference") {
-    val routeFactory = new RouteHandlerFactory(Map.empty[String, HttpHandlerFactory].asJava, handlers)
+    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava, routeDatabase)
 
-    val handler = routeFactory.build(List().asJava, new RouteHandlerReference("aHandler"))
+    val handler = routeFactory.build(List().asJava, new RoutingObjectReference("aHandler"))
 
     handler should be (aHandlerInstance)
   }
 
   it ("Throws exception when it refers a non-existent object") {
-    val routeFactory = new RouteHandlerFactory(Map.empty[String, HttpHandlerFactory].asJava, handlers)
+    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava, routeDatabase)
 
     val e = intercept[IllegalArgumentException] {
-      routeFactory.build(List().asJava, new RouteHandlerReference("non-existent"))
+      routeFactory.build(List().asJava, new RoutingObjectReference("non-existent"))
     }
 
     e.getMessage should be("Non-existent handler instance: 'non-existent'")
@@ -78,7 +78,7 @@ class RouteHandlerFactorySpec extends FunSpec with Matchers with MockitoSugar {
 
   private def httpHandlerFactory(): HttpHandlerFactory = {
     val mockFactory: HttpHandlerFactory = mock[HttpHandlerFactory]
-    when(mockFactory.build(any[java.util.List[String]], any[RouteHandlerFactory], any[RouteHandlerDefinition])).thenReturn(mockHandler)
+    when(mockFactory.build(any[java.util.List[String]], any[RoutingObjectFactory], any[RoutingObjectDefinition])).thenReturn(mockHandler)
     mockFactory
   }
 

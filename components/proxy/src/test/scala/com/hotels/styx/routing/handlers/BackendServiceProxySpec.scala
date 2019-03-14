@@ -29,7 +29,7 @@ import com.hotels.styx.api.{LiveHttpRequest, LiveHttpResponse}
 import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory, OriginsInventory}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.proxy.BackendServiceClientFactory
-import com.hotels.styx.routing.config.RouteHandlerDefinition
+import com.hotels.styx.routing.config.{RouteHandlerDefinition, RoutingObjectDefinition}
 import com.hotels.styx.routing.handlers.BackendServiceProxy.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.reactivestreams.Publisher
@@ -109,7 +109,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
     e.getMessage should be("No such backend service provider exists, attribute='config.config.backendProvider', name='bar'")
   }
 
-  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
+  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RoutingObjectDefinition]).get()
 
   private def clientFactory() = new BackendServiceClientFactory() {
     override def createClient(backendService: BackendService, originsInventory: OriginsInventory, originStatsFactory: OriginStatsFactory): BackendServiceClient = new BackendServiceClient {

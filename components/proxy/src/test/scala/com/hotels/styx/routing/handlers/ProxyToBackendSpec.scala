@@ -24,7 +24,7 @@ import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory, Origins
 import com.hotels.styx.common.StyxFutures
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.proxy.BackendServiceClientFactory
-import com.hotels.styx.routing.config.RouteHandlerDefinition
+import com.hotels.styx.routing.config.RoutingObjectDefinition
 import com.hotels.styx.routing.handlers.ProxyToBackend.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.reactivestreams.Publisher
@@ -102,7 +102,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
     e.getMessage should be("Routing object definition of type 'ProxyToBackend', attribute='config.config.backend', is missing a mandatory 'origins' attribute.")
   }
 
-  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
+  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RoutingObjectDefinition]).get()
 
   private def clientFactory() = new BackendServiceClientFactory() {
     override def createClient(backendService: BackendService, originsInventory: OriginsInventory, originStatsFactory: OriginStatsFactory): BackendServiceClient = new BackendServiceClient {

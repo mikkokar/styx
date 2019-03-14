@@ -18,7 +18,7 @@ package com.hotels.styx.routing.handlers
 import com.hotels.styx.api.HttpResponseStatus.CREATED
 import com.hotels.styx.api.LiveHttpRequest
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
-import com.hotels.styx.routing.config.RouteHandlerDefinition
+import com.hotels.styx.routing.config.RoutingObjectDefinition
 import com.hotels.styx.routing.handlers.StaticResponseHandler.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.scalatest.{FunSpec, Matchers}
@@ -46,6 +46,6 @@ class StaticResponseHandlerSpec extends FunSpec with Matchers {
     response.status should be (CREATED)
   }
 
-  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
+  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RoutingObjectDefinition]).get()
 
 }
