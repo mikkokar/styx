@@ -17,8 +17,18 @@ package com.hotels.styx.routing.db;
 
 import com.hotels.styx.api.HttpHandler;
 
+import java.util.Map;
 import java.util.Optional;
 
-public interface RouteDatabase {
-    public Optional<HttpHandler> handler(String key);
+public class MapBackedRouteDatabase implements RouteDatabase {
+    private Map<String, HttpHandler> handlers;
+
+    public MapBackedRouteDatabase(Map<String, HttpHandler> handlers) {
+        this.handlers = handlers;
+    }
+
+    @Override
+    public Optional<HttpHandler> handler(String key) {
+        return Optional.ofNullable(handlers.get(key));
+    }
 }

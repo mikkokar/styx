@@ -21,7 +21,7 @@ import com.hotels.styx.api.{Eventual, HttpHandler, LiveHttpRequest}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.routing.HttpHandlerAdapter
 import com.hotels.styx.routing.config._
-import com.hotels.styx.routing.db.RouteDatabase
+import com.hotels.styx.routing.db.MapBackedRouteDatabase
 import com.hotels.styx.routing.handlers.StaticResponseHandler.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.mockito.Matchers.{any, eq => meq}
@@ -30,12 +30,12 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FunSpec, Matchers}
 import reactor.core.publisher.Mono
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar {
 
   private val request = LiveHttpRequest.get("/foo").build
-  private val routeHandlerFactory = new RoutingObjectFactory(Map("StaticResponseHandler" -> new Factory), new RouteDatabase())
+  private val routeHandlerFactory = new RoutingObjectFactory(Map("StaticResponseHandler" -> (new Factory).asInstanceOf[HttpHandlerFactory]).asJava, new MapBackedRouteDatabase(Map[String, HttpHandler]().asJava))
 
   private val config = configBlock(
     """
@@ -73,27 +73,30 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
 
 
   it("Builds an instance with fallback handler") {
-    val router = new ConditionRouter.Factory().build(List(), routeHandlerFactory, config)
+    val router = new ConditionRouter.Factory().build(List().asJava, routeHandlerFactory, config)
     val response = Mono.from(router.handle(request, new HttpInterceptorContext(true))).block()
 
     response.status() should be(OK)
   }
 
   it("Builds condition router instance routes") {
-    val router = new ConditionRouter.Factory().build(List(), routeHandlerFactory, config)
+    val router = new ConditionRouter.Factory().build(List().asJava, routeHandlerFactory, config)
     val response = Mono.from(router.handle(request, new HttpInterceptorContext())).block()
 
     response.status().code() should be(301)
   }
 
   it("Fallback handler can be specified as a handler reference") {
-    val routeDatabase = new RouteDatabase()
-    routeDatabase.setHandler("secureHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())))
-    routeDatabase.setHandler("fallbackHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build())))
+    val routeDatabase = new MapBackedRouteDatabase(Map(
+      "secureHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())).asInstanceOf[HttpHandler],
+      "fallbackHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build()))
+    ).asJava)
+    //    routeDatabase.insertHandler("secureHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())))
+    //    routeDatabase.insertHandler("fallbackHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build())))
 
-    val routeHandlerFactory = new RoutingObjectFactory(Map[String, HttpHandlerFactory](), routeDatabase)
+    val routeHandlerFactory = new RoutingObjectFactory(Map[String, HttpHandlerFactory]().asJava, routeDatabase)
 
-    val router = new ConditionRouter.Factory().build(List(), routeHandlerFactory, configWithReferences)
+    val router = new ConditionRouter.Factory().build(List().asJava, routeHandlerFactory, configWithReferences)
 
     val resp = Mono.from(router.handle(request, new HttpInterceptorContext())).block()
 
@@ -101,17 +104,16 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
   }
 
   it("Route destination can be specified as a handler reference") {
-    val routeDatabase = new RouteDatabase()
 
-    val routeHandlerFactory = new RoutingObjectFactory(
-      Map[String, HttpHandlerFactory](),
-      new RouteDatabase(Map(
+    val routeHandlerFactory = new RoutingObjectFactory(Map[String, HttpHandlerFactory]().asJava,
+      new MapBackedRouteDatabase(Map(
         "secureHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())),
         "fallbackHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build()))
-      )))
+      ).asInstanceOf[Map[String, HttpHandler]].asJava))
+
 
     val router = new ConditionRouter.Factory().build(
-      List(),
+      List().asJava,
       routeHandlerFactory,
       configWithReferences
     )
@@ -138,7 +140,7 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
         |""".stripMargin)
 
     val e = intercept[IllegalArgumentException] {
-      val router = new ConditionRouter.Factory().build(List("config", "config"), routeHandlerFactory, config)
+      val router = new ConditionRouter.Factory().build(List("config", "config").asJava, routeHandlerFactory, config)
     }
     e.getMessage should be("Routing object definition of type 'ConditionRouter', attribute='config.config', is missing a mandatory 'routes' attribute.")
   }
@@ -160,7 +162,7 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
         |              content: "secure"
         |""".stripMargin)
 
-    val router = new ConditionRouter.Factory().build(List(), routeHandlerFactory, config)
+    val router = new ConditionRouter.Factory().build(List().asJava, routeHandlerFactory, config)
 
     val resp = Mono.from(router.handle(request, new HttpInterceptorContext())).block()
 
@@ -185,7 +187,7 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
         |""".stripMargin)
 
     val e = intercept[IllegalArgumentException] {
-      val router = new ConditionRouter.Factory().build(List("config", "config"), routeHandlerFactory, config)
+      val router = new ConditionRouter.Factory().build(List("config", "config").asJava, routeHandlerFactory, config)
     }
     e.getMessage should be("Routing object definition of type 'ConditionRouter', attribute='config.config.routes.condition[0]', failed to compile routing expression condition=')() == \"https\"'")
   }
@@ -208,7 +210,7 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
         |""".stripMargin)
 
     val e = intercept[IllegalArgumentException] {
-      val router = new ConditionRouter.Factory().build(List("config", "config"), routeHandlerFactory, config)
+      val router = new ConditionRouter.Factory().build(List("config", "config").asJava, routeHandlerFactory, config)
     }
     e.getMessage should be("Routing object definition of type 'ConditionRouter', attribute='config.config.routes.condition[0]', failed to compile routing expression condition='nonexistant() == \"https\"'")
   }
@@ -247,11 +249,11 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
     when(builtinsFactory.build(any[java.util.List[String]], any[RoutingObjectConfig]))
       .thenReturn(new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).build())))
 
-    val router = new ConditionRouter.Factory().build(List("config", "config"), builtinsFactory, config)
+    val router = new ConditionRouter.Factory().build(List("config", "config").asJava, builtinsFactory, config)
 
-    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[0]")), any[RoutingObjectConfig])
-    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[1]")), any[RoutingObjectConfig])
-    verify(builtinsFactory).build(meq(List("config", "config", "fallback")), any[RoutingObjectConfig])
+    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[0]").asJava), any[RoutingObjectConfig])
+    verify(builtinsFactory).build(meq(List("config", "config", "routes", "destination[1]").asJava), any[RoutingObjectConfig])
+    verify(builtinsFactory).build(meq(List("config", "config", "fallback").asJava), any[RoutingObjectConfig])
   }
 
   private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RoutingObjectDefinition]).get()

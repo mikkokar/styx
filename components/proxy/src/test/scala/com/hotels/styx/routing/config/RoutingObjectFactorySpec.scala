@@ -18,7 +18,7 @@ package com.hotels.styx.routing.config
 import com.fasterxml.jackson.databind.JsonNode
 import com.hotels.styx.api.HttpHandler
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
-import com.hotels.styx.routing.db.RouteDatabase
+import com.hotels.styx.routing.db.{MapBackedRouteDatabase, RouteDatabase, StyxRouteDatabase}
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.mock.MockitoSugar
@@ -31,9 +31,7 @@ class RoutingObjectFactorySpec extends FunSpec with Matchers with MockitoSugar {
   private val mockHandler = mock[HttpHandler]
   private val aHandlerInstance = mock[HttpHandler]
 
-  val routeDatabase = new RouteDatabase
-
-  routeDatabase.setHandler("aHandler", aHandlerInstance)
+  val routeDatabase: RouteDatabase = new MapBackedRouteDatabase(Map("aHandler" -> aHandlerInstance).asJava)
 
   it ("Builds a new handler as per RoutingObjectDefinition") {
     val routeDef = new RoutingObjectDefinition("handler-def", "DelegateHandler", mock[JsonNode])

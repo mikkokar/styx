@@ -30,7 +30,7 @@ import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectConfig;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 import com.hotels.styx.routing.config.RoutingObjectParser;
-import com.hotels.styx.routing.db.RouteDatabase;
+import com.hotels.styx.routing.db.StyxRouteDatabase;
 import com.hotels.styx.routing.handlers.HttpInterceptorPipeline;
 import com.hotels.styx.startup.PipelineFactory;
 import com.hotels.styx.startup.StyxServerComponents;
@@ -42,6 +42,7 @@ import java.util.Optional;
 import static com.hotels.styx.BuiltInInterceptors.INTERCEPTOR_FACTORIES;
 import static com.hotels.styx.BuiltInInterceptors.internalStyxInterceptors;
 import static com.hotels.styx.BuiltInRoutingObjects.createBuiltinRoutingObjectFactories;
+import static com.hotels.styx.routing.config.RoutingObjectParser.toRoutingConfigNode;
 
 
 /**
@@ -49,12 +50,12 @@ import static com.hotels.styx.BuiltInRoutingObjects.createBuiltinRoutingObjectFa
  */
 public final class StyxPipelineFactory implements PipelineFactory {
 
-    private RouteDatabase routeDb;
+    private StyxRouteDatabase routeDb;
     private final Environment environment;
     private final Map<String, StyxService> services;
     private final List<NamedPlugin> plugins;
 
-    public StyxPipelineFactory(RouteDatabase routeDb, Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
+    public StyxPipelineFactory(StyxRouteDatabase routeDb, Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
         this.routeDb = routeDb;
         this.environment = environment;
         this.services = services;
@@ -73,7 +74,7 @@ public final class StyxPipelineFactory implements PipelineFactory {
                 requestTracking);
     }
 
-    private RoutingObjectFactory newRouteHandlerFactory(boolean requestTracking, RouteDatabase handlers) {
+    private RoutingObjectFactory newRouteHandlerFactory(boolean requestTracking, StyxRouteDatabase handlers) {
         BuiltinInterceptorsFactory builtinInterceptorsFactories = new BuiltinInterceptorsFactory(INTERCEPTOR_FACTORIES);
 
         Map<String, HttpHandlerFactory> objectFactories = createBuiltinRoutingObjectFactories(
@@ -94,8 +95,8 @@ public final class StyxPipelineFactory implements PipelineFactory {
         Optional<JsonNode> rootHandlerNode = environment.configuration().get("httpPipeline", JsonNode.class);
 
         pipelineBuilder = rootHandlerNode
-                .map(configuration -> {
-                    RoutingObjectConfig node = RoutingObjectParser.toRoutingConfigNode(configuration);
+                .map(jsonNode -> {
+                    RoutingObjectConfig node = toRoutingConfigNode(jsonNode);
                     return (HttpPipelineFactory) () -> routingObjectFactory.build(ImmutableList.of("httpPipeline"), node);
                 })
                 .orElseGet(() -> {

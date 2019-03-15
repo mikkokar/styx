@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -200,18 +200,18 @@ class HttpInterceptorPipelineSpec extends FunSpec with Matchers with MockitoSuga
 //  }
 
 
-  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
-
-  def interceptors(plugins: NamedPlugin*): java.lang.Iterable[NamedPlugin] =  plugins.toList.asJava
-
-  def mockHandlerFactory(): HttpHandlerFactory = {
-    val handlerFactory = mock[HttpHandlerFactory]
-    when(handlerFactory.build(any[java.util.List[String]], any[RouteHandlerFactory], any[RouteHandlerDefinition]))
-      .thenReturn(new HttpHandlerAdapter((_, _) => Eventual.of(LiveHttpResponse.response(OK).build())))
-    handlerFactory
-  }
-
-  def routingObjectFactory(): RouteHandlerFactory = {
-    new RouteHandlerFactory(Map("BackendServiceProxy" -> mockHandlerFactory()).asJava, Map[String, HttpHandler]())
-  }
+//  private def configBlock(text: String) = new YamlConfig(text).get("config", classOf[RouteHandlerDefinition]).get()
+//
+//  def interceptors(plugins: NamedPlugin*): java.lang.Iterable[NamedPlugin] =  plugins.toList.asJava
+//
+//  def mockHandlerFactory(): HttpHandlerFactory = {
+//    val handlerFactory = mock[HttpHandlerFactory]
+//    when(handlerFactory.build(any[java.util.List[String]], any[RouteHandlerFactory], any[RouteHandlerDefinition]))
+//      .thenReturn(new HttpHandlerAdapter((_, _) => Eventual.of(LiveHttpResponse.response(OK).build())))
+//    handlerFactory
+//  }
+//
+//  def routingObjectFactory(): RouteHandlerFactory = {
+//    new RouteHandlerFactory(Map("BackendServiceProxy" -> mockHandlerFactory()).asJava, Map[String, HttpHandler]())
+//  }
 }

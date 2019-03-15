@@ -29,7 +29,7 @@ import com.hotels.styx.api.{LiveHttpRequest, LiveHttpResponse}
 import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory, OriginsInventory}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.proxy.BackendServiceClientFactory
-import com.hotels.styx.routing.config.{RouteHandlerDefinition, RoutingObjectDefinition}
+import com.hotels.styx.routing.config.RoutingObjectDefinition
 import com.hotels.styx.routing.handlers.BackendServiceProxy.Factory
 import com.hotels.styx.server.HttpInterceptorContext
 import org.reactivestreams.Publisher

@@ -32,11 +32,11 @@ import java.util.List;
 
 import static com.hotels.styx.api.configuration.ConfigurationContextResolver.EMPTY_CONFIGURATION_CONTEXT_RESOLVER;
 
-final class BuiltInInterceptors {
+public final class BuiltInInterceptors {
     private BuiltInInterceptors() {
     }
 
-    static final ImmutableMap<String, HttpInterceptorFactory> INTERCEPTOR_FACTORIES =
+    public static final ImmutableMap<String, HttpInterceptorFactory> INTERCEPTOR_FACTORIES =
             ImmutableMap.of("Rewrite", new RewriteInterceptor.ConfigFactory());
 
     static List<HttpInterceptor> internalStyxInterceptors(StyxConfig config) {

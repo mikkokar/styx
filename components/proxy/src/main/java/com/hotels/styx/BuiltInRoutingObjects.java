@@ -33,8 +33,8 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
 
-class BuiltInRoutingObjects {
-    static ImmutableMap<String, HttpHandlerFactory> createBuiltinRoutingObjectFactories(
+public class BuiltInRoutingObjects {
+    public static ImmutableMap<String, HttpHandlerFactory> createBuiltinRoutingObjectFactories(
             Environment environment,
             Map<String, StyxService> services,
             Iterable<NamedPlugin> plugins,

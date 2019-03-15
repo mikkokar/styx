@@ -17,14 +17,12 @@ package com.hotels.styx;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.ServiceManager;
 import com.hotels.styx.admin.AdminServerBuilder;
-import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.extension.service.spi.StyxService;
@@ -32,11 +30,8 @@ import com.hotels.styx.config.schema.SchemaValidationException;
 import com.hotels.styx.infrastructure.configuration.ConfigurationParser;
 import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfiguration;
-import com.hotels.styx.routing.config.BuiltinInterceptorsFactory;
-import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
-import com.hotels.styx.routing.config.RoutingObjectFactory;
-import com.hotels.styx.routing.db.RouteDatabase;
+import com.hotels.styx.routing.db.StyxRouteDatabase;
 import com.hotels.styx.server.HttpServer;
 import com.hotels.styx.startup.ProxyServerSetUp;
 import com.hotels.styx.startup.StyxServerComponents;
@@ -51,7 +46,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.hotels.styx.BuiltInInterceptors.INTERCEPTOR_FACTORIES;
 import static com.hotels.styx.ServerConfigSchema.validateServerConfiguration;
 import static com.hotels.styx.infrastructure.configuration.ConfigurationSource.configSource;
 import static com.hotels.styx.infrastructure.configuration.yaml.YamlConfigurationFormat.YAML;
@@ -82,8 +76,6 @@ public final class StyxServer extends AbstractService {
 
         LOG.debug("Real resource leak detection level = {}", ResourceLeakDetector.getLevel());
     }
-
-    private final RouteDatabase routeDb = new RouteDatabase();
 
     public static void main(String[] args) {
         try {
@@ -163,12 +155,16 @@ public final class StyxServer extends AbstractService {
 
         components.plugins().forEach(plugin -> components.environment().configStore().set("plugins." + plugin.name(), plugin));
 
-        Map<String, HttpHandler> routes = routesFromConfiguration(components);
-        routes.forEach(routeDb::setHandler);
+        StyxRouteDatabase routeDb = new StyxRouteDatabase(components.environment(), components.services(), components.plugins());
+        Map<String, RoutingObjectDefinition> routes = routesFromConfiguration(components);
+        routes.forEach(routeDb::insert);
 
-        StyxPipelineFactory pipelineFactory = new StyxPipelineFactory(routeDb, components.environment(), components.services(), components.plugins());
-
-        ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(pipelineFactory);
+        ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(
+                new StyxPipelineFactory(
+                        routeDb,
+                        components.environment(),
+                        components.services(),
+                        components.plugins()));
 
         this.proxyServer = proxyServerSetUp.createProxyServer(components);
         this.adminServer = createAdminServer(components);
@@ -184,41 +180,25 @@ public final class StyxServer extends AbstractService {
         });
     }
 
-    private Map<String, HttpHandler> routesFromConfiguration(StyxServerComponents components) {
+    private Map<String, RoutingObjectDefinition> routesFromConfiguration(StyxServerComponents components) {
         return components.environment().configuration().get("httpHandlers", JsonNode.class)
-                .map(node -> readHttpHandlers(node, components))
+                .map(this::readHttpHandlers)
                 .orElse(ImmutableMap.of());
     }
 
-    private Map<String, HttpHandler> readHttpHandlers(JsonNode root, StyxServerComponents components) {
-        Map<String, HttpHandler> handlers = new HashMap<>();
+    private Map<String, RoutingObjectDefinition> readHttpHandlers(JsonNode root) {
+        Map<String, RoutingObjectDefinition> handlers = new HashMap<>();
 
         root.fields().forEachRemaining(
                 (entry) -> {
                     String name = entry.getKey();
                     RoutingObjectDefinition handlerDef = new JsonNodeConfig(entry.getValue()).as(RoutingObjectDefinition.class);
-
-                    RoutingObjectFactory factory = newRouteHandlerFactory(false, components);
-                    handlers.put(name, factory.build(ImmutableList.of(), handlerDef));
+                    handlers.put(name, handlerDef);
                 }
         );
 
         return handlers;
     }
-
-    private RoutingObjectFactory newRouteHandlerFactory(boolean requestTracking, StyxServerComponents components) {
-        BuiltinInterceptorsFactory builtinInterceptorsFactory = new BuiltinInterceptorsFactory(INTERCEPTOR_FACTORIES);
-
-        Map<String, HttpHandlerFactory> objectFactories = BuiltInRoutingObjects.createBuiltinRoutingObjectFactories(
-                components.environment(),
-                components.services(),
-                components.plugins(),
-                builtinInterceptorsFactory,
-                requestTracking);
-
-        return new RoutingObjectFactory(objectFactories, routeDb);
-    }
-
 
     public InetSocketAddress proxyHttpAddress() {
         return proxyServer.httpAddress();
