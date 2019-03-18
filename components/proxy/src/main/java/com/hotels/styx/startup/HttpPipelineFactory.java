@@ -13,22 +13,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
  */
-package com.hotels.styx.routing.db;
+package com.hotels.styx.startup;
 
 import com.hotels.styx.api.HttpHandler;
 
-import java.util.Map;
-import java.util.Optional;
-
-public class MapBackedRouteDatabase implements RouteDatabase {
-    private Map<String, HttpHandler> handlers;
-
-    public MapBackedRouteDatabase(Map<String, HttpHandler> handlers) {
-        this.handlers = handlers;
-    }
-
-    @Override
-    public Optional<HttpHandler> handler(String key) {
-        return Optional.ofNullable(handlers.get(key));
-    }
+/**
+ * A base type for HTTP pipeline builders.
+ */
+public interface HttpPipelineFactory {
+    HttpHandler build();
 }

@@ -33,6 +33,9 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
 
+/**
+ * Built in HTTP handlers.
+ */
 public class BuiltInRoutingObjects {
     public static ImmutableMap<String, HttpHandlerFactory> createBuiltinRoutingObjectFactories(
             Environment environment,

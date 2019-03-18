@@ -19,6 +19,15 @@ import com.hotels.styx.api.HttpHandler;
 
 import java.util.Optional;
 
+/**
+ * Styx Route Database query interface.
+ */
 public interface RouteDatabase {
-    public Optional<HttpHandler> handler(String key);
+
+    /**
+     * Styx route database lookup.
+     * @param key
+     * @return
+     */
+    Optional<HttpHandler> handler(String key);
 }

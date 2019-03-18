@@ -19,10 +19,9 @@ import com.hotels.styx.api.HttpResponseStatus.{BAD_GATEWAY, OK}
 import com.hotels.styx.api.LiveHttpResponse.response
 import com.hotels.styx.api.{Eventual, HttpHandler, LiveHttpRequest}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
-import com.hotels.styx.routing.HttpHandlerAdapter
 import com.hotels.styx.routing.config._
-import com.hotels.styx.routing.db.MapBackedRouteDatabase
 import com.hotels.styx.routing.handlers.StaticResponseHandler.Factory
+import com.hotels.styx.routing.{HttpHandlerAdapter, MapBackedRouteDatabase}
 import com.hotels.styx.server.HttpInterceptorContext
 import org.mockito.Matchers.{any, eq => meq}
 import org.mockito.Mockito.{verify, when}
@@ -35,7 +34,8 @@ import scala.collection.JavaConverters._
 class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar {
 
   private val request = LiveHttpRequest.get("/foo").build
-  private val routeHandlerFactory = new RoutingObjectFactory(Map("StaticResponseHandler" -> (new Factory).asInstanceOf[HttpHandlerFactory]).asJava, new MapBackedRouteDatabase(Map[String, HttpHandler]().asJava))
+  private val routeHandlerFactory = new RoutingObjectFactory(
+    Map("StaticResponseHandler" -> (new Factory).asInstanceOf[HttpHandlerFactory]).asJava, new MapBackedRouteDatabase(Map[String, HttpHandler]()))
 
   private val config = configBlock(
     """
@@ -90,7 +90,7 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
     val routeDatabase = new MapBackedRouteDatabase(Map(
       "secureHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())).asInstanceOf[HttpHandler],
       "fallbackHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build()))
-    ).asJava)
+    ))
     //    routeDatabase.insertHandler("secureHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())))
     //    routeDatabase.insertHandler("fallbackHandler", new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build())))
 
@@ -109,7 +109,7 @@ class ConditionRouterConfigSpec extends FunSpec with Matchers with MockitoSugar 
       new MapBackedRouteDatabase(Map(
         "secureHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "secure").build())),
         "fallbackHandler" -> new HttpHandlerAdapter((_, _) => Eventual.of(response(OK).header("source", "fallback").build()))
-      ).asInstanceOf[Map[String, HttpHandler]].asJava))
+      ).asInstanceOf[Map[String, HttpHandler]]))
 
 
     val router = new ConditionRouter.Factory().build(

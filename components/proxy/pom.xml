@@ -140,6 +140,12 @@
       <version>0.24.1</version>
     </dependency>
 
+    <!--// TODO: Needs to be test scope-->
+    <dependency>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-java8-compat_${scala.version}</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
