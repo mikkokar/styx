@@ -30,4 +30,8 @@ public interface RouteDatabase {
      * @return
      */
     Optional<HttpHandler> handler(String key);
+
+    interface Listener {
+        void updated(RouteDatabase db);
+    }
 }
