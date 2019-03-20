@@ -28,6 +28,7 @@ import com.hotels.styx.routing.handlers.BackendServiceProxy;
 import com.hotels.styx.routing.handlers.ConditionRouter;
 import com.hotels.styx.routing.handlers.HostProxy;
 import com.hotels.styx.routing.handlers.HttpInterceptorPipeline;
+import com.hotels.styx.routing.handlers.PathPrefixRouter;
 import com.hotels.styx.routing.handlers.ProxyToBackend;
 import com.hotels.styx.routing.handlers.StaticResponseHandler;
 
@@ -53,6 +54,7 @@ public class BuiltInRoutingObjects {
                 .put("ProxyToBackend", new ProxyToBackend.Factory(environment, new StyxBackendServiceClientFactory(environment)))
                 .put("HostProxy", new HostProxy.Factory())
                 .put("BackendApplication", new BackendApplication.Factory(environment))
+                .put("PathPrefixRouter", new PathPrefixRouter.Factory())
                 .build();
 
     }

@@ -74,11 +74,24 @@ class NewRoutingSpec extends FunSpec
         |      tag: "landing-app"
         |      host: "localhost:${httpServer02.port()}"
         |
+        |  landingApp:
+        |    type: BackendApplication
+        |    config:
+        |      origins: "landing-app"
+        |      id: "MyLandingApp"
+
+        |  shoppingApp:
+        |    type: BackendApplication
+        |    config:
+        |      origins: "shopping-app"
+        |      id: "MyShoppingApp"
+        |
         |httpPipeline:
-        |  type: BackendApplication
+        |  type: PathPrefixRouter
         |  config:
-        |    origins: "landing-app"
-        |    id: "MyLandingApp"
+        |    routes:
+        |      - {prefix: /, destination: landingApp }
+        |      - {prefix: /hopping, destination: shoppingApp }
       """.stripMargin
   )
 
