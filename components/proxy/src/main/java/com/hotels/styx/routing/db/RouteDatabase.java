@@ -18,11 +18,14 @@ package com.hotels.styx.routing.db;
 import com.hotels.styx.api.HttpHandler;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Styx Route Database query interface.
  */
 public interface RouteDatabase {
+
+    void remove(String key);
 
     /**
      * Styx route database lookup.
@@ -30,6 +33,12 @@ public interface RouteDatabase {
      * @return
      */
     Optional<HttpHandler> handler(String key);
+
+    Set<HttpHandler> handlers(String... tags);
+
+    void addListener(Listener listener);
+
+    void removeListener(Listener listener);
 
     interface Listener {
         void updated(RouteDatabase db);

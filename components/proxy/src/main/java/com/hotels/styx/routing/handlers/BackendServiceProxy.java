@@ -32,6 +32,7 @@ import com.hotels.styx.proxy.StyxBackendServiceClientFactory;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
+import com.hotels.styx.routing.db.RouteDatabase;
 
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,7 @@ public class BackendServiceProxy implements HttpHandler {
         }
 
         @Override
-        public HttpHandler build(List<String> parents, RoutingObjectFactory x, RoutingObjectDefinition configBlock) {
+        public HttpHandler build(List<String> parents, RouteDatabase routeDb, RoutingObjectFactory x, RoutingObjectDefinition configBlock) {
             JsonNodeConfig config = new JsonNodeConfig(configBlock.config());
             String provider = config.get("backendProvider")
                     .orElseThrow(() -> missingAttributeError(configBlock, join(".", parents), "backendProvider"));

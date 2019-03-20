@@ -30,7 +30,11 @@ import com.hotels.styx.config.schema.SchemaValidationException;
 import com.hotels.styx.infrastructure.configuration.ConfigurationParser;
 import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfiguration;
+import com.hotels.styx.proxy.plugin.NamedPlugin;
+import com.hotels.styx.routing.config.BuiltinInterceptorsFactory;
+import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
+import com.hotels.styx.routing.config.RoutingObjectFactory;
 import com.hotels.styx.routing.db.StyxRouteDatabase;
 import com.hotels.styx.server.HttpServer;
 import com.hotels.styx.startup.ProxyServerSetUp;
@@ -44,8 +48,11 @@ import java.io.Reader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static com.hotels.styx.BuiltInInterceptors.INTERCEPTOR_FACTORIES;
+import static com.hotels.styx.BuiltInRoutingObjects.createBuiltinRoutingObjectFactories;
 import static com.hotels.styx.ServerConfigSchema.validateServerConfiguration;
 import static com.hotels.styx.infrastructure.configuration.ConfigurationSource.configSource;
 import static com.hotels.styx.infrastructure.configuration.yaml.YamlConfigurationFormat.YAML;
@@ -146,6 +153,20 @@ public final class StyxServer extends AbstractService {
         this(config, null);
     }
 
+    private RoutingObjectFactory newRouteHandlerFactory(Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins, boolean requestTracking) {
+        BuiltinInterceptorsFactory builtinInterceptorsFactories = new BuiltinInterceptorsFactory(INTERCEPTOR_FACTORIES);
+
+        Map<String, HttpHandlerFactory> objectFactories = createBuiltinRoutingObjectFactories(
+                environment,
+                services,
+                plugins,
+                builtinInterceptorsFactories,
+                requestTracking);
+
+        return new RoutingObjectFactory(objectFactories);
+    }
+
+
     public StyxServer(StyxServerComponents components, Stopwatch stopwatch) {
         this.stopwatch = stopwatch;
 
@@ -155,13 +176,18 @@ public final class StyxServer extends AbstractService {
 
         components.plugins().forEach(plugin -> components.environment().configStore().set("plugins." + plugin.name(), plugin));
 
-        StyxRouteDatabase routeDb = new StyxRouteDatabase(components.environment(), components.services(), components.plugins());
+
+        RoutingObjectFactory routingObjectFactory = newRouteHandlerFactory(components.environment(), components.services(), components.plugins(), false);
+
+        StyxRouteDatabase routeDb = new StyxRouteDatabase(routingObjectFactory);
+
         Map<String, RoutingObjectDefinition> routes = routesFromConfiguration(components);
         routes.forEach(routeDb::insert);
 
         ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(
                 new StyxPipelineFactory(
                         routeDb,
+                        routingObjectFactory,
                         components.environment(),
                         components.services(),
                         components.plugins()));

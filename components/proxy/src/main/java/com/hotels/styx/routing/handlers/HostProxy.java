@@ -1,3 +1,18 @@
+/*
+  Copyright (C) 2013-2019 Expedia Inc.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 package com.hotels.styx.routing.handlers;
 
 import com.google.common.net.HostAndPort;
@@ -21,6 +36,7 @@ import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
+import com.hotels.styx.routing.db.RouteDatabase;
 
 import java.util.List;
 import java.util.Optional;
@@ -94,7 +110,7 @@ public class HostProxy implements HttpHandler {
 
 
     public static class Factory implements HttpHandlerFactory {
-        public HttpHandler build(List<String> parents, RoutingObjectFactory builder, RoutingObjectDefinition configBlock) {
+        public HttpHandler build(List<String> parents, RouteDatabase routeDb, RoutingObjectFactory builder, RoutingObjectDefinition configBlock) {
             JsonNodeConfig config = new JsonNodeConfig(configBlock.config());
 
             // Read hostAndPort:

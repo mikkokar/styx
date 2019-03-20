@@ -40,7 +40,7 @@ class StaticResponseHandlerSpec extends FunSpec with Matchers {
       |""".stripMargin)
 
   it("builds static response handler") {
-    val handler = new Factory().build(List(), null, config)
+    val handler = new Factory().build(List(), null, null, config)
     val response = Mono.from(handler.handle(LiveHttpRequest.get("/foo").build(), HttpInterceptorContext.create)).block()
 
     response.status should be (CREATED)

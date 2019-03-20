@@ -32,44 +32,44 @@ class RoutingObjectFactorySpec extends FunSpec with Matchers with MockitoSugar {
   private val mockHandler = mock[HttpHandler]
   private val aHandlerInstance = mock[HttpHandler]
 
-  val routeDatabase: RouteDatabase = new MapBackedRouteDatabase(Map("aHandler" -> aHandlerInstance))
+  val routeDb: RouteDatabase = new MapBackedRouteDatabase(Map("aHandler" -> aHandlerInstance))
 
   it ("Builds a new handler as per RoutingObjectDefinition") {
     val routeDef = new RoutingObjectDefinition("handler-def", "DelegateHandler", mock[JsonNode])
     val handlerFactory = httpHandlerFactory()
 
-    val routeFactory = new RoutingObjectFactory(Map("DelegateHandler" -> handlerFactory).asJava, routeDatabase)
+    val routeFactory = new RoutingObjectFactory(Map("DelegateHandler" -> handlerFactory).asJava)
 
-    val delegateHandler = routeFactory.build(List("parents").asJava, routeDef)
+    val delegateHandler = routeFactory.build(List("parents").asJava, routeDb, routeDef)
 
     (delegateHandler != null) should be (true)
-    verify(handlerFactory).build(List("parents").asJava, routeFactory, routeDef)
+    verify(handlerFactory).build(List("parents").asJava, routeDb, routeFactory, routeDef)
   }
 
   it ("Doesn't accept unregistered types") {
     val config = new RoutingObjectDefinition("foo", "ConfigType", mock[JsonNode])
-    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava, routeDatabase)
+    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava)
 
     val e = intercept[IllegalArgumentException] {
-      routeFactory.build(List().asJava, config)
+      routeFactory.build(List().asJava, routeDb, config)
     }
 
     e.getMessage should be ("Unknown handler type 'ConfigType'")
   }
 
   it ("Returns handler from a configuration reference") {
-    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava, routeDatabase)
+    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava)
 
-    val handler = routeFactory.build(List().asJava, new RoutingObjectReference("aHandler"))
+    val handler = routeFactory.build(List().asJava, routeDb, new RoutingObjectReference("aHandler"))
 
     handler should be (aHandlerInstance)
   }
 
   it ("Throws exception when it refers a non-existent object") {
-    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava, routeDatabase)
+    val routeFactory = new RoutingObjectFactory(Map.empty[String, HttpHandlerFactory].asJava)
 
     val e = intercept[IllegalArgumentException] {
-      routeFactory.build(List().asJava, new RoutingObjectReference("non-existent"))
+      routeFactory.build(List().asJava, routeDb, new RoutingObjectReference("non-existent"))
     }
 
     e.getMessage should be("Non-existent handler instance: 'non-existent'")
@@ -77,7 +77,7 @@ class RoutingObjectFactorySpec extends FunSpec with Matchers with MockitoSugar {
 
   private def httpHandlerFactory(): HttpHandlerFactory = {
     val mockFactory: HttpHandlerFactory = mock[HttpHandlerFactory]
-    when(mockFactory.build(any[java.util.List[String]], any[RoutingObjectFactory], any[RoutingObjectDefinition])).thenReturn(mockHandler)
+    when(mockFactory.build(any[java.util.List[String]], any[RouteDatabase], any[RoutingObjectFactory], any[RoutingObjectDefinition])).thenReturn(mockHandler)
     mockFactory
   }
 

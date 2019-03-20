@@ -1,3 +1,18 @@
+/*
+  Copyright (C) 2013-2019 Expedia Inc.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 package com.hotels.styx.routing.handlers;
 
 import com.hotels.styx.Environment;
@@ -18,7 +33,6 @@ import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 import com.hotels.styx.routing.db.RouteDatabase;
-import com.hotels.styx.routing.db.StyxRouteDatabase;
 
 import java.util.List;
 import java.util.Set;
@@ -29,21 +43,22 @@ import static com.hotels.styx.api.extension.Origin.newOriginBuilder;
 import static com.hotels.styx.api.extension.RemoteHost.remoteHost;
 import static com.hotels.styx.routing.config.RoutingSupport.missingAttributeError;
 import static java.lang.String.join;
+import static java.util.Objects.requireNonNull;
 
 public class BackendApplication implements HttpHandler, RouteDatabase.Listener {
 
     private final AtomicReference<Set<RemoteHost>> remoteHosts = new AtomicReference<>();
     private final StyxBackendServiceClient client;
-    private final StyxRouteDatabase routeDatabase;
+    private final RouteDatabase routeDatabase;
     private final Environment environment;
     private final String originsTag;
     private final String id;
 
-    public BackendApplication(StyxRouteDatabase routeDatabase, Environment environment, String id, String originsTag, StyxBackendServiceClientFactory styxBackendServiceClientFactory) {
-        this.routeDatabase = routeDatabase;
-        this.originsTag = originsTag;
-        this.id = id;
-        this.environment = environment;
+    public BackendApplication(RouteDatabase routeDatabase, Environment environment, String id, String originsTag, StyxBackendServiceClientFactory styxBackendServiceClientFactory) {
+        this.routeDatabase = requireNonNull(routeDatabase);
+        this.originsTag = requireNonNull(originsTag);
+        this.id = requireNonNull(id);
+        this.environment = requireNonNull(environment);
         this.client = createClient();
     }
 
@@ -102,9 +117,8 @@ public class BackendApplication implements HttpHandler, RouteDatabase.Listener {
         }
 
         @Override
-        public HttpHandler build(List<String> parents, RoutingObjectFactory builder, RoutingObjectDefinition configBlock) {
+        public HttpHandler build(List<String> parents, RouteDatabase routeDb, RoutingObjectFactory builder, RoutingObjectDefinition configBlock) {
             // Read origin tag
-            StyxRouteDatabase routeDatabase = null;
 
             JsonNodeConfig config = new JsonNodeConfig(configBlock.config());
             String originsTag = config.get("origins")
@@ -113,7 +127,9 @@ public class BackendApplication implements HttpHandler, RouteDatabase.Listener {
             String id = config.get("id")
                     .orElseThrow(() -> missingAttributeError(configBlock, join(".", parents), "id"));
 
-            return new BackendApplication(routeDatabase, environment, id, originsTag, new StyxBackendServiceClientFactory(environment));
+            BackendApplication app = new BackendApplication(routeDb, environment, id, originsTag, new StyxBackendServiceClientFactory(environment));
+            app.start();
+            return app;
         }
     }
 

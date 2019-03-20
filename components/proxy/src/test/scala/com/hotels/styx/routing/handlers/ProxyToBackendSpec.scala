@@ -55,7 +55,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
       |""".stripMargin)
 
   it("builds ProxyToBackend handler") {
-    val handler = new Factory(environment, clientFactory()).build(List().asJava, null, config)
+    val handler = new Factory(environment, clientFactory()).build(List().asJava, null, null, config)
 
     val response = Mono.from(handler.handle(LiveHttpRequest.get("/foo").build(), HttpInterceptorContext.create)).block()
     response.status should be (OK)
@@ -73,7 +73,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
 
     val e = intercept[IllegalArgumentException] {
       val handler = new Factory(environment, clientFactory())
-              .build(List("config", "config").asJava, null, config)
+                    .build(List("config", "config").asJava, null, null, config)
     }
 
     e.getMessage should be("Routing object definition of type 'ProxyToBackend', attribute='config.config', is missing a mandatory 'backend' attribute.")
@@ -96,7 +96,7 @@ class ProxyToBackendSpec extends FunSpec with Matchers {
 
     val e = intercept[IllegalArgumentException] {
       val handler = new Factory(environment, clientFactory())
-              .build(List("config", "config").asJava, null, config)
+                    .build(List("config", "config").asJava, null, null, config)
     }
 
     e.getMessage should be("Routing object definition of type 'ProxyToBackend', attribute='config.config.backend', is missing a mandatory 'origins' attribute.")

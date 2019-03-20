@@ -31,14 +31,12 @@ import static java.util.Objects.requireNonNull;
  */
 public class RoutingObjectFactory {
     private final Map<String, HttpHandlerFactory> factories;
-    private final RouteDatabase routeDb;
 
-    public RoutingObjectFactory(Map<String, HttpHandlerFactory> factories, RouteDatabase routeDb) {
+    public RoutingObjectFactory(Map<String, HttpHandlerFactory> factories) {
         this.factories = requireNonNull(factories);
-        this.routeDb = requireNonNull(routeDb);
     }
 
-    public HttpHandler build(List<String> parents, RoutingObjectConfig configNode) {
+    public HttpHandler build(List<String> parents, RouteDatabase routeDb, RoutingObjectConfig configNode) {
         if (configNode instanceof RoutingObjectDefinition) {
             RoutingObjectDefinition configBlock = (RoutingObjectDefinition) configNode;
             String type = configBlock.type();
@@ -46,7 +44,7 @@ public class RoutingObjectFactory {
             HttpHandlerFactory factory = factories.get(type);
             Preconditions.checkArgument(factory != null, format("Unknown handler type '%s'", type));
 
-            return factory.build(parents, this, configBlock);
+            return factory.build(parents, routeDb, this, configBlock);
         } else if (configNode instanceof RoutingObjectReference) {
             RoutingObjectReference reference = (RoutingObjectReference) configNode;
 

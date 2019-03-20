@@ -29,6 +29,7 @@ import com.hotels.styx.api.{LiveHttpRequest, LiveHttpResponse}
 import com.hotels.styx.client.{BackendServiceClient, OriginStatsFactory, OriginsInventory}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.proxy.BackendServiceClientFactory
+import com.hotels.styx.routing.MapBackedRouteDatabase
 import com.hotels.styx.routing.config.RoutingObjectDefinition
 import com.hotels.styx.routing.handlers.BackendServiceProxy.Factory
 import com.hotels.styx.server.HttpInterceptorContext
@@ -36,6 +37,7 @@ import org.reactivestreams.Publisher
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FunSpec, Matchers}
 import reactor.core.publisher.Mono
+import com.hotels.styx.api.HttpHandler
 
 import scala.collection.JavaConversions._
 
@@ -44,6 +46,8 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
   val hwaRequest = LiveHttpRequest.get("/x").build()
   val laRequest = LiveHttpRequest.get("/lp/x").build()
   val baRequest = LiveHttpRequest.get("/ba/x").build()
+
+  val routeDb = new MapBackedRouteDatabase(Map())
 
   val environment = new Environment.Builder().build()
 
@@ -63,7 +67,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
 
     val services: Map[String, Registry[BackendService]] = Map("backendServicesRegistry" -> backendRegistry)
 
-    val handler = new Factory(environment, clientFactory(), services).build(List(), null, config)
+    val handler = new Factory(environment, clientFactory(), services).build(List(), routeDb, null, config)
     backendRegistry.reload()
 
     val hwaResponse = Mono.from(handler.handle(hwaRequest, HttpInterceptorContext.create)).block()
@@ -88,7 +92,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
     val registries: Map[String, Registry[BackendService]] = Map.empty
 
     val e = intercept[IllegalArgumentException] {
-      val handler = new Factory(environment, clientFactory(), registries).build(List("config", "config"), null, config)
+      val handler = new Factory(environment, clientFactory(), registries).build(List("config", "config"), routeDb, null, config)
     }
     e.getMessage should be("Routing object definition of type 'BackendServiceProxy', attribute='config.config', is missing a mandatory 'backendProvider' attribute.")
   }
@@ -104,7 +108,7 @@ class BackendServiceProxySpec extends FunSpec with Matchers with MockitoSugar {
 
     val e = intercept[IllegalArgumentException] {
       val registries: Map[String, Registry[BackendService]] = Map.empty
-      val handler = new Factory(environment, clientFactory(), registries).build(List("config", "config"), null, config)
+      val handler = new Factory(environment, clientFactory(), registries).build(List("config", "config"), routeDb, null, config)
     }
     e.getMessage should be("No such backend service provider exists, attribute='config.config.backendProvider', name='bar'")
   }

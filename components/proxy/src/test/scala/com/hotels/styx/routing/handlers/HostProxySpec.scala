@@ -1,3 +1,18 @@
+/*
+  Copyright (C) 2013-2019 Expedia Inc.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 package com.hotels.styx.routing.handlers
 
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -37,7 +52,7 @@ class HostProxySpec extends FunSpec with Matchers with BeforeAndAfterAll with Mo
         |    host: localhost:${server.port()}
       """.stripMargin)
 
-    val handler = new Factory().build(List("bar").asJava, null, config)
+    val handler = new Factory().build(List("bar").asJava, null, null, config)
     val response: HttpResponse = Mono.from(handler.handle(LiveHttpRequest.get("/").build(), HttpInterceptorContext.create())
         .flatMap(response => response.aggregate(10000)))
         .block()

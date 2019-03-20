@@ -17,14 +17,11 @@ package com.hotels.styx.routing.db;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.hotels.styx.Environment;
 import com.hotels.styx.api.HttpHandler;
-import com.hotels.styx.api.extension.service.spi.StyxService;
-import com.hotels.styx.proxy.plugin.NamedPlugin;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
+import com.hotels.styx.routing.config.RoutingObjectFactory;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,17 +33,13 @@ import java.util.stream.Collectors;
  */
 
 public class StyxRouteDatabase implements RouteDatabase {
-    private final ObjectLoader objectLoader;
     private final ConcurrentHashMap<String, RouteDatabaseRecord> handlers;
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
+    private RoutingObjectFactory routingObjectFactory;
 
-    public StyxRouteDatabase(ObjectLoader objectLoader) {
+    public StyxRouteDatabase(RoutingObjectFactory routingObjectFactory) {
+        this.routingObjectFactory = routingObjectFactory;
         this.handlers = new ConcurrentHashMap<>();
-        this.objectLoader = objectLoader;
-    }
-
-    public StyxRouteDatabase(Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
-        this(new RoutingObjectLoader(environment, services, plugins));
     }
 
     public void insert(String key, RoutingObjectDefinition routingObjectDef) {
@@ -59,6 +52,7 @@ public class StyxRouteDatabase implements RouteDatabase {
         notifyListeners();
     }
 
+    @Override
     public void remove(String key) {
         try {
             handlers.remove(key);
@@ -78,13 +72,14 @@ public class StyxRouteDatabase implements RouteDatabase {
                     if (record instanceof HandlerRecord) {
                         return ((HandlerRecord) record).handler();
                     } else {
-                        HttpHandler handler = objectLoader.load(this, key, ((ConfigRecord) record).configuration());
+                        HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, ((ConfigRecord) record).configuration());
                         handlers.put(key, new HandlerRecord(record.key(), handler, record.tags()));
                         return handler;
                     }
                 });
     }
 
+    @Override
     public Set<HttpHandler> handlers(String... tags) {
         return handlers.values()
                 .stream()
@@ -94,7 +89,7 @@ public class StyxRouteDatabase implements RouteDatabase {
                         return ((HandlerRecord) record).handler();
                     } else {
                         String key = record.key();
-                        HttpHandler handler = objectLoader.load(this, key, ((ConfigRecord) record).configuration());
+                        HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, ((ConfigRecord) record).configuration());
                         handlers.put(key, new HandlerRecord(record.key(), handler, record.tags()));
                         return handler;
                     }
@@ -108,20 +103,22 @@ public class StyxRouteDatabase implements RouteDatabase {
         notifyListeners();
     }
 
+    @Override
+    public void addListener(Listener listener) {
+        this.listeners.add(listener);
+    }
+
+    @Override
+    public void removeListener(Listener listener) {
+        this.listeners.remove(listener);
+    }
+
     private void notifyListeners() {
         listeners.forEach(listener -> listener.updated(this));
     }
 
     private Set<String> asSet(List<String> inObject) {
         return ImmutableSet.copyOf(inObject);
-    }
-
-    public void addListener(Listener listener) {
-        this.listeners.add(listener);
-    }
-
-    public void removeListener(Listener listener) {
-        this.listeners.remove(listener);
     }
 
     private static class RouteDatabaseRecord {

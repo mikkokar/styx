@@ -23,24 +23,20 @@ import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.extension.service.spi.StyxService;
 import com.hotels.styx.proxy.plugin.NamedPlugin;
-import com.hotels.styx.startup.HttpPipelineFactory;
-import com.hotels.styx.startup.StaticPipelineFactory;
-import com.hotels.styx.routing.config.BuiltinInterceptorsFactory;
-import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectConfig;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 import com.hotels.styx.routing.db.StyxRouteDatabase;
 import com.hotels.styx.routing.handlers.HttpInterceptorPipeline;
+import com.hotels.styx.startup.HttpPipelineFactory;
 import com.hotels.styx.startup.PipelineFactory;
+import com.hotels.styx.startup.StaticPipelineFactory;
 import com.hotels.styx.startup.StyxServerComponents;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hotels.styx.BuiltInInterceptors.INTERCEPTOR_FACTORIES;
 import static com.hotels.styx.BuiltInInterceptors.internalStyxInterceptors;
-import static com.hotels.styx.BuiltInRoutingObjects.createBuiltinRoutingObjectFactories;
 import static com.hotels.styx.routing.config.RoutingObjectParser.toRoutingConfigNode;
 
 
@@ -50,12 +46,14 @@ import static com.hotels.styx.routing.config.RoutingObjectParser.toRoutingConfig
 public final class StyxPipelineFactory implements PipelineFactory {
 
     private StyxRouteDatabase routeDb;
+    private final RoutingObjectFactory routingObjectFactory;
     private final Environment environment;
     private final Map<String, StyxService> services;
     private final List<NamedPlugin> plugins;
 
-    public StyxPipelineFactory(StyxRouteDatabase routeDb, Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
+    public StyxPipelineFactory(StyxRouteDatabase routeDb, RoutingObjectFactory routingObjectFactory, Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
         this.routeDb = routeDb;
+        this.routingObjectFactory = routingObjectFactory;
         this.environment = environment;
         this.services = services;
         this.plugins = plugins;
@@ -69,21 +67,8 @@ public final class StyxPipelineFactory implements PipelineFactory {
 
         return new HttpInterceptorPipeline(
                 internalInterceptors,
-                configuredPipeline(newRouteHandlerFactory(requestTracking, routeDb)),
+                configuredPipeline(routingObjectFactory),
                 requestTracking);
-    }
-
-    private RoutingObjectFactory newRouteHandlerFactory(boolean requestTracking, StyxRouteDatabase handlers) {
-        BuiltinInterceptorsFactory builtinInterceptorsFactories = new BuiltinInterceptorsFactory(INTERCEPTOR_FACTORIES);
-
-        Map<String, HttpHandlerFactory> objectFactories = createBuiltinRoutingObjectFactories(
-                environment,
-                services,
-                plugins,
-                builtinInterceptorsFactories,
-                requestTracking);
-
-        return new RoutingObjectFactory(objectFactories, handlers);
     }
 
     private HttpHandler configuredPipeline(RoutingObjectFactory routingObjectFactory) {
@@ -96,7 +81,7 @@ public final class StyxPipelineFactory implements PipelineFactory {
         pipelineBuilder = rootHandlerNode
                 .map(jsonNode -> {
                     RoutingObjectConfig node = toRoutingConfigNode(jsonNode);
-                    return (HttpPipelineFactory) () -> routingObjectFactory.build(ImmutableList.of("httpPipeline"), node);
+                    return (HttpPipelineFactory) () -> routingObjectFactory.build(ImmutableList.of("httpPipeline"), routeDb, node);
                 })
                 .orElseGet(() -> {
                     Registry<BackendService> backendServicesRegistry = (Registry<BackendService>) services.get("backendServiceRegistry");
