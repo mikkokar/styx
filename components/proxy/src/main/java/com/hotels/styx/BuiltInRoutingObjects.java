@@ -23,8 +23,10 @@ import com.hotels.styx.proxy.StyxBackendServiceClientFactory;
 import com.hotels.styx.proxy.plugin.NamedPlugin;
 import com.hotels.styx.routing.config.BuiltinInterceptorsFactory;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
+import com.hotels.styx.routing.handlers.BackendApplication;
 import com.hotels.styx.routing.handlers.BackendServiceProxy;
 import com.hotels.styx.routing.handlers.ConditionRouter;
+import com.hotels.styx.routing.handlers.HostProxy;
 import com.hotels.styx.routing.handlers.HttpInterceptorPipeline;
 import com.hotels.styx.routing.handlers.ProxyToBackend;
 import com.hotels.styx.routing.handlers.StaticResponseHandler;
@@ -43,13 +45,16 @@ public class BuiltInRoutingObjects {
             Iterable<NamedPlugin> plugins,
             BuiltinInterceptorsFactory builtinInterceptorsFactory,
             boolean requestTracking) {
-        return ImmutableMap.of(
-                "StaticResponseHandler", new StaticResponseHandler.Factory(),
-                "ConditionRouter", new ConditionRouter.Factory(),
-                "BackendServiceProxy", new BackendServiceProxy.Factory(environment, backendRegistries(services)),
-                "InterceptorPipeline", new HttpInterceptorPipeline.Factory(plugins, builtinInterceptorsFactory, requestTracking),
-                "ProxyToBackend", new ProxyToBackend.Factory(environment, new StyxBackendServiceClientFactory(environment))
-        );
+        return ImmutableMap.<String, HttpHandlerFactory>builder()
+                .put("StaticResponseHandler", new StaticResponseHandler.Factory())
+                .put("ConditionRouter", new ConditionRouter.Factory())
+                .put("BackendServiceProxy", new BackendServiceProxy.Factory(environment, backendRegistries(services)))
+                .put("InterceptorPipeline", new HttpInterceptorPipeline.Factory(plugins, builtinInterceptorsFactory, requestTracking))
+                .put("ProxyToBackend", new ProxyToBackend.Factory(environment, new StyxBackendServiceClientFactory(environment)))
+                .put("HostProxy", new HostProxy.Factory())
+                .put("BackendApplication", new BackendApplication.Factory(environment))
+                .build();
+
     }
 
     private static Map<String, Registry<BackendService>> backendRegistries(Map<String, StyxService> servicesFromConfig) {
