@@ -17,10 +17,10 @@ package com.hotels.styx.routing.handlers
 
 import com.hotels.styx.api.HttpResponseStatus.{BAD_GATEWAY, OK}
 import com.hotels.styx.api.LiveHttpResponse.response
+import com.hotels.styx.api.configuration.RouteDatabase
 import com.hotels.styx.api.{Eventual, HttpHandler, LiveHttpRequest}
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.routing.config._
-import com.hotels.styx.routing.db.RouteDatabase
 import com.hotels.styx.routing.handlers.StaticResponseHandler.Factory
 import com.hotels.styx.routing.{HttpHandlerAdapter, MapBackedRouteDatabase}
 import com.hotels.styx.server.HttpInterceptorContext

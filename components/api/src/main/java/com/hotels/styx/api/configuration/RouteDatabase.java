@@ -13,7 +13,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
  */
-package com.hotels.styx.routing.db;
+package com.hotels.styx.api.configuration;
 
 import com.hotels.styx.api.HttpHandler;
 
@@ -36,11 +36,23 @@ public interface RouteDatabase {
 
     Set<HttpHandler> handlers(String... tags);
 
+    Optional<Record> lookup(String key);
+
+    Set<Record> tagLookup(String... tags);
+
+    void replaceTag(String key, String oldTag, String newTag);
+
     void addListener(Listener listener);
 
     void removeListener(Listener listener);
 
     interface Listener {
         void updated(RouteDatabase db);
+    }
+
+    interface Record {
+        String name();
+        Set<String> tags();
+        HttpHandler handler();
     }
 }

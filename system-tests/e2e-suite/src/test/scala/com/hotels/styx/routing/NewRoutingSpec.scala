@@ -61,12 +61,21 @@ class NewRoutingSpec extends FunSpec
     logbackXmlLocation = logback,
     yamlText =
       s"""
+        |services:
+        |  factories:
+        |    landingAppMonitor:
+        |      class: "com.hotels.styx.proxy.healthchecks.HealthCheckMonitoringServiceFactory"
+        |      config:
+        |        application: landing-app
+        |        monitor:
+        |          url: "/version.txt"
+        |
         |httpHandlers:
         |  landing-01:
         |    type: HostProxy
         |    tags:
         |      - landing-app
-        |      - state=disabled
+        |      - status=inactive
         |    config:
         |      host: "localhost:${httpServer01.port()}"
         |
@@ -74,7 +83,7 @@ class NewRoutingSpec extends FunSpec
         |    type: HostProxy
         |    tags:
         |      - landing-app
-        |      - state=active
+        |      - status=active
         |    config:
         |      host: "localhost:${httpServer02.port()}"
         |

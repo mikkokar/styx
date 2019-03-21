@@ -24,7 +24,6 @@ import com.hotels.styx.proxy.plugin.NamedPlugin;
 import com.hotels.styx.routing.config.BuiltinInterceptorsFactory;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.handlers.BackendApplication;
-import com.hotels.styx.routing.handlers.BackendServiceProxy;
 import com.hotels.styx.routing.handlers.ConditionRouter;
 import com.hotels.styx.routing.handlers.HostProxy;
 import com.hotels.styx.routing.handlers.HttpInterceptorPipeline;
@@ -42,14 +41,12 @@ import static java.util.stream.Collectors.toMap;
 public class BuiltInRoutingObjects {
     public static ImmutableMap<String, HttpHandlerFactory> createBuiltinRoutingObjectFactories(
             Environment environment,
-            Map<String, StyxService> services,
             Iterable<NamedPlugin> plugins,
             BuiltinInterceptorsFactory builtinInterceptorsFactory,
             boolean requestTracking) {
         return ImmutableMap.<String, HttpHandlerFactory>builder()
                 .put("StaticResponseHandler", new StaticResponseHandler.Factory())
                 .put("ConditionRouter", new ConditionRouter.Factory())
-                .put("BackendServiceProxy", new BackendServiceProxy.Factory(environment, backendRegistries(services)))
                 .put("InterceptorPipeline", new HttpInterceptorPipeline.Factory(plugins, builtinInterceptorsFactory, requestTracking))
                 .put("ProxyToBackend", new ProxyToBackend.Factory(environment, new StyxBackendServiceClientFactory(environment)))
                 .put("HostProxy", new HostProxy.Factory())

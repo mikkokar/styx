@@ -17,6 +17,7 @@ package com.hotels.styx.metrics.reporting.jmx;
 
 import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.configuration.Configuration;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.configuration.ServiceFactory;
 import com.hotels.styx.api.extension.service.spi.StyxService;
 
@@ -27,7 +28,7 @@ import static com.hotels.styx.metrics.reporting.MetricRegistryConstraints.codaHa
  */
 public class JmxReporterServiceFactory implements ServiceFactory<StyxService> {
     @Override
-    public StyxService create(Environment environment, Configuration serviceConfiguration) {
+    public StyxService create(Environment environment, RouteDatabase routeDb, Configuration serviceConfiguration) {
         String domain = serviceConfiguration.get("domain").orElse("com.hotels.styx");
 
         return new JmxReporterService(domain, codaHaleMetricRegistry(environment));

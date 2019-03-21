@@ -18,6 +18,7 @@ package com.hotels.styx.routing.db;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hotels.styx.api.HttpHandler;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
 public class StyxRouteDatabase implements RouteDatabase {
     private final ConcurrentHashMap<String, RouteDatabaseRecord> handlers;
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
-    private RoutingObjectFactory routingObjectFactory;
+    private final RoutingObjectFactory routingObjectFactory;
 
     public StyxRouteDatabase(RoutingObjectFactory routingObjectFactory) {
         this.routingObjectFactory = routingObjectFactory;
@@ -65,38 +66,76 @@ public class StyxRouteDatabase implements RouteDatabase {
     //
     // Needs to run concurrently
     //
+
     @Override
-    public Optional<HttpHandler> handler(String key) {
+    public Optional<Record> lookup(String key) {
         return Optional.ofNullable(handlers.get(key))
                 .map(record -> {
                     if (record instanceof HandlerRecord) {
-                        return ((HandlerRecord) record).handler();
+                        return ((HandlerRecord) record);
                     } else {
                         HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, ((ConfigRecord) record).configuration());
-                        handlers.put(key, new HandlerRecord(record.key(), handler, record.tags()));
-                        return handler;
+                        HandlerRecord newRecord = new HandlerRecord(record.key(), handler, record.tags());
+                        handlers.put(key, newRecord);
+                        return newRecord;
                     }
-                });
+                })
+                .map(this::toRecord);
+    }
+
+    private Record toRecord(HandlerRecord record) {
+        return new Record() {
+            @Override
+            public String name() {
+                return record.key();
+            }
+
+            @Override
+            public Set<String> tags() {
+                return ImmutableSet.copyOf(record.tags());
+            }
+
+            @Override
+            public HttpHandler handler() {
+                return record.handler();
+            }
+        };
     }
 
     @Override
-    public Set<HttpHandler> handlers(String... tags) {
+    public Set<Record> tagLookup(String... tags) {
         return handlers.values()
                 .stream()
                 .filter(record -> asSet(record.tags()).containsAll(asSet(ImmutableList.copyOf(tags))))
                 .map(record -> {
                     if (record instanceof HandlerRecord) {
-                        return ((HandlerRecord) record).handler();
+                        return ((HandlerRecord) record);
                     } else {
                         String key = record.key();
                         HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, ((ConfigRecord) record).configuration());
-                        handlers.put(key, new HandlerRecord(record.key(), handler, record.tags()));
-                        return handler;
+                        HandlerRecord newRecord = new HandlerRecord(record.key(), handler, record.tags());
+                        handlers.put(key, newRecord);
+                        return newRecord;
                     }
                 })
+                .map(this::toRecord)
+                .collect(Collectors.toSet());
+    }
+    @Override
+    public Optional<HttpHandler> handler(String key) {
+        return lookup(key)
+                .map(Record::handler);
+    }
+
+    @Override
+    public Set<HttpHandler> handlers(String... tags) {
+        return tagLookup(tags).stream()
+                .map(Record::handler)
                 .collect(Collectors.toSet());
     }
 
+
+    @Override
     public void replaceTag(String key, String oldTag, String newTag) {
         Optional.ofNullable(handlers.get(key))
                 .ifPresent(record -> record.replaceTag(oldTag, newTag));

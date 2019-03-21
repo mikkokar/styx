@@ -32,17 +32,6 @@ public interface ServiceFactory<E> {
      * @param serviceConfiguration configuration specific to the factory product
      * @return product instance
      */
-    E create(Environment environment, Configuration serviceConfiguration);
+    E create(Environment environment, RouteDatabase routeDb, Configuration serviceConfiguration);
 
-    /**
-     * Create an instance of the product.
-     *
-     * @param environment                 environment
-     * @param serviceConfiguration configuration specific to the factory product
-     * @param objects objects that service might depend on
-     * @return product instance
-     */
-    default E create(Environment environment, Configuration serviceConfiguration, ActiveOrigins objects) {
-        return create(environment, serviceConfiguration);
-    }
 }

@@ -25,7 +25,7 @@ import com.hotels.styx.api.extension.service.spi.StyxService;
 import com.hotels.styx.proxy.plugin.NamedPlugin;
 import com.hotels.styx.routing.config.RoutingObjectConfig;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
-import com.hotels.styx.routing.db.StyxRouteDatabase;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.routing.handlers.HttpInterceptorPipeline;
 import com.hotels.styx.startup.HttpPipelineFactory;
 import com.hotels.styx.startup.PipelineFactory;
@@ -45,13 +45,13 @@ import static com.hotels.styx.routing.config.RoutingObjectParser.toRoutingConfig
  */
 public final class StyxPipelineFactory implements PipelineFactory {
 
-    private StyxRouteDatabase routeDb;
+    private RouteDatabase routeDb;
     private final RoutingObjectFactory routingObjectFactory;
     private final Environment environment;
     private final Map<String, StyxService> services;
     private final List<NamedPlugin> plugins;
 
-    public StyxPipelineFactory(StyxRouteDatabase routeDb, RoutingObjectFactory routingObjectFactory, Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
+    public StyxPipelineFactory(RouteDatabase routeDb, RoutingObjectFactory routingObjectFactory, Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins) {
         this.routeDb = routeDb;
         this.routingObjectFactory = routingObjectFactory;
         this.environment = environment;

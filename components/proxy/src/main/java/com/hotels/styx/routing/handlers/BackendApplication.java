@@ -32,7 +32,7 @@ import com.hotels.styx.proxy.StyxBackendServiceClientFactory;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
-import com.hotels.styx.routing.db.RouteDatabase;
+import com.hotels.styx.api.configuration.RouteDatabase;
 
 import java.util.List;
 import java.util.Set;
@@ -92,7 +92,7 @@ public class BackendApplication implements HttpHandler, RouteDatabase.Listener {
 
     @Override
     public void updated(RouteDatabase db) {
-        Set<HttpHandler> handlers = routeDatabase.handlers(originsTag);
+        Set<HttpHandler> handlers = routeDatabase.handlers(originsTag, "status=active");
         remoteHosts.set(handlers.stream()
                 .map(this::toRemoteHost)
                 .collect(Collectors.toSet()));

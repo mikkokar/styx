@@ -17,9 +17,9 @@ package com.hotels.styx.routing.config
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.hotels.styx.api.HttpHandler
+import com.hotels.styx.api.configuration.RouteDatabase
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfig
 import com.hotels.styx.routing.MapBackedRouteDatabase
-import com.hotels.styx.routing.db.RouteDatabase
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.mock.MockitoSugar

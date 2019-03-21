@@ -27,7 +27,7 @@ import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
-import com.hotels.styx.routing.db.RouteDatabase;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import reactor.core.publisher.Flux;
 
 import java.util.List;

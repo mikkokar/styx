@@ -17,6 +17,7 @@ package com.hotels.styx.metrics.reporting.graphite;
 
 import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.configuration.Configuration;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.configuration.ServiceFactory;
 import com.hotels.styx.api.extension.service.spi.StyxService;
 
@@ -30,7 +31,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class GraphiteReporterServiceFactory implements ServiceFactory<StyxService> {
 
     @Override
-    public StyxService create(Environment environment, Configuration serviceConfiguration) {
+    public StyxService create(Environment environment, RouteDatabase routeDb, Configuration serviceConfiguration) {
         GraphiteConfig graphiteConfig = serviceConfiguration.as(GraphiteConfig.class);
 
         String host = graphiteConfig.host();

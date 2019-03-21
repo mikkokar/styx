@@ -19,6 +19,7 @@ import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.configuration.ConfigurationException;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.extension.service.spi.AbstractRegistry;
 import com.hotels.styx.api.extension.service.spi.AbstractStyxService;
 import com.hotels.styx.api.extension.service.BackendService;
@@ -88,7 +89,7 @@ public class TestBackendProvider extends AbstractStyxService implements Registry
     public static class Factory implements Registry.Factory<BackendService> {
 
         @Override
-        public Registry<BackendService> create(Environment environment, Configuration registryConfiguration) {
+        public Registry<BackendService> create(Environment environment, RouteDatabase routeDb, Configuration registryConfiguration) {
             BackendService service = registryConfiguration.get("backendService", BackendService.class)
                     .orElseThrow(() -> new ConfigurationException(
                             "missing [services.registry.factory.config.backendService] config value for factory class TestBackendProvider.Factory"));

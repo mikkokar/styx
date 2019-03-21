@@ -24,7 +24,7 @@ import com.hotels.styx.proxy.RouteHandlerAdapter;
 import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
-import com.hotels.styx.routing.db.RouteDatabase;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.server.HttpRouter;
 import com.hotels.styx.server.routing.AntlrMatcher;
 

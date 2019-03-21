@@ -19,7 +19,7 @@ import java.util
 import java.util.Optional
 
 import com.hotels.styx.api.HttpHandler
-import com.hotels.styx.routing.db.RouteDatabase
+import com.hotels.styx.api.configuration.RouteDatabase
 
 import scala.compat.java8.OptionConverters.toJava
 
@@ -39,4 +39,10 @@ class MapBackedRouteDatabase(map: Map[String, HttpHandler]) extends RouteDatabas
   override def addListener(listener: RouteDatabase.Listener): Unit = ???
 
   override def removeListener(listener: RouteDatabase.Listener): Unit = ???
+
+  override def lookup(key: String): Optional[RouteDatabase.Record] = ???
+
+  override def tagLookup(tags: String*): util.Set[RouteDatabase.Record] = ???
+
+  override def replaceTag(key: String, oldTag: String, newTag: String): Unit = ???
 }

@@ -20,6 +20,7 @@ import com.hotels.styx.StyxConfig;
 import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.configuration.ConfigurationException;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.configuration.ServiceFactory;
 import com.hotels.styx.api.extension.RemoteHost;
 import com.hotels.styx.api.extension.retrypolicy.spi.RetryPolicy;
@@ -42,9 +43,11 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
 
 public class ServiceProvisionTest {
     Path FIXTURES_CLASS_PATH = fixturesHome(ServiceProvisionTest.class, "/plugins");
+    RouteDatabase routeDb = mock(RouteDatabase.class);
 
     private final String yaml = "" +
             "my:\n" +
@@ -166,7 +169,7 @@ public class ServiceProvisionTest {
 
     @Test
     public void servicesReturnCorrectlyFromCall() {
-        Map<String, String> services = loadServices(environment.configuration(), environment, "multi", String.class);
+        Map<String, String> services = loadServices(environment.configuration(), environment, routeDb,"multi", String.class);
 
         assertThat(services, isMap(ImmutableMap.of(
                 "one", "valueNumber1",
@@ -178,7 +181,7 @@ public class ServiceProvisionTest {
     @Test
     public void isInstanceWorks() {
         Environment env = environmentWithConfig(yamlForServices);
-        Map<String, StyxService> services = loadServices(env.configuration(), env, "multi", StyxService.class);
+        Map<String, StyxService> services = loadServices(env.configuration(), env, routeDb, "multi", StyxService.class);
 
         assertThat(services.get("backendProvider"), instanceOf(BackendServiceProvider.class));
         assertThat(services.get("routingProvider"), instanceOf(RoutingObjectProvider.class));
@@ -187,7 +190,7 @@ public class ServiceProvisionTest {
     @Test
     public void loadsNewConfigurationFormat() {
         Environment env = environmentWithConfig(yamlForServiceFactories);
-        Map<String, StyxService> services = loadServices(env.configuration(), env, "multi", StyxService.class);
+        Map<String, StyxService> services = loadServices(env.configuration(), env, routeDb, "multi", StyxService.class);
 
         assertThat(services.get("backendProvider"), instanceOf(BackendServiceProvider.class));
         assertThat(services.get("routingProvider"), instanceOf(RoutingObjectProvider.class));
@@ -197,7 +200,7 @@ public class ServiceProvisionTest {
     @Test
     public void loadsFromMixedConfigFormat() {
         Environment env = environmentWithConfig(yamlForMixedServiceFactories);
-        Map<String, StyxService> services = loadServices(env.configuration(), env, "multi", StyxService.class);
+        Map<String, StyxService> services = loadServices(env.configuration(), env, routeDb,"multi", StyxService.class);
 
         assertThat(services.get("backendProvider"), instanceOf(BackendServiceProvider.class));
         assertThat(services.get("routingProvider"), instanceOf(RoutingObjectProvider.class));
@@ -206,7 +209,7 @@ public class ServiceProvisionTest {
     @Test
     public void ignoresDisabledServices() {
         Environment env = environmentWithConfig(mixedDisabledServices);
-        Map<String, StyxService> services = loadServices(env.configuration(), env, "multi", StyxService.class);
+        Map<String, StyxService> services = loadServices(env.configuration(), env, routeDb,"multi", StyxService.class);
 
         assertThat(services.isEmpty(), is(true));
     }
@@ -214,7 +217,7 @@ public class ServiceProvisionTest {
 
     @Test
     public void servicesReturnEmptyWhenFactoryKeyDoesNotExist() {
-        Map<String, String> services = loadServices(environment.configuration(), environment, "invalid.key", String.class);
+        Map<String, String> services = loadServices(environment.configuration(), environment, routeDb,"invalid.key", String.class);
 
         assertThat(services, isMap(emptyMap()));
     }
@@ -236,7 +239,7 @@ public class ServiceProvisionTest {
                 "        stringValue: valueNumber1\n";
 
         Environment env = environmentWithConfig(config);
-        loadServices(env.configuration(), env, "multi", StyxService.class);
+        loadServices(env.configuration(), env, routeDb,"multi", StyxService.class);
     }
 
     @Test(expectedExceptions = ConfigurationException.class,
@@ -253,7 +256,7 @@ public class ServiceProvisionTest {
                 "         attribute: x\n";
 
         Environment env = environmentWithConfig(config);
-        loadServices(env.configuration(), env, "multi", StyxService.class);
+        loadServices(env.configuration(), env, routeDb,"multi", StyxService.class);
     }
 
     public static class MyRetryFactory implements RetryPolicyFactory {
@@ -280,7 +283,7 @@ public class ServiceProvisionTest {
 
     public static class MyFactory implements ServiceFactory<String> {
         @Override
-        public String create(Environment environment, Configuration serviceConfiguration) {
+        public String create(Environment environment, RouteDatabase routeDb, Configuration serviceConfiguration) {
             return serviceConfiguration.get("stringValue").orElse("VALUE_ABSENT");
         }
     }
@@ -288,7 +291,7 @@ public class ServiceProvisionTest {
 
     public static class TestBackendServiceProviderFactory implements ServiceFactory<StyxService> {
         @Override
-        public StyxService create(Environment environment, Configuration serviceConfiguration) {
+        public StyxService create(Environment environment, RouteDatabase routeDb, Configuration serviceConfiguration) {
             return new TestBackendServiceProvider();
         }
     }
@@ -296,7 +299,7 @@ public class ServiceProvisionTest {
 
     public static class TestRoutingObjectProviderFactory implements ServiceFactory<StyxService> {
         @Override
-        public StyxService create(Environment environment, Configuration serviceConfiguration) {
+        public StyxService create(Environment environment, RouteDatabase routeDb, Configuration serviceConfiguration) {
             return new TestRoutingObjectProvider();
         }
     }

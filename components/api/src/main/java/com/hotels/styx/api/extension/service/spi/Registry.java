@@ -19,6 +19,7 @@ import com.google.common.collect.Iterables;
 import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.Identifiable;
 import com.hotels.styx.api.configuration.Configuration;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.configuration.ServiceFactory;
 
 import java.util.EventListener;
@@ -63,7 +64,7 @@ public interface Registry<T extends Identifiable> extends Supplier<Iterable<T>> 
      * @param <T>
      */
     interface Factory<T extends Identifiable> extends ServiceFactory<Registry<T>> {
-        Registry<T> create(Environment environment, Configuration registryConfiguration);
+        Registry<T> create(Environment environment, RouteDatabase routeDb, Configuration registryConfiguration);
     }
 
     /**

@@ -17,7 +17,7 @@ package com.hotels.styx.routing.config;
 
 import com.google.common.base.Preconditions;
 import com.hotels.styx.api.HttpHandler;
-import com.hotels.styx.routing.db.RouteDatabase;
+import com.hotels.styx.api.configuration.RouteDatabase;
 
 import java.util.List;
 import java.util.Map;

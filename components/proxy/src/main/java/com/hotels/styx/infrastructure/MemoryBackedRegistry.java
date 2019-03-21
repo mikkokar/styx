@@ -20,6 +20,7 @@ import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.Id;
 import com.hotels.styx.api.Identifiable;
 import com.hotels.styx.api.configuration.Configuration;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.extension.service.spi.AbstractRegistry;
 import com.hotels.styx.api.extension.service.spi.Registry;
 
@@ -43,7 +44,7 @@ public class MemoryBackedRegistry<T extends Identifiable> extends AbstractRegist
      */
     public static class Factory<T extends Identifiable> implements Registry.Factory<T> {
         @Override
-        public Registry<T> create(Environment environment, Configuration registryConfiguration) {
+        public Registry<T> create(Environment environment, RouteDatabase routeDb, Configuration registryConfiguration) {
             return new MemoryBackedRegistry<>();
         }
     }

@@ -15,9 +15,7 @@
  */
 package com.hotels.styx;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.AbstractService;
 import com.google.common.util.concurrent.Service;
@@ -28,14 +26,7 @@ import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.api.extension.service.spi.StyxService;
 import com.hotels.styx.config.schema.SchemaValidationException;
 import com.hotels.styx.infrastructure.configuration.ConfigurationParser;
-import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.infrastructure.configuration.yaml.YamlConfiguration;
-import com.hotels.styx.proxy.plugin.NamedPlugin;
-import com.hotels.styx.routing.config.BuiltinInterceptorsFactory;
-import com.hotels.styx.routing.config.HttpHandlerFactory;
-import com.hotels.styx.routing.config.RoutingObjectDefinition;
-import com.hotels.styx.routing.config.RoutingObjectFactory;
-import com.hotels.styx.routing.db.StyxRouteDatabase;
 import com.hotels.styx.server.HttpServer;
 import com.hotels.styx.startup.ProxyServerSetUp;
 import com.hotels.styx.startup.StyxServerComponents;
@@ -47,12 +38,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import static com.hotels.styx.BuiltInInterceptors.INTERCEPTOR_FACTORIES;
-import static com.hotels.styx.BuiltInRoutingObjects.createBuiltinRoutingObjectFactories;
 import static com.hotels.styx.ServerConfigSchema.validateServerConfiguration;
 import static com.hotels.styx.infrastructure.configuration.ConfigurationSource.configSource;
 import static com.hotels.styx.infrastructure.configuration.yaml.YamlConfigurationFormat.YAML;
@@ -153,40 +139,15 @@ public final class StyxServer extends AbstractService {
         this(config, null);
     }
 
-    private RoutingObjectFactory newRouteHandlerFactory(Environment environment, Map<String, StyxService> services, List<NamedPlugin> plugins, boolean requestTracking) {
-        BuiltinInterceptorsFactory builtinInterceptorsFactories = new BuiltinInterceptorsFactory(INTERCEPTOR_FACTORIES);
-
-        Map<String, HttpHandlerFactory> objectFactories = createBuiltinRoutingObjectFactories(
-                environment,
-                services,
-                plugins,
-                builtinInterceptorsFactories,
-                requestTracking);
-
-        return new RoutingObjectFactory(objectFactories);
-    }
-
-
     public StyxServer(StyxServerComponents components, Stopwatch stopwatch) {
         this.stopwatch = stopwatch;
 
         registerCoreMetrics(components.environment().buildInfo(), components.environment().metricRegistry());
 
-        Map<String, StyxService> servicesFromConfig = components.services();
-
-        components.plugins().forEach(plugin -> components.environment().configStore().set("plugins." + plugin.name(), plugin));
-
-        RoutingObjectFactory routingObjectFactory = newRouteHandlerFactory(components.environment(), components.services(), components.plugins(), false);
-
-        StyxRouteDatabase routeDb = new StyxRouteDatabase(routingObjectFactory);
-
-        routesFromConfiguration(components)
-                .forEach(routeDb::insert);
-
         ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(
                 new StyxPipelineFactory(
-                        routeDb,
-                        routingObjectFactory,
+                        components.routeDatabase(),
+                        components.routingObjectFactory(),
                         components.environment(),
                         components.services(),
                         components.plugins()));
@@ -198,31 +159,11 @@ public final class StyxServer extends AbstractService {
             {
                 add(proxyServer);
                 add(adminServer);
-                servicesFromConfig.values().stream()
+                components.services().values().stream()
                         .map(StyxServer::toGuavaService)
                         .forEach(this::add);
             }
         });
-    }
-
-    private Map<String, RoutingObjectDefinition> routesFromConfiguration(StyxServerComponents components) {
-        return components.environment().configuration().get("httpHandlers", JsonNode.class)
-                .map(this::readHttpHandlers)
-                .orElse(ImmutableMap.of());
-    }
-
-    private Map<String, RoutingObjectDefinition> readHttpHandlers(JsonNode root) {
-        Map<String, RoutingObjectDefinition> handlers = new HashMap<>();
-
-        root.fields().forEachRemaining(
-                (entry) -> {
-                    String name = entry.getKey();
-                    RoutingObjectDefinition handlerDef = new JsonNodeConfig(entry.getValue()).as(RoutingObjectDefinition.class);
-                    handlers.put(name, handlerDef);
-                }
-        );
-
-        return handlers;
     }
 
     public InetSocketAddress proxyHttpAddress() {

@@ -31,7 +31,7 @@ import com.hotels.styx.routing.config.RoutingObjectConfig;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 import com.hotels.styx.routing.config.RoutingObjectReference;
-import com.hotels.styx.routing.db.RouteDatabase;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.server.track.CurrentRequestTracker;
 import com.hotels.styx.server.track.RequestTracker;
 

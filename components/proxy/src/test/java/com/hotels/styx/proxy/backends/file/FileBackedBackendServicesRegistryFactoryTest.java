@@ -20,6 +20,7 @@ import com.hotels.styx.StyxConfig;
 import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.configuration.ConfigurationException;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 import com.hotels.styx.proxy.backends.file.FileChangeMonitor.FileMonitorSettings;
@@ -50,6 +51,7 @@ public class FileBackedBackendServicesRegistryFactoryTest {
     private File tempDir;
     private Path monitoredFile;
     private Environment environment;
+    private RouteDatabase routeDb = mock(RouteDatabase.class);
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -75,7 +77,7 @@ public class FileBackedBackendServicesRegistryFactoryTest {
 
         JsonNodeConfig factoryConfig = new JsonNodeConfig(environment.configuration().get("config", JsonNode.class).get());
 
-        Registry registry = new FileBackedBackendServicesRegistry.Factory().create(environment, factoryConfig);
+        Registry registry = new FileBackedBackendServicesRegistry.Factory().create(environment, routeDb, factoryConfig);
 
         assertThat(registry != null, is(true));
     }
@@ -84,21 +86,21 @@ public class FileBackedBackendServicesRegistryFactoryTest {
     public void requiresOriginsFileToBeSet() {
         Configuration configuration = mockConfiguration(Optional.of(""));
 
-        new FileBackedBackendServicesRegistry.Factory().create(environment, configuration);
+        new FileBackedBackendServicesRegistry.Factory().create(environment, routeDb, configuration);
     }
 
     @Test(expectedExceptions = ConfigurationException.class, expectedExceptionsMessageRegExp = "missing .services.registry.factory.config.originsFile. config value for factory class FileBackedBackendServicesRegistry.Factory")
     public void requiresOriginsFileToBeNonEmpty() {
         Configuration configuration = mockConfiguration(Optional.empty());
 
-        new FileBackedBackendServicesRegistry.Factory().create(environment, configuration);
+        new FileBackedBackendServicesRegistry.Factory().create(environment, routeDb, configuration);
     }
 
     @Test
     public void fileMonitorIsTurnedOffByDefault() {
         Configuration configuration = mockConfiguration(Optional.of("/styx/config/path/origins.yml"), Optional.empty());
 
-        FileBackedBackendServicesRegistry registry = (FileBackedBackendServicesRegistry)new FileBackedBackendServicesRegistry.Factory().create(environment, configuration);
+        FileBackedBackendServicesRegistry registry = (FileBackedBackendServicesRegistry)new FileBackedBackendServicesRegistry.Factory().create(environment, routeDb, configuration);
         assertThat(registry.monitor(), is(FileMonitor.DISABLED));
     }
 
@@ -106,7 +108,7 @@ public class FileBackedBackendServicesRegistryFactoryTest {
     public void createsWithFileChangeMonitor() {
         Configuration configuration = mockConfiguration(Optional.of(monitoredFile.toString()), Optional.of(new FileMonitorSettings(true)));
 
-        FileBackedBackendServicesRegistry registry = (FileBackedBackendServicesRegistry)new FileBackedBackendServicesRegistry.Factory().create(environment, configuration);
+        FileBackedBackendServicesRegistry registry = (FileBackedBackendServicesRegistry)new FileBackedBackendServicesRegistry.Factory().create(environment, routeDb, configuration);
         assertThat(registry.monitor(), instanceOf(FileChangeMonitor.class));
     }
 

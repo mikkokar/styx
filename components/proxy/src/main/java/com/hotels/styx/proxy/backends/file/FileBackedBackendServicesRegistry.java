@@ -24,6 +24,7 @@ import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.Resource;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.configuration.ConfigurationException;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.AbstractStyxService;
 import com.hotels.styx.api.extension.service.spi.Registry;
@@ -153,7 +154,7 @@ public class FileBackedBackendServicesRegistry extends AbstractStyxService imple
     public static class Factory implements Registry.Factory<BackendService> {
 
         @Override
-        public Registry<BackendService> create(Environment environment, Configuration registryConfiguration) {
+        public Registry<BackendService> create(Environment environment, RouteDatabase routeDb, Configuration registryConfiguration) {
             String originsFile = registryConfiguration.get("originsFile", String.class)
                     .map(Factory::requireNonEmpty)
                     .orElseThrow(() -> new ConfigurationException(
@@ -181,6 +182,7 @@ public class FileBackedBackendServicesRegistry extends AbstractStyxService imple
                 return originsFile;
             }
         }
+
     }
 
     @VisibleForTesting

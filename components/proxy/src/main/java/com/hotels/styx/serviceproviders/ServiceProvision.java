@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.hotels.styx.api.Environment;
 import com.hotels.styx.api.configuration.Configuration;
 import com.hotels.styx.api.configuration.ConfigurationException;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.configuration.ServiceFactory;
 import com.hotels.styx.api.extension.ActiveOrigins;
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer;
@@ -118,13 +119,13 @@ public final class ServiceProvision {
      * @param serviceClass  Service class
      * @return services, if such a configuration key exists
      */
-    public static <T> Map<String, T> loadServices(Configuration configuration, Environment environment, String key, Class<? extends T> serviceClass) {
+    public static <T> Map<String, T> loadServices(Configuration configuration, Environment environment, RouteDatabase routeDb, String key, Class<? extends T> serviceClass) {
         return configuration.get(key, JsonNode.class)
-                .<Map<String, T>>map(node -> servicesMap(node, environment, serviceClass))
+                .<Map<String, T>>map(node -> servicesMap(node, environment, routeDb, serviceClass))
                 .orElse(emptyMap());
     }
 
-    private static <U> Map<String, U> servicesMap(JsonNode jsonNode, Environment environment, Class<? extends U> serviceClass) {
+    private static <U> Map<String, U> servicesMap(JsonNode jsonNode, Environment environment, RouteDatabase routeDb, Class<? extends U> serviceClass) {
         JsonNode factories = jsonNode.get("factories");
         JsonNodeConfig jsonNodeConfig = new JsonNodeConfig(factories);
 
@@ -132,9 +133,9 @@ public final class ServiceProvision {
                 .stream()
                 .flatMap(name -> {
                     if (isType(name, jsonNodeConfig, SpiExtension.class)) {
-                        return namedExtensionFromSpiExtension(environment, serviceClass, jsonNodeConfig, name);
+                        return namedExtensionFromSpiExtension(environment, routeDb, serviceClass, jsonNodeConfig, name);
                     } else if (isType(name, jsonNodeConfig, ServiceFactoryConfig.class)) {
-                        return namedExtensionFromServiceFactoryConfig(environment, serviceClass, jsonNodeConfig, name);
+                        return namedExtensionFromServiceFactoryConfig(environment, routeDb, serviceClass, jsonNodeConfig, name);
                     } else {
                         String content = factories.get(name).toString();
                         String message = format("Unexpected configuration object 'services.factories.%s', Configuration='%s'", name, content);
@@ -154,21 +155,21 @@ public final class ServiceProvision {
     }
 
     private static <U> Stream<Pair<String, ? extends U>> namedExtensionFromSpiExtension(
-            Environment environment, Class<? extends U> serviceClass, JsonNodeConfig jsonNodeConfig, String name) {
+            Environment environment, RouteDatabase routeDb, Class<? extends U> serviceClass, JsonNodeConfig jsonNodeConfig, String name) {
         LOGGER.info("Spi Extension type");
         return jsonNodeConfig.get(name, SpiExtension.class)
                 .filter(SpiExtension::enabled)
-                .map(extension -> loadSpiExtension(extension, environment, serviceClass))
+                .map(extension -> loadSpiExtension(extension, environment, routeDb, serviceClass))
                 .map(service -> ImmutableList.<Pair<String, ? extends U>>of(pair(name, service)))
                 .orElse(ImmutableList.of())
                 .stream();
     }
 
-    private static <T> T loadSpiExtension(SpiExtension factoryConfig, Environment environment, Class<T> serviceSuperclass) {
+    private static <T> T loadSpiExtension(SpiExtension factoryConfig, Environment environment, RouteDatabase routeDb, Class<T> serviceSuperclass) {
         ServiceFactory factory = newServiceFactory(factoryConfig);
         JsonNodeConfig config = new JsonNodeConfig(factoryConfig.config());
 
-        return serviceSuperclass.cast(factory.create(environment, config));
+        return serviceSuperclass.cast(factory.create(environment, routeDb, config));
     }
 
     private static ServiceFactory newServiceFactory(SpiExtension extensionConfig) {
@@ -180,19 +181,19 @@ public final class ServiceProvision {
     }
 
     private static <U> Stream<Pair<String, ? extends U>> namedExtensionFromServiceFactoryConfig(
-            Environment environment, Class<? extends U> serviceClass, JsonNodeConfig jsonNodeConfig, String name) {
+            Environment environment, RouteDatabase routeDb, Class<? extends U> serviceClass, JsonNodeConfig jsonNodeConfig, String name) {
         LOGGER.info("Service Factory Config type");
         return jsonNodeConfig.get(name, ServiceFactoryConfig.class)
                 .filter(ServiceFactoryConfig::enabled)
-                .map(serviceFactoryConfig -> loadServiceFactory(serviceFactoryConfig, environment, serviceClass))
+                .map(serviceFactoryConfig -> loadServiceFactory(serviceFactoryConfig, environment, routeDb, serviceClass))
                 .map(service -> ImmutableList.<Pair<String, ? extends U>>of(pair(name, service)))
                 .orElse(ImmutableList.of()).stream();
     }
 
-    private static <T> T loadServiceFactory(ServiceFactoryConfig serviceFactoryConfig, Environment environment, Class<T> serviceSuperclass) {
+    private static <T> T loadServiceFactory(ServiceFactoryConfig serviceFactoryConfig, Environment environment, RouteDatabase routeDb, Class<T> serviceSuperclass) {
         ServiceFactory factory = newInstance(serviceFactoryConfig.factory(), ServiceFactory.class);
         JsonNodeConfig config = serviceFactoryConfig.config();
 
-        return serviceSuperclass.cast(factory.create(environment, config));
+        return serviceSuperclass.cast(factory.create(environment, routeDb, config));
     }
 }
