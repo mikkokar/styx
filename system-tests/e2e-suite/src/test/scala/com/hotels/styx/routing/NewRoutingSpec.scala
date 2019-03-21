@@ -64,14 +64,18 @@ class NewRoutingSpec extends FunSpec
         |httpHandlers:
         |  landing-01:
         |    type: HostProxy
+        |    tags:
+        |      - landing-app
+        |      - state=disabled
         |    config:
-        |      tag: "landing-app"
         |      host: "localhost:${httpServer01.port()}"
         |
         |  landing-02:
         |    type: HostProxy
+        |    tags:
+        |      - landing-app
+        |      - state=active
         |    config:
-        |      tag: "landing-app"
         |      host: "localhost:${httpServer02.port()}"
         |
         |  landingApp:
@@ -79,7 +83,7 @@ class NewRoutingSpec extends FunSpec
         |    config:
         |      origins: "landing-app"
         |      id: "MyLandingApp"
-
+        |
         |  shoppingApp:
         |    type: BackendApplication
         |    config:
@@ -120,10 +124,11 @@ class NewRoutingSpec extends FunSpec
 
       assert(response.status() == OK)
       assert(response.bodyAs(UTF_8) == "Hello, World!")
+      println("From origin: " + response.header(STUB_ORIGIN_INFO))
 
-      httpServer02.verify(
-        getRequestedFor(urlEqualTo("/app.1"))
-          .withHeader("X-Forwarded-Proto", valueMatchingStrategy("http")))
+//      httpServer02.verify(
+//        getRequestedFor(urlEqualTo("/app.1"))
+//          .withHeader("X-Forwarded-Proto", valueMatchingStrategy("http")))
     }
   }
 

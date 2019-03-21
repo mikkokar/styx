@@ -176,13 +176,12 @@ public final class StyxServer extends AbstractService {
 
         components.plugins().forEach(plugin -> components.environment().configStore().set("plugins." + plugin.name(), plugin));
 
-
         RoutingObjectFactory routingObjectFactory = newRouteHandlerFactory(components.environment(), components.services(), components.plugins(), false);
 
         StyxRouteDatabase routeDb = new StyxRouteDatabase(routingObjectFactory);
 
-        Map<String, RoutingObjectDefinition> routes = routesFromConfiguration(components);
-        routes.forEach(routeDb::insert);
+        routesFromConfiguration(components)
+                .forEach(routeDb::insert);
 
         ProxyServerSetUp proxyServerSetUp = new ProxyServerSetUp(
                 new StyxPipelineFactory(

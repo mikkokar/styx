@@ -43,7 +43,7 @@ public class StyxRouteDatabase implements RouteDatabase {
     }
 
     public void insert(String key, RoutingObjectDefinition routingObjectDef) {
-        handlers.put(key, new ConfigRecord(key, routingObjectDef, ImmutableList.of()));
+        handlers.put(key, new ConfigRecord(key, routingObjectDef, routingObjectDef.tags()));
         notifyListeners();
     }
 
