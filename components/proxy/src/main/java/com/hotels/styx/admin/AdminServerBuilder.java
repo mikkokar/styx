@@ -40,6 +40,7 @@ import com.hotels.styx.admin.tasks.OriginsCommandHandler;
 import com.hotels.styx.admin.tasks.OriginsReloadCommandHandler;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.configuration.Configuration;
+import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.api.extension.service.BackendService;
 import com.hotels.styx.api.extension.service.spi.Registry;
 import com.hotels.styx.common.http.handler.HttpMethodFilteringHandler;
@@ -78,12 +79,14 @@ public class AdminServerBuilder {
 
     private final Environment environment;
     private final Configuration configuration;
+    private final RouteDatabase routeDb;
 
     private Registry<BackendService> backendServicesRegistry;
 
-    public AdminServerBuilder(Environment environment) {
+    public AdminServerBuilder(Environment environment, RouteDatabase routeDb) {
         this.environment = environment;
         this.configuration = environment.configuration();
+        this.routeDb = routeDb;
     }
 
     public AdminServerBuilder backendServicesRegistry(Registry<BackendService> backendServicesRegistry) {
@@ -114,6 +117,10 @@ public class AdminServerBuilder {
         httpRouter.add("/admin/origins/status", new OriginsInventoryHandler(environment.eventBus()));
         httpRouter.add("/admin/configuration/logging", new LoggingConfigurationHandler(styxConfig.startupConfig().logConfigLocation()));
         httpRouter.add("/admin/configuration/startup", new StartupConfigHandler(styxConfig.startupConfig()));
+
+        RoutingObjectHandler routingObjectHandler = new RoutingObjectHandler(routeDb);
+        httpRouter.add("/admin/routing", routingObjectHandler);
+        httpRouter.add("/admin/routing/", routingObjectHandler);
 
         // Dashboard
         httpRouter.add("/admin/dashboard/data.json", dashboardDataHandler(styxConfig));

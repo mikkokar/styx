@@ -15,6 +15,9 @@
  */
 package com.hotels.styx.routing.db;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hotels.styx.api.HttpHandler;
@@ -22,6 +25,7 @@ import com.hotels.styx.api.configuration.RouteDatabase;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -29,12 +33,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+import static com.hotels.styx.admin.support.Json.PRETTY_PRINTER;
+
 /**
  * Styx Route Database.
  */
 
 public class StyxRouteDatabase implements RouteDatabase {
-    private final ConcurrentHashMap<String, RouteDatabaseRecord> handlers;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private final ConcurrentHashMap<String, ConfigRecord> handlers;
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final RoutingObjectFactory routingObjectFactory;
 
@@ -43,13 +51,19 @@ public class StyxRouteDatabase implements RouteDatabase {
         this.handlers = new ConcurrentHashMap<>();
     }
 
-    public void insert(String key, RoutingObjectDefinition routingObjectDef) {
-        handlers.put(key, new ConfigRecord(key, routingObjectDef, routingObjectDef.tags()));
-        notifyListeners();
+    @Override
+    public void insert(String routingObjectDefAsJson) {
+        try {
+            RoutingObjectDefinition value = objectMapper.readValue(routingObjectDefAsJson, RoutingObjectDefinition.class);
+            insert(value.name(), value);
+        } catch (IOException e) {
+            System.out.println("StyxRouteDatabase.insert() error: " + e);
+            System.out.println(routingObjectDefAsJson);
+        }
     }
 
-    public void insert(String key, RoutingObjectDefinition routingObjectDefinition, String... tags) {
-        handlers.put(key, new ConfigRecord(key, routingObjectDefinition, ImmutableList.copyOf(tags)));
+    public void insert(String key, RoutingObjectDefinition routingObjectDef) {
+        handlers.put(key, new ConfigRecord(routingObjectDef));
         notifyListeners();
     }
 
@@ -66,7 +80,6 @@ public class StyxRouteDatabase implements RouteDatabase {
     //
     // Needs to run concurrently
     //
-
     @Override
     public Optional<Record> lookup(String key) {
         return Optional.ofNullable(handlers.get(key))
@@ -74,8 +87,9 @@ public class StyxRouteDatabase implements RouteDatabase {
                     if (record instanceof HandlerRecord) {
                         return ((HandlerRecord) record);
                     } else {
-                        HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, ((ConfigRecord) record).configuration());
-                        HandlerRecord newRecord = new HandlerRecord(record.key(), handler, record.tags());
+                        HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, record.configuration);
+
+                        HandlerRecord newRecord = record.addHandler(handler);
                         handlers.put(key, newRecord);
                         return newRecord;
                     }
@@ -99,6 +113,28 @@ public class StyxRouteDatabase implements RouteDatabase {
             public HttpHandler handler() {
                 return record.handler();
             }
+
+            @Override
+            public String configuration() {
+                try {
+                    return objectMapper
+                            .writer(PRETTY_PRINTER)
+                            .writeValueAsString(record.configuration());
+                } catch (JsonProcessingException e) {
+                    System.out.println("serialisation error: " + e);
+                    return "Serialisation error";
+                }
+//                return record.configuration().asText();
+            }
+
+            @Override
+            public String toString() {
+                return "{\n" +
+                        " name: " + name() +
+                        ",\n tags: " + tags() +
+                        ",\n " + "configuration: " + configuration() +
+                        "\n}";
+            }
         };
     }
 
@@ -112,8 +148,9 @@ public class StyxRouteDatabase implements RouteDatabase {
                         return ((HandlerRecord) record);
                     } else {
                         String key = record.key();
-                        HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, ((ConfigRecord) record).configuration());
-                        HandlerRecord newRecord = new HandlerRecord(record.key(), handler, record.tags());
+                        HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, record.configuration);
+
+                        HandlerRecord newRecord = record.addHandler(handler);
                         handlers.put(key, newRecord);
                         return newRecord;
                     }
@@ -121,6 +158,28 @@ public class StyxRouteDatabase implements RouteDatabase {
                 .map(this::toRecord)
                 .collect(Collectors.toSet());
     }
+
+    @Override
+    public Set<Record> lookupAll() {
+        return handlers.values()
+                .stream()
+                .map(record -> {
+                    if (record instanceof HandlerRecord) {
+                        return ((HandlerRecord) record);
+                    } else {
+                        String key = record.key();
+                        HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, record.configuration);
+
+                        HandlerRecord newRecord = record.addHandler(handler);
+                        handlers.put(key, newRecord);
+                        return newRecord;
+                    }
+                })
+                .map(this::toRecord)
+                .collect(Collectors.toSet());
+    }
+
+
     @Override
     public Optional<HttpHandler> handler(String key) {
         return lookup(key)
@@ -137,8 +196,7 @@ public class StyxRouteDatabase implements RouteDatabase {
 
     @Override
     public void replaceTag(String key, String oldTag, String newTag) {
-        Optional.ofNullable(handlers.get(key))
-                .ifPresent(record -> record.replaceTag(oldTag, newTag));
+        handlers.computeIfPresent(key, (x, record) -> record.replaceTag(oldTag, newTag));
         notifyListeners();
     }
 
@@ -160,54 +218,59 @@ public class StyxRouteDatabase implements RouteDatabase {
         return ImmutableSet.copyOf(inObject);
     }
 
-    private static class RouteDatabaseRecord {
-        private final String key;
-        private List<String> tags;
+    private static class ConfigRecord {
+        final RoutingObjectDefinition configuration;
 
-        RouteDatabaseRecord(String key, List<String> tags) {
-            this.key = key;
-            this.tags = ImmutableList.copyOf(tags);
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public List<String> tags() {
-            return tags;
-        }
-
-        public void replaceTag(String oldTag, String newTag) {
-            this.tags = ImmutableList.copyOf(
-                    tags.stream()
-                            .map(tag -> tag.equals(oldTag) ? newTag : tag)
-                            .collect(Collectors.toList()));
-        }
-    }
-
-    private static class ConfigRecord extends RouteDatabaseRecord {
-        private final RoutingObjectDefinition configuration;
-
-        ConfigRecord(String key, RoutingObjectDefinition configuration, List<String> tags) {
-            super(key, tags);
+        ConfigRecord(RoutingObjectDefinition configuration) {
             this.configuration = configuration;
         }
 
-        RoutingObjectDefinition configuration() {
-            return configuration;
+        public String key() {
+            return this.configuration.name();
+        }
+
+        public List<String> tags() {
+            return this.configuration.tags();
+        }
+
+        JsonNode configuration() {
+            return configuration.config();
+        }
+
+        RoutingObjectDefinition replaceTag(RoutingObjectDefinition input, String oldTag, String newTag) {
+            return new RoutingObjectDefinition(
+                    input.name(),
+                    input.type(),
+                    ImmutableList.copyOf(
+                            input.tags().stream()
+                                    .map(tag -> tag.equals(oldTag) ? newTag : tag)
+                                    .collect(Collectors.toList())),
+                    input.config());
+        }
+
+        public ConfigRecord replaceTag(String oldTag, String newTag) {
+            return new ConfigRecord(replaceTag(this.configuration, oldTag, newTag));
+        }
+
+        public HandlerRecord addHandler(HttpHandler handler) {
+            return new HandlerRecord(this.configuration, handler);
         }
     }
 
-    private static class HandlerRecord extends RouteDatabaseRecord {
+    private static class HandlerRecord extends ConfigRecord {
         private final HttpHandler handler;
 
-        HandlerRecord(String key, HttpHandler handler, List<String> tags) {
-            super(key, tags);
+        HandlerRecord(RoutingObjectDefinition configuration, HttpHandler handler) {
+            super(configuration);
             this.handler = handler;
         }
 
         HttpHandler handler() {
             return handler;
+        }
+
+        public ConfigRecord replaceTag(String oldTag, String newTag) {
+            return new HandlerRecord(replaceTag(configuration, oldTag, newTag), handler);
         }
     }
 

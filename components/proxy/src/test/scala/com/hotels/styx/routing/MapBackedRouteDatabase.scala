@@ -45,4 +45,8 @@ class MapBackedRouteDatabase(map: Map[String, HttpHandler]) extends RouteDatabas
   override def tagLookup(tags: String*): util.Set[RouteDatabase.Record] = ???
 
   override def replaceTag(key: String, oldTag: String, newTag: String): Unit = ???
+
+  override def lookupAll(): util.Set[RouteDatabase.Record] = ???
+
+  override def insert(routingObjectDefAsJson: String): Unit = ???
 }

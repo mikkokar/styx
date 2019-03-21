@@ -23,6 +23,8 @@ import com.hotels.styx.infrastructure.configuration.yaml.JsonNodeConfig;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An yaml configuration block used in routing configuration to configure an HTTP handler.
  */
@@ -35,9 +37,9 @@ public class RoutingObjectDefinition implements RoutingObjectConfig {
 
     public RoutingObjectDefinition(String name, String type, List<String> tags, JsonNode config) {
         this.name = name;
-        this.type = type;
+        this.type = requireNonNull(type);
         this.tags = ImmutableList.copyOf(tags);
-        this.config = config;
+        this.config = requireNonNull(config);
     }
 
     public RoutingObjectDefinition(String name, String type, JsonNode config) {

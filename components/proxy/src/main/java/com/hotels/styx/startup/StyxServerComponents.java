@@ -91,7 +91,9 @@ public class StyxServerComponents {
         this.environment.configuration().get("httpHandlers", JsonNode.class)
                 .map(this::readHttpHandlers)
                 .orElse(ImmutableMap.of())
-                .forEach(routeDatabase::insert);
+                .forEach((name, record) -> {
+                    routeDatabase.insert(name, new RoutingObjectDefinition(name, record.type(), record.tags(), record.config()));
+                });
     }
 
     private RoutingObjectFactory newRouteHandlerFactory(Environment environment, List<NamedPlugin> plugins, boolean requestTracking) {

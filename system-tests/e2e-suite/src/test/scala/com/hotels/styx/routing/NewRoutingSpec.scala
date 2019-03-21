@@ -21,8 +21,8 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.client.{ValueMatchingStrategy, WireMock}
 import com.hotels.styx.api.HttpRequest.get
 import com.hotels.styx.api.HttpResponseStatus._
-import com.hotels.styx.api.extension
-import com.hotels.styx.infrastructure.{MemoryBackedRegistry}
+import com.hotels.styx.api.{HttpRequest, HttpResponse, extension}
+import com.hotels.styx.infrastructure.MemoryBackedRegistry
 import com.hotels.styx.support.ResourcePaths.fixturesHome
 import com.hotels.styx.support.backends.FakeHttpServer
 import com.hotels.styx.support.configuration._
@@ -55,6 +55,12 @@ class NewRoutingSpec extends FunSpec
     originId = "app-02")
     .start()
     .stub(WireMock.get(urlMatching("/.*")), originResponse("http-app-02"))
+
+  val httpServer03 = FakeHttpServer.HttpStartupConfig(
+    appId = "app",
+    originId = "app-03")
+    .start()
+    .stub(WireMock.get(urlMatching("/.*")), originResponse("http-app-03"))
 
   override val styxConfig = StyxConfig(
     ProxyConfig(),
@@ -110,12 +116,18 @@ class NewRoutingSpec extends FunSpec
 
   println("httpOrigin-01: " + httpServer01.port())
   println("httpOrigin-02: " + httpServer02.port())
+  println("httpOrigin-03: " + httpServer03.port())
 
   override protected def afterAll(): Unit = {
     httpServer01.stop()
     httpServer02.stop()
+    httpServer03.stop()
     super.afterAll()
   }
+
+  def adminRequest(path: String) = get(styxServer.adminURL(path)).build()
+
+  def adminPost(path: String, body: String) = HttpRequest.post(styxServer.adminURL(path)).body(body, UTF_8).build()
 
   def httpRequest(path: String) = get(styxServer.routerURL(path)).build()
 
@@ -127,7 +139,47 @@ class NewRoutingSpec extends FunSpec
     matchingStrategy
   }
 
+  def displayResponse(info: String, response: HttpResponse): String = s"$info: - ${response.status()}: ${response.bodyAs(UTF_8)}"
+
   describe("Styx routing of HTTP requests") {
+    it("Exposes routing configuration via admin interface") {
+      val response = decodedRequest(adminRequest("/admin/routing/objects"))
+      println("Admin interface response: ")
+      println(response.bodyAs(UTF_8))
+    }
+
+    it("Adds new objects via admin interface") {
+      println(displayResponse("Response from HTTP port", decodedRequest(httpRequest("/app.1"))))
+
+      val addLanding3 =
+        s"""
+        |{ "name": "landing-03",
+        |  "type": "HostProxy",
+        |  "tags": ["landing-app", "status=active"],
+        |  "config": {
+        |     "host": "localhost:${httpServer03.port()}"
+        |  }
+        |}""".stripMargin
+
+      println(displayResponse("New object", decodedRequest(adminPost("/admin/routing/objects", addLanding3))))
+
+      val inactivateLanding2 =
+        s"""
+           |{ "name": "landing-02",
+           |  "type": "HostProxy",
+           |  "tags": ["landing-app", "status=inactive"],
+           |  "config": {
+           |     "host": "localhost:${httpServer02.port()}"
+           |  }
+           |}""".stripMargin
+
+      println(displayResponse("Query objects", decodedRequest(adminPost("/admin/routing/objects", inactivateLanding2))))
+
+      println(displayResponse("Check status", decodedRequest(adminRequest("/admin/routing/objects"))))
+
+      println(displayResponse("Response from HTTP port", decodedRequest(httpRequest("/app.1"))))
+    }
+
     it("Routes HTTP protocol to HTTP origins") {
       val response = decodedRequest(httpRequest("/app.1"))
 
@@ -144,6 +196,6 @@ class NewRoutingSpec extends FunSpec
   def originResponse(appId: String) = aResponse
     .withStatus(OK.code())
     .withHeader(STUB_ORIGIN_INFO.toString, appId)
-    .withBody("Hello, World!")
+    .withBody(s"Hello from $appId")
 
 }

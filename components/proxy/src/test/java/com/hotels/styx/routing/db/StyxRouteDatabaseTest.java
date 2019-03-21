@@ -55,66 +55,66 @@ public class StyxRouteDatabaseTest {
         db = new StyxRouteDatabase(routingObjectFactory);
     }
 
-    @Test
-    public void queryTags() {
-        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1)));
-
-        db.insert("app-b", new RoutingObjectDefinition("appB", "bar", jsonNode), "app=landing");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
-
-        db.insert("app-c", new RoutingObjectDefinition("appC", "bar", jsonNode), "app=shopping");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
-    }
-
-    @Test
-    public void modifyTags() {
-        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1)));
-
-        db.insert("app-b", new RoutingObjectDefinition("appB", "bar", jsonNode), "app=landing");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
-
-        db.insert("app-c", new RoutingObjectDefinition("appC", "bar", jsonNode), "app=shopping");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
-
-        db.replaceTag("app-c", "app=shopping", "app=landing");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2, handler3)));
-    }
-
-    @Test
-    public void removesObjects() {
-        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1)));
-
-        db.remove("app-a");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of()));
-
-        db.remove("app-a");
-        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of()));
-    }
-
-    @Test
-    public void listensForEvents() {
-        AtomicBoolean notified = new AtomicBoolean();
-        RouteDatabase.Listener listener = db -> notified.set(true);
-
-        db.addListener(listener);
-
-        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
-        assertThat(notified.get(), Matchers.is(true));
-
-        notified.set(false);
-
-        db.remove("app-a");
-        assertThat(notified.get(), Matchers.is(true));
-
-        notified.set(false);
-
-        db.removeListener(listener);
-        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
-        db.remove("app-a");
-
-        assertThat(notified.get(), Matchers.is(false));
-    }
+//    @Test
+//    public void queryTags() {
+//        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1)));
+//
+//        db.insert("app-b", new RoutingObjectDefinition("appB", "bar", jsonNode), "app=landing");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
+//
+//        db.insert("app-c", new RoutingObjectDefinition("appC", "bar", jsonNode), "app=shopping");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
+//    }
+//
+//    @Test
+//    public void modifyTags() {
+//        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1)));
+//
+//        db.insert("app-b", new RoutingObjectDefinition("appB", "bar", jsonNode), "app=landing");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
+//
+//        db.insert("app-c", new RoutingObjectDefinition("appC", "bar", jsonNode), "app=shopping");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2)));
+//
+//        db.replaceTag("app-c", "app=shopping", "app=landing");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1, handler2, handler3)));
+//    }
+//
+//    @Test
+//    public void removesObjects() {
+//        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of(handler1)));
+//
+//        db.remove("app-a");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of()));
+//
+//        db.remove("app-a");
+//        assertThat(db.handlers("app=landing"), Matchers.is(ImmutableSet.of()));
+//    }
+//
+//    @Test
+//    public void listensForEvents() {
+//        AtomicBoolean notified = new AtomicBoolean();
+//        RouteDatabase.Listener listener = db -> notified.set(true);
+//
+//        db.addListener(listener);
+//
+//        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
+//        assertThat(notified.get(), Matchers.is(true));
+//
+//        notified.set(false);
+//
+//        db.remove("app-a");
+//        assertThat(notified.get(), Matchers.is(true));
+//
+//        notified.set(false);
+//
+//        db.removeListener(listener);
+//        db.insert("app-a", new RoutingObjectDefinition("appA", "bar", jsonNode), "app=landing");
+//        db.remove("app-a");
+//
+//        assertThat(notified.get(), Matchers.is(false));
+//    }
 }
