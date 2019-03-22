@@ -18,6 +18,7 @@ package com.hotels.styx.routing.db;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hotels.styx.api.HttpHandler;
@@ -33,7 +34,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+import static com.fasterxml.jackson.core.JsonParser.Feature.AUTO_CLOSE_SOURCE;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.hotels.styx.admin.support.Json.PRETTY_PRINTER;
+import static com.hotels.styx.infrastructure.configuration.json.ObjectMappers.addStyxMixins;
 
 /**
  * Styx Route Database.
@@ -41,6 +45,11 @@ import static com.hotels.styx.admin.support.Json.PRETTY_PRINTER;
 
 public class StyxRouteDatabase implements RouteDatabase {
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private final ObjectMapper YAML_MAPPER = addStyxMixins(new ObjectMapper(new YAMLFactory()))
+            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(AUTO_CLOSE_SOURCE, true);
+
 
     private final ConcurrentHashMap<String, ConfigRecord> handlers;
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
@@ -54,7 +63,7 @@ public class StyxRouteDatabase implements RouteDatabase {
     @Override
     public void insert(String routingObjectDefAsJson) {
         try {
-            RoutingObjectDefinition value = objectMapper.readValue(routingObjectDefAsJson, RoutingObjectDefinition.class);
+            RoutingObjectDefinition value = YAML_MAPPER.readValue(routingObjectDefAsJson, RoutingObjectDefinition.class);
             insert(value.name(), value);
         } catch (IOException e) {
             System.out.println("StyxRouteDatabase.insert() error: " + e);

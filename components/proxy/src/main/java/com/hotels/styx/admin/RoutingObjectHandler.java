@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hotels.styx.admin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.hotels.styx.admin.handlers.UrlPatternRouter;
 import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static com.fasterxml.jackson.core.JsonParser.Feature.AUTO_CLOSE_SOURCE;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.hotels.styx.api.HttpResponse.response;
 import static com.hotels.styx.api.HttpResponseStatus.BAD_REQUEST;
 import static com.hotels.styx.api.HttpResponseStatus.OK;
@@ -49,11 +52,14 @@ public class RoutingObjectHandler implements HttpHandler {
     private static final ObjectMapper MAPPER = addStyxMixins(new ObjectMapper().setSerializationInclusion(NON_NULL));
     private final UrlPatternRouter urlRouter;
 
+    private final ObjectMapper YAML_MAPPER = addStyxMixins(new ObjectMapper(new YAMLFactory()))
+            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(AUTO_CLOSE_SOURCE, true);
+
 
     public RoutingObjectHandler(RouteDatabase routeDb) {
         urlRouter = new UrlPatternRouter.Builder()
                 .get("/admin/routing/objects", httpHandler((request, context) -> {
-                    System.out.println("HELLL LO HELLO HELLO");
                     String output = routeDb.lookupAll()
                             .stream()
                             .map(Object::toString)
@@ -67,7 +73,7 @@ public class RoutingObjectHandler implements HttpHandler {
                 .post("/admin/routing/objects", httpHandler((request, context) -> {
                     String body = request.bodyAs(UTF_8);
                     try {
-                        MAPPER.readValue(body, RoutingObjectDefinition.class);
+                        YAML_MAPPER.readValue(body, RoutingObjectDefinition.class);
                         routeDb.insert(body);
                         return Eventual.of(response(OK).build());
                     } catch (IOException | RuntimeException cause) {

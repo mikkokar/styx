@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -64,7 +64,6 @@ class NewRoutingSpec extends FunSpec
 
   override val styxConfig = StyxConfig(
     ProxyConfig(),
-    logbackXmlLocation = logback,
     yamlText =
       s"""
         |services:
@@ -151,7 +150,7 @@ class NewRoutingSpec extends FunSpec
     it("Adds new objects via admin interface") {
       println(displayResponse("Response from HTTP port", decodedRequest(httpRequest("/app.1"))))
 
-      val addLanding3 =
+      val addLanding3Json =
         s"""
         |{ "name": "landing-03",
         |  "type": "HostProxy",
@@ -161,9 +160,8 @@ class NewRoutingSpec extends FunSpec
         |  }
         |}""".stripMargin
 
-      println(displayResponse("New object", decodedRequest(adminPost("/admin/routing/objects", addLanding3))))
 
-      val inactivateLanding2 =
+      val inactivateLanding2Json =
         s"""
            |{ "name": "landing-02",
            |  "type": "HostProxy",
@@ -172,6 +170,35 @@ class NewRoutingSpec extends FunSpec
            |     "host": "localhost:${httpServer02.port()}"
            |  }
            |}""".stripMargin
+
+      val addLanding3 =
+        s"""
+           |---
+           |name: landing-03
+           |type: HostProxy
+           |tags:
+           | - landing-app
+           | - status=active
+           |config:
+           |  host: "localhost:${httpServer03.port()}"
+           |""".stripMargin
+
+      val inactivateLanding2 =
+        s"""
+           |---
+           |name: landing-02
+           |type: HostProxy
+           |tags:
+           | - landing-app
+           | - status=inactive
+           |config:
+           |  host: "localhost:${httpServer02.port()}"
+           |""".stripMargin
+
+
+      println("landing app")
+      println(addLanding3)
+      println(displayResponse("New object", decodedRequest(adminPost("/admin/routing/objects", addLanding3))))
 
       println(displayResponse("Query objects", decodedRequest(adminPost("/admin/routing/objects", inactivateLanding2))))
 
