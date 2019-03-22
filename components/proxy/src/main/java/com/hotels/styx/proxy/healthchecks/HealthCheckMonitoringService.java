@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.hotels.styx.api.extension.service.HealthCheckConfig;
 import com.hotels.styx.api.extension.service.spi.AbstractStyxService;
 import com.hotels.styx.client.healthcheck.OriginHealthStatusMonitor;
 import com.hotels.styx.client.healthcheck.Schedule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -51,6 +53,8 @@ public class HealthCheckMonitoringService extends AbstractStyxService implements
     private RouteDatabase routeDb;
     private final String application;
     private final Schedule schedule;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheckMonitoringService.class);
 
     private final Set<RouteDatabase.Record> hosts;
 
@@ -91,8 +95,10 @@ public class HealthCheckMonitoringService extends AbstractStyxService implements
 
     @Override
     protected CompletableFuture<Void> startService() {
+        LOGGER.info("HealthCheckMonitoringService - Service Started");
         scheduleHealthCheck();
         updated(routeDb);
+        routeDb.addListener(this);
         return completedFuture(null);
     }
 
@@ -111,19 +117,20 @@ public class HealthCheckMonitoringService extends AbstractStyxService implements
     }
 
     private void scheduleHealthCheck() {
-        Set<RouteDatabase.Record> snapshot = ImmutableSet.copyOf(hosts);
-
         this.hostHealthMonitorExecutor.scheduleAtFixedRate(() ->
-                healthCheck(snapshot), schedule.initialDelay(), schedule.period(), schedule.unit());
+                healthCheck(hosts), schedule.initialDelay(), schedule.period(), schedule.unit());
     }
 
     private void healthCheck(Set<RouteDatabase.Record> hosts) {
-        for (RouteDatabase.Record record: hosts) {
+        Set<RouteDatabase.Record> snapshot = ImmutableSet.copyOf(hosts);
+
+        for (RouteDatabase.Record record: snapshot) {
             healthCheckOriginAndAnnounceListeners(record);
         }
     }
 
     private void healthCheckOriginAndAnnounceListeners(RouteDatabase.Record host) {
+        LOGGER.info("Health check to: " + host.name());
         Mono.from(healthCheckingFunction.apply(host.handler()))
                 .subscribe(result -> {
                     if (isActive(host.tags()) && !result) {

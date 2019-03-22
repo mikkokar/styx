@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import com.hotels.styx.api.extension.service.HealthCheckConfig;
 import com.hotels.styx.api.extension.service.spi.StyxService;
 import com.hotels.styx.client.healthcheck.Schedule;
 import com.hotels.styx.server.HttpInterceptorContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
@@ -37,6 +39,8 @@ import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class HealthCheckMonitoringServiceFactory implements ServiceFactory<StyxService> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheckMonitoringServiceFactory.class);
+
     @Override
     public StyxService create(Environment environment, RouteDatabase routeDb, Configuration serviceConfiguration) {
         String application = serviceConfiguration.get("application").orElseThrow(() -> new IllegalArgumentException("application is a mandatory field"));
@@ -49,7 +53,11 @@ public class HealthCheckMonitoringServiceFactory implements ServiceFactory<StyxS
 
         Function<HttpHandler, Eventual<Boolean>> httpHandlerEventualFunction =
                 handler -> handler.handle(HttpRequest.get(healthCheckConfig.uri().orElse("/")).build().stream(), HttpInterceptorContext.create())
-                        .map(response -> true)
+                        .flatMap(response -> response.aggregate(10000))
+                        .map(response -> {
+                            LOGGER.info("Health check response: " + response.status());
+                            return response.status().code() == 200;
+                        })
                         .onError(cause -> Eventual.of(false));
 
         return new HealthCheckMonitoringService(
