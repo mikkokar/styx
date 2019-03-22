@@ -17,7 +17,6 @@ package com.hotels.styx.api.configuration;
 
 import com.hotels.styx.api.HttpHandler;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -28,21 +27,15 @@ public interface RouteDatabase {
 
     void remove(String key);
 
-    /**
-     * Styx route database lookup.
-     * @param key
-     * @return
-     */
-
     void insert(String routingObjectDefAsJson);
 
     Optional<HttpHandler> handler(String key);
 
     Set<HttpHandler> handlers(String... tags);
 
-    Optional<Record> lookup(String key);
-
     Set<Record> tagLookup(String... tags);
+
+    Optional<Record> lookup(String key);
 
     void replaceTag(String key, String oldTag, String newTag);
 
@@ -52,12 +45,17 @@ public interface RouteDatabase {
 
     Set<Record> lookupAll();
 
+    void delete(String appId);
+
     interface Listener {
         void updated(RouteDatabase db);
     }
 
     interface Record {
         String name();
+
+        String type();
+
         Set<String> tags();
         HttpHandler handler();
         String configuration();

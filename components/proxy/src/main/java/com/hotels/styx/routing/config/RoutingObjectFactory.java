@@ -16,14 +16,18 @@
 package com.hotels.styx.routing.config;
 
 import com.google.common.base.Preconditions;
+import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.configuration.RouteDatabase;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static com.hotels.styx.api.HttpResponse.response;
+import static com.hotels.styx.api.HttpResponseStatus.NOT_FOUND;
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -48,13 +52,13 @@ public class RoutingObjectFactory {
         } else if (configNode instanceof RoutingObjectReference) {
             RoutingObjectReference reference = (RoutingObjectReference) configNode;
 
-            Optional<HttpHandler> handler = routeDb.handler(reference.name());
-
-            if (!handler.isPresent()) {
-                throw new IllegalArgumentException(format("Non-existent handler instance: '%s'", reference.name()));
-            }
-
-            return handler.get();
+            return (request, context) -> routeDb.handler(reference.name())
+                    .map(handler -> handler.handle(request, context))
+                    .orElse(Eventual.of(
+                            response(NOT_FOUND)
+                                    .body("Not found: " + parents.stream().collect(Collectors.joining(".")) + "." + reference.name(), UTF_8)
+                                    .build()
+                                    .stream()));
         } else {
             throw new UnsupportedOperationException(format("Unsupported configuration node type: '%s'", configNode.getClass().getName()));
         }

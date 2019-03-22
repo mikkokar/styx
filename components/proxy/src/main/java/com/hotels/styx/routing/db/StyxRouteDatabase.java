@@ -71,6 +71,12 @@ public class StyxRouteDatabase implements RouteDatabase {
         }
     }
 
+    @Override
+    public void delete(String key) {
+        handlers.remove(key);
+        notifyListeners();
+    }
+
     public void insert(String key, RoutingObjectDefinition routingObjectDef) {
         handlers.put(key, new ConfigRecord(routingObjectDef));
         notifyListeners();
@@ -110,7 +116,12 @@ public class StyxRouteDatabase implements RouteDatabase {
         return new Record() {
             @Override
             public String name() {
-                return record.key();
+                return record.name();
+            }
+
+            @Override
+            public String type() {
+                return record.type();
             }
 
             @Override
@@ -133,13 +144,13 @@ public class StyxRouteDatabase implements RouteDatabase {
                     System.out.println("serialisation error: " + e);
                     return "Serialisation error";
                 }
-//                return record.configuration().asText();
             }
 
             @Override
             public String toString() {
                 return "{\n" +
                         " name: " + name() +
+                        ",\n type: " + type() +
                         ",\n tags: " + tags() +
                         ",\n " + "configuration: " + configuration() +
                         "\n}";
@@ -156,7 +167,7 @@ public class StyxRouteDatabase implements RouteDatabase {
                     if (record instanceof HandlerRecord) {
                         return ((HandlerRecord) record);
                     } else {
-                        String key = record.key();
+                        String key = record.name();
                         HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, record.configuration);
 
                         HandlerRecord newRecord = record.addHandler(handler);
@@ -176,7 +187,7 @@ public class StyxRouteDatabase implements RouteDatabase {
                     if (record instanceof HandlerRecord) {
                         return ((HandlerRecord) record);
                     } else {
-                        String key = record.key();
+                        String key = record.name();
                         HttpHandler handler = routingObjectFactory.build(ImmutableList.of(key), this, record.configuration);
 
                         HandlerRecord newRecord = record.addHandler(handler);
@@ -187,7 +198,6 @@ public class StyxRouteDatabase implements RouteDatabase {
                 .map(this::toRecord)
                 .collect(Collectors.toSet());
     }
-
 
     @Override
     public Optional<HttpHandler> handler(String key) {
@@ -234,8 +244,12 @@ public class StyxRouteDatabase implements RouteDatabase {
             this.configuration = configuration;
         }
 
-        public String key() {
+        public String name() {
             return this.configuration.name();
+        }
+
+        public String type() {
+            return this.configuration.type();
         }
 
         public List<String> tags() {

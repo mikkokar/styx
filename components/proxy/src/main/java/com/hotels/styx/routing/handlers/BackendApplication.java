@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.routing.handlers;
 
+import com.google.common.collect.ImmutableSet;
 import com.hotels.styx.Environment;
 import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
@@ -33,6 +34,8 @@ import com.hotels.styx.routing.config.HttpHandlerFactory;
 import com.hotels.styx.routing.config.RoutingObjectDefinition;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 import com.hotels.styx.api.configuration.RouteDatabase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
@@ -46,8 +49,9 @@ import static java.lang.String.join;
 import static java.util.Objects.requireNonNull;
 
 public class BackendApplication implements HttpHandler, RouteDatabase.Listener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackendApplication.class);
 
-    private final AtomicReference<Set<RemoteHost>> remoteHosts = new AtomicReference<>();
+    private final AtomicReference<Set<RemoteHost>> remoteHosts = new AtomicReference<>(ImmutableSet.of());
     private final StyxBackendServiceClient client;
     private final RouteDatabase routeDatabase;
     private final Environment environment;
@@ -92,15 +96,19 @@ public class BackendApplication implements HttpHandler, RouteDatabase.Listener {
 
     @Override
     public void updated(RouteDatabase db) {
-        Set<HttpHandler> handlers = routeDatabase.handlers(originsTag, "status=active");
-        remoteHosts.set(handlers.stream()
+        Set<RouteDatabase.Record> handlers = routeDatabase.tagLookup(originsTag, "status=active");
+
+        Set<RemoteHost> newHosts = handlers.stream()
                 .map(this::toRemoteHost)
-                .collect(Collectors.toSet()));
+                .collect(Collectors.toSet());
+
+        LOGGER.info("Load balancing set updated {}", newHosts);
+        remoteHosts.set(newHosts);
     }
 
-    private RemoteHost toRemoteHost(HttpHandler handler) {
-        return remoteHost(newOriginBuilder("xyz", 1).build(),
-                handler,
+    private RemoteHost toRemoteHost(RouteDatabase.Record record) {
+        return remoteHost(newOriginBuilder(record.name(), 1).build(),
+                record.handler(),
                 () -> new LoadBalancingMetric(1));
     }
 

@@ -49,4 +49,6 @@ class MapBackedRouteDatabase(map: Map[String, HttpHandler]) extends RouteDatabas
   override def lookupAll(): util.Set[RouteDatabase.Record] = ???
 
   override def insert(routingObjectDefAsJson: String): Unit = ???
+
+  override def delete(appId: String): Unit = ???
 }

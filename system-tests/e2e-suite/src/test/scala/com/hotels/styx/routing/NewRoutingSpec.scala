@@ -38,11 +38,8 @@ class NewRoutingSpec extends FunSpec
   with SequentialNestedSuiteExecution
   with BackendServicesRegistrySupplier {
 
-  val logback = fixturesHome(this.getClass, "/conf/logback/logback-debug-stdout.xml")
   val httpBackendRegistry = new MemoryBackedRegistry[extension.service.BackendService]()
   val httpsBackendRegistry = new MemoryBackedRegistry[extension.service.BackendService]()
-  val crtFile = fixturesHome(this.getClass, "/ssl/testCredentials.crt").toString
-  val keyFile = fixturesHome(this.getClass, "/ssl/testCredentials.key").toString
 
   val httpServer01 = FakeHttpServer.HttpStartupConfig(
     appId = "app",

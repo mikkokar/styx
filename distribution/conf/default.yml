@@ -44,49 +44,24 @@ admin:
     enabled: true
     expirationMillis: 10000
 
-# * Will use empty configuration by default *
-#
-#configuration:
-#  factory: {class: "<Your_ConfigurationFactory>"}
-#
-#  context:
-#    resolver:
-#      factory: {class: "<Your_ConfigurationContextResolverFactory>"}
-
 services:
   factories:
     backendServiceRegistry:
       class: "com.hotels.styx.proxy.backends.file.FileBackedBackendServicesRegistry$Factory"
       config: {originsFile: "${originsFile:classpath:conf/origins.yml}"}
-#    graphite:
-#      enabled: false
-#      class: "com.hotels.styx.metrics.reporting.graphite.GraphiteReporterServiceFactory"
-#      config:
-#        prefix: "app-instance-identifying-prefix"
-#        host: "some-ip"
-#        port: 2003
-#        intervalMillis: 15000
+
     jmx:
       class: "com.hotels.styx.metrics.reporting.jmx.JmxReporterServiceFactory"
       config:
         domain: "com.hotels.styx"
 
-retrypolicy:
-  policy:
-    factory:
-      class: "com.hotels.styx.client.retry.RetryPolicyFactory"
-      config: {count: 2}
+    originMonitor:
+      class: "com.hotels.styx.proxy.healthchecks.HealthCheckMonitoringServiceFactory"
+      config:
+        application: landingApp
+        monitor:
+          url: "/version.txt"
 
-loadBalancing:
-  strategy:
-    factory: {class: "com.hotels.styx.client.loadbalancing.strategies.BusyConnectionsStrategy$Factory"}
-
-# Allow and Encode the list of unwise chars.
-url:
-  encoding:
-    unwiseCharactersToEncode:
-
-#originRestrictionCookie: yourCookieNameHere
 
 # TODO comment out before raising PR
 plugins:
@@ -100,3 +75,17 @@ plugins:
         adminText: "this is the admin page"
         responseHeaderValue: "this is the response header value"
 
+httpHandlers:
+  notFound:
+    type: StaticResponseHandler
+    config:
+      status: 404
+      content: "Not found anything"
+
+  root:
+    type: PathPrefixRouter
+    config:
+      routes:
+        - {prefix: /, destination: notFound }
+
+httpPipeline: root

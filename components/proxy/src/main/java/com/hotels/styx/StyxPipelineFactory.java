@@ -45,7 +45,7 @@ import static com.hotels.styx.routing.config.RoutingObjectParser.toRoutingConfig
  */
 public final class StyxPipelineFactory implements PipelineFactory {
 
-    private RouteDatabase routeDb;
+    private final RouteDatabase routeDb;
     private final RoutingObjectFactory routingObjectFactory;
     private final Environment environment;
     private final Map<String, StyxService> services;

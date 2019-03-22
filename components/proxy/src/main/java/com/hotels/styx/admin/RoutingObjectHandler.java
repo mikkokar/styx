@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
@@ -39,6 +40,7 @@ import static com.fasterxml.jackson.core.JsonParser.Feature.AUTO_CLOSE_SOURCE;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.hotels.styx.api.HttpResponse.response;
 import static com.hotels.styx.api.HttpResponseStatus.BAD_REQUEST;
+import static com.hotels.styx.api.HttpResponseStatus.NOT_FOUND;
 import static com.hotels.styx.api.HttpResponseStatus.OK;
 import static com.hotels.styx.infrastructure.configuration.json.ObjectMappers.addStyxMixins;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -65,7 +67,6 @@ public class RoutingObjectHandler implements HttpHandler {
                             .map(Object::toString)
                             .collect(Collectors.joining(", \n"));
 
-//                    String serialised = serialise(apps);
                     return Eventual.of(response(OK)
                             .body(output, UTF_8)
                             .build());
@@ -80,89 +81,20 @@ public class RoutingObjectHandler implements HttpHandler {
                         return Eventual.of(response(BAD_REQUEST).body(cause.toString(), UTF_8).build());
                     }
                 }))
+                .delete("/admin/routing/objects/:objectId", httpHandler((request, context) -> {
+                    Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
+                    String appId = placeholders.get("objectId");
+
+
+                    if (routeDb.handler(appId).isPresent()) {
+                        routeDb.delete(appId);
+                        return Eventual.of(response(OK).build());
+                    } else {
+                        return Eventual.of(response(NOT_FOUND).build());
+                    }
+                }))
                 .build();
     }
-//            .get("/admin/apps/:appId", httpHandler((request, context) -> {
-//                Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
-//                String appId = placeholders.get("appId");
-//                Optional<BackendService> app = configStore.get(appsAttribute(appId));
-//                if (app.isPresent()) {
-//                    String serialised = serialise(app.get());
-//                    return StyxObservable.of(response(OK)
-//                            .body(serialised, UTF_8)
-//                            .build());
-//                } else {
-//                    return StyxObservable.of(response(NOT_FOUND).build());
-//                }
-//            }))
-//            .post("/admin/apps/:appId",
-//                    httpHandler((request, context) -> {
-//                        String body = request.bodyAs(UTF_8);
-//                        Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
-//                        Id appId = Id.id(placeholders.get("appId"));
-//
-//                        BackendService app;
-//                        if (body.isEmpty()) {
-//                            app = newBackendServiceBuilder().id(appId).build();
-//                        } else {
-//                            app = deserialise(body);
-//                            app = newBackendServiceBuilder(app).id(appId).build();
-//                        }
-//
-//                        return addApp(appId, app);
-//                    }))
-//            .put("/admin/apps/:appId", httpHandler((request, context) -> {
-//                Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
-//                String appId = placeholders.get("appId");
-//
-//                Optional<BackendService> existingApp = configStore.get(appsAttribute(appId));
-//                BackendService newApp = deserialise(request.bodyAs(UTF_8));
-//
-//                if (existingApp.isPresent()) {
-//                    configStore.set(appsAttribute(appId), newApp);
-//                    return StyxObservable.of(response(OK)
-//                            .build());
-//                } else {
-//                    return StyxObservable.of(response(NOT_FOUND).build());
-//                }
-//            }))
-//            .delete("/admin/apps/:appId", httpHandler((request, context) -> {
-//                Map<String, String> placeholders = UrlPatternRouter.placeholders(context);
-//                String appId = placeholders.get("appId");
-//
-//                Optional<BackendService> existingApp = configStore.get(appsAttribute(appId));
-//
-//                if (existingApp.isPresent()) {
-//                    List<String> apps = configStore.<List<String>>get("apps").orElse(ImmutableList.of());
-//
-//                    List<String> apps2 = apps.stream()
-//                            .filter(name -> !name.equals(appId))
-//                            .collect(Collectors.toList());
-//
-//                    configStore.unset(appsAttribute(appId));
-//
-//                    configStore.set("apps", apps2);
-//
-//                    return StyxObservable.of(response(OK)
-//                            .build());
-//                } else {
-//                    return StyxObservable.of(response(NOT_FOUND).build());
-//                }
-//            }))
-
-
-
-//    private StyxObservable<FullHttpResponse> addApp(Id appId, BackendService app) {
-//        boolean existing = configStore.get(appsAttribute(appId)).isPresent();
-//
-//        if (existing) {
-//            return StyxObservable.of(response(CONFLICT).build());
-//        } else {
-//            Registry.Changes<BackendService> build = new Registry.Changes.Builder<BackendService>().added(app).build();
-//            shim.onChange(build);
-//            return StyxObservable.of(response(CREATED).build());
-//        }
-//    }
 
     private static RoutingObjectDefinition deserialise(String body) {
         try {

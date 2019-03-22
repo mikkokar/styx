@@ -169,6 +169,7 @@ public class AdminServerBuilder {
                 link("JVM", "/admin/jvm?pretty"),
                 link("Origins Status", "/admin/origins/status?pretty"),
                 link("Dashboard", "/admin/dashboard/index.html"),
+                link("Routing Objects", "/admin/routing/objects"),
                 link("Plugins", "/admin/plugins"));
     }
 
