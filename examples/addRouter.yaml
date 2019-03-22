@@ -1,0 +1,6 @@
+---
+name: root
+type: PathPrefixRouter
+config:
+  routes:
+    - {prefix: /, destination: landingApp }

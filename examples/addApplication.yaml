@@ -1,0 +1,6 @@
+---
+name: landingApp
+type: BackendApplication
+config:
+  origins: landingApp
+  id: shoppingApp

@@ -1,0 +1,8 @@
+---
+name: origin-9011
+type: HostProxy
+tags:
+ - landingApp
+ - status=active
+config:
+ host: localhost:9011
