@@ -127,7 +127,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
     private volatile LiveHttpRequest prematureRequest;
 
     private volatile CompletableFuture<Void> future;
-    private volatile QueueDrainingEventProcessor eventProcessor;
+    private volatile QueueDrainingEventProcessor<HandlerEvent> eventProcessor;
 
     private final RequestTracker tracker;
 
@@ -205,8 +205,9 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         String loggingPrefix = format("%s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
-        this.eventProcessor = new QueueDrainingEventProcessor(new FsmEventProcessor<>(stateMachine, (throwable, state) -> {
-        }, loggingPrefix));
+        this.eventProcessor = new QueueDrainingEventProcessor<>(
+                new FsmEventProcessor<>(stateMachine, (throwable, state) -> {
+                }, loggingPrefix));
         super.channelActive(ctx);
     }
 
@@ -551,7 +552,10 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         HttpResponseWriter create(ChannelHandlerContext ctx);
     }
 
-    private static class RequestReceivedEvent {
+    private interface HandlerEvent {
+    }
+
+    private static class RequestReceivedEvent implements HandlerEvent {
         final LiveHttpRequest request;
         final ChannelHandlerContext ctx;
 
@@ -561,7 +565,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         }
     }
 
-    private static class ResponseReceivedEvent {
+    private static class ResponseReceivedEvent implements HandlerEvent {
         private final LiveHttpResponse response;
         private final ChannelHandlerContext ctx;
 
@@ -571,7 +575,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         }
     }
 
-    private static class ResponseSentEvent {
+    private static class ResponseSentEvent implements HandlerEvent {
         private final ChannelHandlerContext ctx;
 
         ResponseSentEvent(ChannelHandlerContext ctx) {
@@ -579,7 +583,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         }
     }
 
-    private static class ResponseWriteErrorEvent {
+    private static class ResponseWriteErrorEvent implements HandlerEvent {
         private final Throwable cause;
         private final ChannelHandlerContext ctx;
 
@@ -589,10 +593,10 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         }
     }
 
-    private static class ChannelInactiveEvent {
+    private static class ChannelInactiveEvent implements HandlerEvent {
     }
 
-    private static class ChannelExceptionEvent {
+    private static class ChannelExceptionEvent implements HandlerEvent {
         ChannelHandlerContext ctx;
         Throwable cause;
 
@@ -602,7 +606,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         }
     }
 
-    private static class ResponseObservableErrorEvent {
+    private static class ResponseObservableErrorEvent implements HandlerEvent {
         private final ChannelHandlerContext ctx;
         private final Throwable cause;
         private final Object requestId;
@@ -614,7 +618,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         }
     }
 
-    private static class ResponseObservableCompletedEvent {
+    private static class ResponseObservableCompletedEvent implements HandlerEvent {
         private final ChannelHandlerContext ctx;
         private final Object requestId;
 

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -59,14 +59,14 @@ public class FsmEventProcessorTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void throwsNullPointerExceptionForNullEvents() {
-        FsmEventProcessor<String> processor = new FsmEventProcessor<>(stateMachine, errorHandler, "prefix");
+        FsmEventProcessor<String, EventType> processor = new FsmEventProcessor<>(stateMachine, errorHandler, "prefix");
 
         processor.submit(null);
     }
 
     @Test
     public void propagatesEventToFsm() {
-        FsmEventProcessor<String> processor = new FsmEventProcessor<>(stateMachine, errorHandler, "prefix");
+        FsmEventProcessor<String, EventType> processor = new FsmEventProcessor<>(stateMachine, errorHandler, "prefix");
 
         processor.submit(new TestEventOk());
 
@@ -75,7 +75,7 @@ public class FsmEventProcessorTest {
 
     @Test
     public void handlesStateMachineExceptions() {
-        FsmEventProcessor<String> processor = new FsmEventProcessor<>(stateMachine, errorHandler, "prefix");
+        FsmEventProcessor<String, EventType> processor = new FsmEventProcessor<>(stateMachine, errorHandler, "prefix");
 
         processor.submit(new TestEventError());
 
@@ -88,11 +88,13 @@ public class FsmEventProcessorTest {
                         "Test exception message")));
     }
 
-    class TestEventOk {
+    private interface EventType { };
+
+    class TestEventOk implements EventType {
 
     }
 
-    class TestEventError {
+    class TestEventError implements EventType {
 
     }
 

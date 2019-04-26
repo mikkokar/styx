@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -27,30 +27,31 @@ import static java.util.Objects.requireNonNull;
 /**
  * An event processor that is implemented using Queue Drain approach.
  *
+ * @param <T> Event type.
  */
-public class QueueDrainingEventProcessor implements EventProcessor {
+public class QueueDrainingEventProcessor<T> implements EventProcessor<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueueDrainingEventProcessor.class);
 
-    private final Queue<Object> events = new ConcurrentLinkedDeque<>();
+    private final Queue<T> events = new ConcurrentLinkedDeque<>();
     private final AtomicInteger eventCount = new AtomicInteger(0);
-    private final EventProcessor eventProcessor;
+    private final EventProcessor<T> eventProcessor;
     private boolean logErrors;
 
-    public QueueDrainingEventProcessor(EventProcessor eventProcessor) {
+    public QueueDrainingEventProcessor(EventProcessor<T> eventProcessor) {
         this(eventProcessor, false);
     }
 
-    public QueueDrainingEventProcessor(EventProcessor eventProcessor, boolean logErrors) {
+    public QueueDrainingEventProcessor(EventProcessor<T> eventProcessor, boolean logErrors) {
         this.eventProcessor = requireNonNull(eventProcessor);
         this.logErrors = logErrors;
     }
 
     @Override
-    public void submit(Object event) {
+    public void submit(T event) {
         events.add(event);
         if (eventCount.getAndIncrement() == 0) {
             do {
-                Object e = events.poll();
+                T e = events.poll();
                 try {
                     eventProcessor.submit(e);
                 } catch (RuntimeException cause) {

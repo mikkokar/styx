@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -30,9 +30,27 @@ import static org.mockito.Mockito.verify;
 
 public class QueueDrainingEventProcessorTest {
 
+    private static void await(CyclicBarrier barrier) {
+        try {
+            barrier.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            currentThread().interrupt();
+            ;
+            throw new RuntimeException(e);
+        } catch (BrokenBarrierException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private static <T> Consumer<T> consumerEvent(Consumer<T> action) {
+        return action;
+    }
+
     @Test
     public void processesEvents() {
-        QueueDrainingEventProcessor eventProcessor = new QueueDrainingEventProcessor((event) -> ((Consumer<Void>) event).accept(null));
+        QueueDrainingEventProcessor<Consumer<?>> eventProcessor = new QueueDrainingEventProcessor<>((event) -> event.accept(null));
 
         Consumer<Void> event1 = mock(Consumer.class);
         eventProcessor.submit(event1);
@@ -51,7 +69,7 @@ public class QueueDrainingEventProcessorTest {
             CyclicBarrier barrier1 = new CyclicBarrier(2);
             CyclicBarrier barrier2 = new CyclicBarrier(2);
 
-            QueueDrainingEventProcessor eventProcessor = new QueueDrainingEventProcessor((event) -> ((Consumer<Void>) event).accept(null));
+            QueueDrainingEventProcessor<Consumer<?>> eventProcessor = new QueueDrainingEventProcessor<>((event) -> event.accept(null));
 
             Consumer<Void> event1 = mock(Consumer.class);
             Consumer<Void> event2 = mock(Consumer.class);
@@ -84,7 +102,7 @@ public class QueueDrainingEventProcessorTest {
             CyclicBarrier barrier2 = new CyclicBarrier(2);
             CyclicBarrier barrier3 = new CyclicBarrier(2);
 
-            QueueDrainingEventProcessor eventProcessor = new QueueDrainingEventProcessor((event) -> ((Consumer<Void>) event).accept(null), false);
+            QueueDrainingEventProcessor<Consumer<?>> eventProcessor = new QueueDrainingEventProcessor<>((event) -> event.accept(null), false);
 
             startThread(
                     () -> {
@@ -112,24 +130,6 @@ public class QueueDrainingEventProcessorTest {
 
             verify(event2).accept(eq(null));
         }
-    }
-
-    private void await(CyclicBarrier barrier) {
-        try {
-            barrier.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            currentThread().interrupt();
-            ;
-            throw new RuntimeException(e);
-        } catch (BrokenBarrierException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    private <T> Consumer<T> consumerEvent(Consumer<T> action) {
-        return action;
     }
 
     private static void startThread(Runnable runnable) {

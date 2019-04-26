@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -26,8 +26,9 @@ import static java.util.Objects.requireNonNull;
  * A state machine for driving Finite State Machines.
  *
  * @param <S> State type.
+ * @param <T> Event type.
  */
-public class FsmEventProcessor<S> implements EventProcessor {
+public class FsmEventProcessor<S, T> implements EventProcessor<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FsmEventProcessor.class);
 
@@ -42,7 +43,7 @@ public class FsmEventProcessor<S> implements EventProcessor {
     }
 
     @Override
-    public void submit(Object event) {
+    public void submit(T event) {
         requireNonNull(event);
 
         try {

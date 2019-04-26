@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public final class OriginsInventory
         ActiveOrigins,
         OriginsChangeListener.Announcer,
         Closeable,
-        EventProcessor {
+        EventProcessor<Runnable> {
     private static final Logger LOG = getLogger(OriginsInventory.class);
 
     private static final HealthyEvent HEALTHY = new HealthyEvent();
@@ -95,7 +95,7 @@ public final class OriginsInventory
     private final ConnectionPool.Factory hostConnectionPoolFactory;
     private final StyxHostHttpClient.Factory hostClientFactory;
     private final MetricRegistry metricRegistry;
-    private final QueueDrainingEventProcessor eventQueue;
+    private final QueueDrainingEventProcessor<Runnable> eventQueue;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     private Map<Id, MonitoredOrigin> origins = emptyMap();
@@ -125,7 +125,7 @@ public final class OriginsInventory
 
         this.eventBus.register(this);
         this.originHealthStatusMonitor.addOriginStatusListener(this);
-        eventQueue = new QueueDrainingEventProcessor(this, true);
+        this.eventQueue = new QueueDrainingEventProcessor<>(this, true);
     }
 
 
@@ -188,29 +188,58 @@ public final class OriginsInventory
     }
 
     @Override
-    public void submit(Object event) {
-        if (event instanceof SetOriginsEvent) {
-            handleSetOriginsEvent((SetOriginsEvent) event);
-        } else if (event instanceof OriginHealthEvent) {
-            handleOriginHealthEvent((OriginHealthEvent) event);
-        } else if (event instanceof EnableOriginCommand) {
-            handleEnableOriginCommand((EnableOriginCommand) event);
-        } else if (event instanceof DisableOriginCommand) {
-            handleDisableOriginCommand((DisableOriginCommand) event);
-        } else if (event instanceof CloseEvent) {
-            handleCloseEvent();
-        }
+    public void submit(Runnable event) {
+        event.run();
     }
 
-    private static class SetOriginsEvent {
+    private class SetOriginsEvent implements Runnable {
         final Set<Origin> newOrigins;
 
         SetOriginsEvent(Set<Origin> newOrigins) {
             this.newOrigins = newOrigins;
         }
+
+        @Override
+        public void run() {
+            Map<Id, Origin> newOriginsMap = newOrigins.stream()
+                    .collect(toMap(Origin::id, o -> o));
+
+            OriginChanges originChanges = new OriginChanges();
+
+            concat(origins.keySet().stream(), newOriginsMap.keySet().stream())
+                    .collect(toSet())
+                    .forEach(originId -> {
+                                Origin origin = newOriginsMap.get(originId);
+
+                                if (isNewOrigin(originId, origin)) {
+                                    MonitoredOrigin monitoredOrigin = addMonitoredEndpoint(origin);
+                                    originChanges.addOrReplaceOrigin(originId, monitoredOrigin);
+
+                                } else if (isUpdatedOrigin(originId, origin)) {
+                                    MonitoredOrigin monitoredOrigin = changeMonitoredEndpoint(origin);
+                                    originChanges.addOrReplaceOrigin(originId, monitoredOrigin);
+
+                                } else if (isUnchangedOrigin(originId, origin)) {
+                                    LOG.info("Existing origin has been left unchanged. Origin={}:{}", appId, origin);
+                                    originChanges.keepExistingOrigin(originId, origins.get(originId));
+
+                                } else if (isRemovedOrigin(originId, origin)) {
+                                    removeMonitoredEndpoint(originId);
+                                    originChanges.noteRemovedOrigin();
+                                }
+                            }
+                    );
+
+            origins = originChanges.updatedOrigins();
+
+            if (originChanges.changed()) {
+                notifyStateChange();
+            }
+        }
     }
 
-    private static class OriginHealthEvent {
+
+    private class OriginHealthEvent implements Runnable {
         final Object healthEvent;
         final Origin origin;
 
@@ -218,94 +247,62 @@ public final class OriginsInventory
             this.origin = origin;
             this.healthEvent = healthy;
         }
+
+        @Override
+        public void run() {
+            if (healthEvent == HEALTHY) {
+                if (!(originHealthStatusMonitor instanceof NoOriginHealthStatusMonitor)) {
+                    onEvent(origin, HEALTHY);
+                }
+            } else if (healthEvent == UNHEALTHY) {
+                if (!(originHealthStatusMonitor instanceof NoOriginHealthStatusMonitor)) {
+                    onEvent(origin, UNHEALTHY);
+                }
+            }
+        }
     }
 
-    private static class EnableOriginCommand {
+    private class EnableOriginCommand implements Runnable {
         final EnableOrigin enableOrigin;
 
         EnableOriginCommand(EnableOrigin enableOrigin) {
             this.enableOrigin = enableOrigin;
         }
+
+        @Override
+        public void run() {
+            if (enableOrigin.forApp(appId)) {
+                onEvent(enableOrigin.originId(), enableOrigin);
+            }
+
+        }
     }
 
-    private static class DisableOriginCommand {
+
+
+    private class DisableOriginCommand implements Runnable {
         final DisableOrigin disableOrigin;
 
         DisableOriginCommand(DisableOrigin disableOrigin) {
             this.disableOrigin = disableOrigin;
         }
-    }
 
-    private static class CloseEvent {
-
-    }
-
-    private void handleSetOriginsEvent(SetOriginsEvent event) {
-        Map<Id, Origin> newOriginsMap = event.newOrigins.stream()
-                .collect(toMap(Origin::id, o -> o));
-
-        OriginChanges originChanges = new OriginChanges();
-
-        concat(this.origins.keySet().stream(), newOriginsMap.keySet().stream())
-                .collect(toSet())
-                .forEach(originId -> {
-                    Origin origin = newOriginsMap.get(originId);
-
-                    if (isNewOrigin(originId, origin)) {
-                        MonitoredOrigin monitoredOrigin = addMonitoredEndpoint(origin);
-                        originChanges.addOrReplaceOrigin(originId, monitoredOrigin);
-
-                    } else if (isUpdatedOrigin(originId, origin)) {
-                        MonitoredOrigin monitoredOrigin = changeMonitoredEndpoint(origin);
-                        originChanges.addOrReplaceOrigin(originId, monitoredOrigin);
-
-                    } else if (isUnchangedOrigin(originId, origin)) {
-                        LOG.info("Existing origin has been left unchanged. Origin={}:{}", appId, origin);
-                        originChanges.keepExistingOrigin(originId, this.origins.get(originId));
-
-                    } else if (isRemovedOrigin(originId, origin)) {
-                        removeMonitoredEndpoint(originId);
-                        originChanges.noteRemovedOrigin();
-                    }
-                }
-        );
-
-        this.origins = originChanges.updatedOrigins();
-
-        if (originChanges.changed()) {
-            notifyStateChange();
-        }
-    }
-
-    private void handleCloseEvent() {
-        if (closed.compareAndSet(false, true)) {
-            origins.values().forEach(host -> removeMonitoredEndpoint(host.origin.id()));
-            this.origins = ImmutableMap.of();
-            notifyStateChange();
-            eventBus.unregister(this);
-        }
-    }
-
-    private void handleDisableOriginCommand(DisableOriginCommand event) {
-        if (event.disableOrigin.forApp(appId)) {
-            onEvent(event.disableOrigin.originId(), event.disableOrigin);
-        }
-    }
-
-    private void handleEnableOriginCommand(EnableOriginCommand event) {
-        if (event.enableOrigin.forApp(appId)) {
-            onEvent(event.enableOrigin.originId(), event.enableOrigin);
-        }
-    }
-
-    private void handleOriginHealthEvent(OriginHealthEvent event) {
-        if (event.healthEvent == HEALTHY) {
-            if (!(originHealthStatusMonitor instanceof NoOriginHealthStatusMonitor)) {
-                onEvent(event.origin, HEALTHY);
+        @Override
+        public void run() {
+            if (disableOrigin.forApp(appId)) {
+                onEvent(disableOrigin.originId(), disableOrigin);
             }
-        } else if (event.healthEvent == UNHEALTHY) {
-            if (!(originHealthStatusMonitor instanceof NoOriginHealthStatusMonitor)) {
-                onEvent(event.origin, UNHEALTHY);
+        }
+    }
+
+    private class CloseEvent implements Runnable {
+        @Override
+        public void run() {
+            if (closed.compareAndSet(false, true)) {
+                origins.values().forEach(host -> removeMonitoredEndpoint(host.origin.id()));
+                origins = ImmutableMap.of();
+                notifyStateChange();
+                eventBus.unregister(OriginsInventory.this);
             }
         }
     }
