@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package com.hotels.styx.client;
 
 import com.hotels.styx.api.HttpHandler;
-import com.hotels.styx.api.extension.Origin;
+import com.hotels.styx.api.Id;
 import com.hotels.styx.api.extension.RemoteHost;
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer;
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancingMetricSupplier;
@@ -198,7 +198,7 @@ public class OriginRestrictionLoadBalancingStrategyTest {
             }
 
             @Override
-            public List<Origin> avoidOrigins() {
+            public List<Id> avoidOrigins() {
                 return null;
             }
         };

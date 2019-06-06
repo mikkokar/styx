@@ -216,7 +216,8 @@ public class HostProxy implements RoutingObject {
                     .build();
 
             OriginMetrics originMetrics = OriginMetrics.create(
-                    origin,
+                    origin.applicationId(),
+                    origin.id(),
                     context.environment().metricRegistry());
 
             ConnectionPool.Factory connectionPoolFactory = new SimpleConnectionPoolFactory.Builder()
@@ -224,7 +225,7 @@ public class HostProxy implements RoutingObject {
                             connectionFactory(
                                     tlsSettings,
                                     responseTimeoutMillis,
-                                    theOrigin -> originMetrics,
+                                    (appId, theOrigin) -> originMetrics,
                                     poolSettings.connectionExpirationSeconds()))
                     .connectionPoolSettings(poolSettings)
                     .metricRegistry(context.environment().metricRegistry())

@@ -13,11 +13,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
  */
-package com.hotels.styx.proxy
+package com.hotels.styx.admin
 
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.hotels.styx.api.HttpRequest
+import com.hotels.styx.api.HttpResponseStatus.{METHOD_NOT_ALLOWED, OK}
 import com.hotels.styx.support.backends.FakeHttpServer
 import com.hotels.styx.support.configuration.{HttpBackend, Origins}
 import com.hotels.styx.{DefaultStyxConfiguration, StyxClientSupplier, StyxProxySpec}
@@ -26,7 +27,7 @@ import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
 
-class OriginsReloadRepetitionSpec extends FunSpec
+class OriginsReloadSpec extends FunSpec
   with StyxProxySpec
   with DefaultStyxConfiguration
   with StyxClientSupplier
@@ -40,7 +41,7 @@ class OriginsReloadRepetitionSpec extends FunSpec
     super.beforeAll()
 
     styxServer.setBackends(
-      "/foobar" -> HttpBackend("appOne", Origins(backend1, backend2, backend3))
+      "/foobar" -> HttpBackend("appOne", Origins(backend1, backend2))
     )
   }
 
@@ -48,42 +49,28 @@ class OriginsReloadRepetitionSpec extends FunSpec
     backend1.stop()
     backend2.stop()
     backend3.stop()
-
     super.afterAll()
   }
 
   describe("Reload Origins Endpoint") {
-    // this test was created to precisely reproduce a confusing bug we encountered.
-    it("should be able to remove and re-add origins") {
-      styxServer.setBackends(
-        "/foobar" -> HttpBackend("appOne", Origins(backend1, backend3))
-      )
+    it("should return 200 for POST /admin/tasks/origins/reload") {
+      val response = post(styxServer.adminURL("/admin/tasks/origins/reload"))
 
-      eventually(timeout(1 seconds)) {
-        val response = get(styxServer.adminURL("/admin/origins/status"))
+      assert(response.status() == OK)
+    }
 
-        response.bodyAs(UTF_8) should include(backend1.originId())
-        response.bodyAs(UTF_8) should not include backend2.originId()
-        response.bodyAs(UTF_8) should include(backend3.originId())
-      }
+    it("should return 405 for GET /admin/tasks/origins/reload") {
+      val response = get(styxServer.adminURL("/admin/tasks/origins/reload"))
 
-      styxServer.setBackends(
-        "/foobar" -> HttpBackend("appOne", Origins(backend3))
-      )
+      assert(response.status() == METHOD_NOT_ALLOWED)
+    }
 
-      eventually(timeout(1 seconds)) {
-        val response = get(styxServer.adminURL("/admin/origins/status"))
-
-        response.bodyAs(UTF_8) should not include backend1.originId()
-        response.bodyAs(UTF_8) should not include backend2.originId()
-        response.bodyAs(UTF_8) should include(backend3.originId())
-      }
-
+    it("should reflect origin addition in origins status page") {
       styxServer.setBackends(
         "/foobar" -> HttpBackend("appOne", Origins(backend1, backend2, backend3))
       )
 
-      eventually(timeout(1 seconds)) {
+      eventually(timeout(1.seconds)) {
         val response = get(styxServer.adminURL("/admin/origins/status"))
 
         response.bodyAs(UTF_8) should include(backend1.originId())
@@ -91,6 +78,24 @@ class OriginsReloadRepetitionSpec extends FunSpec
         response.bodyAs(UTF_8) should include(backend3.originId())
       }
     }
+
+    it("should reflect origin removal in origins status page") {
+      styxServer.setBackends(
+        "/foobar" -> HttpBackend("appOne", Origins(backend1))
+      )
+
+      eventually(timeout(1.seconds)) {
+        val response = get(styxServer.adminURL("/admin/origins/status"))
+
+        response.bodyAs(UTF_8) should include(backend1.originId())
+        response.bodyAs(UTF_8) should not include backend2.originId()
+        response.bodyAs(UTF_8) should not include backend3.originId()
+      }
+    }
+  }
+
+  private def post(url: String, content: String = "") = {
+    decodedRequest(HttpRequest.post(url).body(content, UTF_8).build())
   }
 
   private def get(url: String) = {

@@ -24,7 +24,6 @@ import com.hotels.styx.api.MetricRegistry;
 import com.hotels.styx.api.RequestCookie;
 import com.hotels.styx.api.ResponseEventListener;
 import com.hotels.styx.api.exceptions.NoAvailableHostsException;
-import com.hotels.styx.api.extension.Origin;
 import com.hotels.styx.api.extension.RemoteHost;
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer;
 import com.hotels.styx.api.extension.retrypolicy.spi.RetryPolicy;
@@ -56,8 +55,6 @@ import static io.netty.handler.codec.http.HttpMethod.HEAD;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.StreamSupport.stream;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -149,10 +146,12 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
             List<RemoteHost> newPreviousOrigins = newArrayList(previousOrigins);
             newPreviousOrigins.add(remoteHost.get());
 
-            return ResponseEventListener.from(host.hostClient().handle(request, HttpInterceptorContext.create())
-                    .map(response -> addStickySessionIdentifier(response, host.origin())))
+            return ResponseEventListener.from(
+                    host.hostClient()
+                            .handle(request, HttpInterceptorContext.create())
+                            .map(response -> addStickySessionIdentifier(response, host.id())))
                     .whenResponseError(cause -> logError(request, cause))
-                    .whenCancelled(() -> originStatsFactory.originStats(host.origin()).requestCancelled())
+                    .whenCancelled(() -> originStatsFactory.originStats(id, host.id()).requestCancelled())
                     .apply()
                     .doOnNext(this::recordErrorStatusMetrics)
                     .map(response -> removeUnexpectedResponseBody(request, response))
@@ -182,9 +181,9 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
             }
 
             @Override
-            public List<Origin> avoidOrigins() {
+            public List<Id> avoidOrigins() {
                 return previousOrigins.stream()
-                        .map(RemoteHost::origin)
+                        .map(RemoteHost::id)
                         .collect(Collectors.toList());
             }
         };
@@ -244,14 +243,7 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
                     .add("retryCount", retryCount)
                     .add("lastException", lastException)
                     .add("request", request.url())
-                    .add("previouslyUsedOrigins", hosts(previouslyUsedOrigins))
                     .toString();
-        }
-
-        private static String hosts(Iterable<RemoteHost> origins) {
-            return stream(origins.spliterator(), false)
-                    .map(host -> host.origin().hostAndPortString())
-                    .collect(joining(", "));
         }
     }
 
@@ -298,18 +290,18 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
             }
 
             @Override
-            public List<Origin> avoidOrigins() {
+            public List<Id> avoidOrigins() {
                 return Collections.emptyList();
             }
         };
         return loadBalancer.choose(preferences);
     }
 
-    private LiveHttpResponse addStickySessionIdentifier(LiveHttpResponse httpResponse, Origin origin) {
+    private LiveHttpResponse addStickySessionIdentifier(LiveHttpResponse httpResponse, Id originId) {
         if (this.loadBalancer instanceof StickySessionLoadBalancingStrategy) {
             int maxAge = stickySessionConfig.stickySessionTimeoutSeconds();
             return httpResponse.newBuilder()
-                    .addCookies(newStickySessionCookie(id, origin.id(), maxAge))
+                    .addCookies(newStickySessionCookie(id, originId, maxAge))
                     .build();
         } else {
             return httpResponse;
@@ -335,7 +327,6 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
      * A builder for {@link StyxBackendServiceClient}.
      */
     public static class Builder {
-
         private final Id backendServiceId;
         private MetricRegistry metricsRegistry = new CodaHaleMetricRegistry();
         private List<RewriteRule> rewriteRules = emptyList();
@@ -370,7 +361,6 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
             this.rewriteRules = ImmutableList.copyOf(rewriteRules);
             return this;
         }
-
 
         public Builder loadBalancer(LoadBalancer loadBalancer) {
             this.loadBalancer = requireNonNull(loadBalancer);

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.util.Set;
 
 import static com.google.common.base.Objects.toStringHelper;
 import static com.hotels.styx.api.Id.id;
-import static com.hotels.styx.api.extension.Origin.newOriginBuilder;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -33,15 +33,15 @@ import static java.util.stream.Collectors.toSet;
  */
 public final class OriginsSnapshot {
     private final Id appId;
-    private final Set<Origin> activeOrigins;
-    private final Set<Origin> inactiveOrigins;
-    private final Set<Origin> disabledOrigins;
-    private final Map<Id, Origin> allOriginsById = new HashMap<>();
+    private final Set<Id> activeOrigins;
+    private final Set<Id> inactiveOrigins;
+    private final Set<Id> disabledOrigins;
+    private final Map<Id, Id> allOriginsById = new HashMap<>();
 
     OriginsSnapshot(String appId,
-                    Collection<Origin> activeOrigins,
-                    Collection<Origin> inactiveOrigins,
-                    Collection<Origin> disabledOrigins) {
+                    Collection<Id> activeOrigins,
+                    Collection<Id> inactiveOrigins,
+                    Collection<Id> disabledOrigins) {
         this.appId = id(appId);
         this.activeOrigins = withAppId(activeOrigins, appId);
         this.inactiveOrigins = withAppId(inactiveOrigins, appId);
@@ -68,23 +68,22 @@ public final class OriginsSnapshot {
         mapOriginsById();
     }
 
-    private void mapOriginsById() {
-        this.activeOrigins.forEach(origin -> allOriginsById.put(origin.id(), origin));
-        this.inactiveOrigins.forEach(origin -> allOriginsById.put(origin.id(), origin));
-        this.disabledOrigins.forEach(origin -> allOriginsById.put(origin.id(), origin));
-    }
-
-    private Set<Origin> mapToOrigins(Collection<RemoteHost> activeOrigins) {
+    private static Set<Id> mapToOrigins(Collection<RemoteHost> activeOrigins) {
         return activeOrigins.stream()
-                .map(RemoteHost::origin)
+                .map(RemoteHost::id)
                 .collect(toSet());
     }
 
-    private static Set<Origin> withAppId(Collection<Origin> origins, String appId) {
-        return origins.stream().map(origin -> newOriginBuilder(origin)
-                .applicationId(appId)
-                .build())
+    private static Set<Id> withAppId(Collection<Id> originIds, String appId) {
+        return originIds.stream()
+                .map(it -> Id.id(format("%s-%s", appId, it)))
                 .collect(toSet());
+    }
+
+    private void mapOriginsById() {
+        this.activeOrigins.forEach(id -> allOriginsById.put(id, id));
+        this.inactiveOrigins.forEach(id -> allOriginsById.put(id, id));
+        this.disabledOrigins.forEach(id -> allOriginsById.put(id, id));
     }
 
     /**
@@ -105,7 +104,7 @@ public final class OriginsSnapshot {
      *
      * @return active origins
      */
-    public Set<Origin> activeOrigins() {
+    public Set<Id> activeOrigins() {
         return activeOrigins;
     }
 
@@ -114,7 +113,7 @@ public final class OriginsSnapshot {
      *
      * @return inactive origins
      */
-    public Set<Origin> inactiveOrigins() {
+    public Set<Id> inactiveOrigins() {
         return inactiveOrigins;
     }
 
@@ -123,7 +122,7 @@ public final class OriginsSnapshot {
      *
      * @return disabled origins
      */
-    public Set<Origin> disabledOrigins() {
+    public Set<Id> disabledOrigins() {
         return disabledOrigins;
     }
 

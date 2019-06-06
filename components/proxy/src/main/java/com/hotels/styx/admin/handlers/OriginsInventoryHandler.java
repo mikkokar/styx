@@ -49,7 +49,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class OriginsInventoryHandler extends BaseHttpHandler implements OriginsChangeListener {
     private static final Logger LOG = getLogger(OriginsInventoryHandler.class);
 
-    private final ObjectMapper mapper = addStyxMixins(new ObjectMapper()).disable(FAIL_ON_EMPTY_BEANS)
+    private final ObjectMapper mapper = addStyxMixins(new ObjectMapper())
+            .disable(FAIL_ON_EMPTY_BEANS)
             .setDefaultPrettyPrinter(PRETTY_PRINTER);
 
     private final Map<Id, OriginsSnapshot> originsInventorySnapshotMap = new ConcurrentHashMap<>();

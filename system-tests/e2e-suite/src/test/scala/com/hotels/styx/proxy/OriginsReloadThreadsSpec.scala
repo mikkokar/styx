@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -67,9 +67,9 @@ class OriginsReloadThreadsSpec extends FunSpec
       eventually(timeout(1 seconds)) {
         val response = get(styxServer.adminURL("/admin/origins/status"))
 
-        response.bodyAs(UTF_8) should include("localhost:" + backend1.port())
-        response.bodyAs(UTF_8) should not include ("localhost:" + backend2.port())
-        response.bodyAs(UTF_8) should include("localhost:" + backend3.port())
+        response.bodyAs(UTF_8) should include(backend1.originId())
+        response.bodyAs(UTF_8) should not include backend2.originId()
+        response.bodyAs(UTF_8) should include(backend3.originId())
       }
 
       styxServer.setBackends(
@@ -79,9 +79,9 @@ class OriginsReloadThreadsSpec extends FunSpec
       eventually(timeout(1 seconds)) {
         val response = get(styxServer.adminURL("/admin/origins/status"))
 
-        response.bodyAs(UTF_8) should not include ("localhost:" + backend1.port())
-        response.bodyAs(UTF_8) should not include ("localhost:" + backend2.port())
-        response.bodyAs(UTF_8) should include("localhost:" + backend3.port())
+        response.bodyAs(UTF_8) should not include backend1.originId()
+        response.bodyAs(UTF_8) should not include backend2.originId()
+        response.bodyAs(UTF_8) should include(backend3.originId())
       }
 
       styxServer.setBackends(
@@ -91,9 +91,9 @@ class OriginsReloadThreadsSpec extends FunSpec
       eventually(timeout(1 seconds)) {
         val response = get(styxServer.adminURL("/admin/origins/status"))
 
-        response.bodyAs(UTF_8) should include("localhost:" + backend1.port())
-        response.bodyAs(UTF_8) should include("localhost:" + backend2.port())
-        response.bodyAs(UTF_8) should include("localhost:" + backend3.port())
+        response.bodyAs(UTF_8) should include(backend1.originId())
+        response.bodyAs(UTF_8) should include(backend2.originId())
+        response.bodyAs(UTF_8) should include(backend3.originId())
       }
 
       eventually(timeout(5 seconds)) {

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package com.hotels.styx.api.extension.loadbalancing.spi;
 
-import com.hotels.styx.api.extension.Origin;
-import com.hotels.styx.api.extension.OriginsSnapshot;
+import com.hotels.styx.api.Id;
 import com.hotels.styx.api.extension.OriginsChangeListener;
+import com.hotels.styx.api.extension.OriginsSnapshot;
 import com.hotels.styx.api.extension.RemoteHost;
 
 import java.util.List;
@@ -70,6 +70,6 @@ public interface LoadBalancer extends OriginsChangeListener {
          *
          * @return A list of origins.
          */
-        List<Origin> avoidOrigins();
+        List<Id> avoidOrigins();
     }
 }

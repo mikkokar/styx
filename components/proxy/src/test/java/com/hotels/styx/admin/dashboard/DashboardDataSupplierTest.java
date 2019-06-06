@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -74,7 +74,8 @@ public class DashboardDataSupplierTest {
         registry.add(backend("bar", origin("bar1")));
 
         // Set statuses
-        environment.eventBus().post(new OriginsSnapshot(id("foo"), pools(foo1), pools(foo2), pools()));
+        OriginsSnapshot snapshot = new OriginsSnapshot(id("foo"), pools(foo1), pools(foo2), pools());
+        environment.eventBus().post(snapshot);
 
         DashboardData.Downstream downstream = supplier.get().downstream();
         DashboardData.Backend fooBackend = downstream.backend("STYXPRES-foo");

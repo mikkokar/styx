@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ class OriginsCommandsSpec extends FeatureSpec
       And("origins status page shows the origin as disabled")
       eventually(timeout(5 seconds)) {
         getCurrentOriginsStatusSnapshot should include(
-          s"""disabledOrigins":[{"id":"appOne-01","host":"localhost:${origin1.port()}"}]"""
+          s"""disabledOrigins":[{"id":"appOne-01"}]"""
         )
       }
     }
@@ -120,7 +120,7 @@ class OriginsCommandsSpec extends FeatureSpec
       disableOrigin("appOne", "appOne-01")
       eventually(timeout(5 seconds)) {
         getCurrentOriginsStatusSnapshot should include(
-          s"""disabledOrigins":[{"id":"appOne-01","host":"localhost:${origin1.port()}"}]"""
+          s"""disabledOrigins":[{"id":"appOne-01"}]"""
         )
       }
 
@@ -136,7 +136,7 @@ class OriginsCommandsSpec extends FeatureSpec
       And("origins status page shows the origin as active")
       eventually(timeout(5 seconds)) {
         getCurrentOriginsStatusSnapshot should include(
-          s""""activeOrigins":[{"id":"appOne-01","host":"localhost:${origin1.port()}"}]"""
+          s""""activeOrigins":[{"id":"appOne-01"}]"""
         )
       }
     }

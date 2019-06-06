@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class RequestsToOriginMetricsCollectorTest {
     private void setUp() {
         this.metricRegistry = new CodaHaleMetricRegistry();
         ApplicationMetrics appMetrics = new ApplicationMetrics(this.appId, this.metricRegistry);
-        this.originMetrics = new OriginMetrics(appMetrics, this.origin);
+        this.originMetrics = new OriginMetrics(appMetrics, this.origin.id());
     }
 
     @AfterMethod
@@ -113,7 +113,7 @@ public class RequestsToOriginMetricsCollectorTest {
 
     private EmbeddedChannel buildEmbeddedChannel() {
         ApplicationMetrics appMetrics = new ApplicationMetrics(this.origin.applicationId(), this.metricRegistry);
-        OriginMetrics originMetrics = new OriginMetrics(appMetrics, this.origin);
+        OriginMetrics originMetrics = new OriginMetrics(appMetrics, this.origin.id());
 
         return new EmbeddedChannel(
                 new HttpClientCodec(),

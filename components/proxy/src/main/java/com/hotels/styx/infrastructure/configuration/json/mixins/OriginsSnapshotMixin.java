@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hotels.styx.infrastructure.configuration.json.mixins;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.hotels.styx.api.extension.Origin;
+import com.hotels.styx.api.Id;
 
 import java.util.Collection;
 import java.util.Set;
@@ -30,20 +30,20 @@ public abstract class OriginsSnapshotMixin {
     @JsonCreator
     OriginsSnapshotMixin(
             @JsonProperty("appId") String appId,
-            @JsonProperty("activeOrigins") Collection<Origin> activeOrigins,
-            @JsonProperty("inactiveOrigins") Collection<Origin> inactiveOrigins,
-            @JsonProperty("disabledOrigins") Collection<Origin> disabledOrigins) {
+            @JsonProperty("activeOrigins") Collection<Id> activeOrigins,
+            @JsonProperty("inactiveOrigins") Collection<Id> inactiveOrigins,
+            @JsonProperty("disabledOrigins") Collection<Id> disabledOrigins) {
     }
 
     @JsonProperty("appId")
     public abstract String appIdAsString();
 
     @JsonProperty("activeOrigins")
-    public abstract Set<Origin> activeOrigins();
+    public abstract Set<Id> activeOrigins();
 
     @JsonProperty("inactiveOrigins")
-    public abstract Set<Origin> inactiveOrigins();
+    public abstract Set<Id> inactiveOrigins();
 
     @JsonProperty("disabledOrigins")
-    public abstract Set<Origin> disabledOrigins();
+    public abstract Set<Id> disabledOrigins();
 }

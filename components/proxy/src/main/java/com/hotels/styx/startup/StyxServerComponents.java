@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.AsyncEventBus;
 import com.hotels.styx.Environment;
 import com.hotels.styx.StyxConfig;
@@ -108,7 +109,7 @@ public class StyxServerComponents {
                 .orElse(ImmutableMap.of())
                 .forEach((name, record) -> {
                     RoutingObject handler = routingObjectFactory.build(ImmutableList.of(name), record);
-                    routeObjectStore.insert(name, new RoutingObjectRecord(record.type(), record.config(), handler))
+                    routeObjectStore.insert(name, new RoutingObjectRecord(record.type(), ImmutableSet.of(), record.config(), handler))
                             .ifPresent(previous -> previous.getRoutingObject().stop());
                 });
     }

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -512,11 +512,11 @@ public class DashboardData {
         @Subscribe
         @Override
         public void originsChanged(OriginsSnapshot snapshot) {
-            if (snapshot.activeOrigins().contains(origin)) {
+            if (snapshot.activeOrigins().contains(origin.id())) {
                 status = "active";
-            } else if (snapshot.inactiveOrigins().contains(origin)) {
+            } else if (snapshot.inactiveOrigins().contains(origin.id())) {
                 status = "inactive";
-            } else if (snapshot.disabledOrigins().contains(origin)) {
+            } else if (snapshot.disabledOrigins().contains(origin.id())) {
                 status = "disabled";
             }
         }

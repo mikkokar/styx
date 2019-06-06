@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -43,12 +43,8 @@ public final class RemoteHost {
     }
 
     public Id id() {
-        return origin().id();
+        return this.origin.id();
     };
-
-    public Origin origin() {
-        return this.origin;
-    }
 
     public HttpHandler hostClient() {
         return hostClient;

@@ -15,7 +15,7 @@
  */
 package com.hotels.styx.client;
 
-import com.hotels.styx.api.extension.Origin;
+import com.hotels.styx.api.Id;
 import com.hotels.styx.api.MetricRegistry;
 import com.hotels.styx.client.applications.OriginStats;
 import com.hotels.styx.client.applications.metrics.OriginMetrics;
@@ -32,14 +32,14 @@ import static java.util.Objects.requireNonNull;
  */
 
 public interface OriginStatsFactory {
-    OriginStats originStats(Origin origin);
+    OriginStats originStats(Id appId, Id originId);
 
     /**
      * A caching OriginStatsFactory. A newly created OriginStats object is cached,
      * and the cached copy is returned for future invocations.
      */
     class CachingOriginStatsFactory implements OriginStatsFactory {
-        private final ConcurrentMap<Origin, OriginMetrics> metricsByOrigin = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Id, OriginMetrics> metricsByOrigin = new ConcurrentHashMap<>();
         private final MetricRegistry metricRegistry;
 
         /**
@@ -54,11 +54,13 @@ public interface OriginStatsFactory {
         /**
          * Construct a new {@link OriginStats} for an origin, or return a previously created one if it exists.
          *
-         * @param origin origin to collect stats for
+         *
+         * @param appId
+         * @param originId origin to collect stats for
          * @return the {@link OriginStats}
          */
-        public OriginStats originStats(Origin origin) {
-            return metricsByOrigin.computeIfAbsent(origin, theOrigin -> OriginMetrics.create(theOrigin, metricRegistry));
+        public OriginStats originStats(Id appId, Id originId) {
+            return metricsByOrigin.computeIfAbsent(originId, theOrigin -> OriginMetrics.create(appId, theOrigin, metricRegistry));
         }
     }
 }

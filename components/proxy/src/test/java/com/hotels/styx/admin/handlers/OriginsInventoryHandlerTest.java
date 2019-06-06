@@ -18,6 +18,7 @@ package com.hotels.styx.admin.handlers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hotels.styx.admin.tasks.StubConnectionPool;
 import com.hotels.styx.api.HttpHandler;
@@ -77,9 +78,9 @@ public class OriginsInventoryHandlerTest {
         OriginsSnapshot snapshot = output.get(APP_ID);
 
         assertThat(snapshot.appId(), is(APP_ID));
-        assertThat(snapshot.activeOrigins(), is(activeOrigins));
-        assertThat(snapshot.inactiveOrigins(), is(inactiveOrigins));
-        assertThat(snapshot.disabledOrigins(), is(disabledOrigins));
+        assertThat(snapshot.activeOrigins(), is(ImmutableSet.of(id("foo-origin2"), id("foo-origin0"), id("foo-origin1"))));
+        assertThat(snapshot.inactiveOrigins(), is(ImmutableSet.of(id("foo-origin2"), id("foo-origin3"), id("foo-origin0"), id("foo-origin1"))));
+        assertThat(snapshot.disabledOrigins(), is(ImmutableSet.of(id("foo-origin0"), id("foo-origin1"))));
     }
 
     @Test
@@ -99,11 +100,9 @@ public class OriginsInventoryHandlerTest {
                         "    \"activeOrigins\" : \\[ ],\n" +
                         "    \"inactiveOrigins\" : \\[ ],\n" +
                         "    \"disabledOrigins\" : \\[ \\{\n" +
-                        "      \"id\" : \"origin.\",\n" +
-                        "      \"host\" : \"localhost:....\"\n" +
+                        "      \"id\" : \"origin0\"\n" +
                         "    }, \\{\n" +
-                        "      \"id\" : \"origin.\",\n" +
-                        "      \"host\" : \"localhost:....\"\n" +
+                        "      \"id\" : \"origin1\"\n" +
                         "    } ]\n" +
                         "  }\n" +
                         "}"));

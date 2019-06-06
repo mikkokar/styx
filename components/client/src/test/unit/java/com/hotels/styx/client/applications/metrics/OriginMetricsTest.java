@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public class OriginMetricsTest {
     private void setUp() {
         rootMetricRegistry = new StubClockMeterMetricRegistry(clock);
         appMetrics = new ApplicationMetrics(appId, rootMetricRegistry);
-        originMetrics = new OriginMetrics(appMetrics, origin);
+        originMetrics = new OriginMetrics(appMetrics, origin.id());
     }
 
     @AfterMethod
@@ -82,7 +82,7 @@ public class OriginMetricsTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void failsIfCreatedWithNullApplicationMetrics() {
-        new OriginMetrics(null, origin);
+        new OriginMetrics(null, origin.id());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -92,7 +92,7 @@ public class OriginMetricsTest {
 
     @Test
     public void successfullyCreated() {
-        assertThat(new OriginMetrics(appMetrics, origin), is(notNullValue()));
+        assertThat(new OriginMetrics(appMetrics, origin.id()), is(notNullValue()));
     }
 
     @Test
@@ -120,8 +120,8 @@ public class OriginMetricsTest {
                 .id("h2")
                 .build();
 
-        OriginMetrics originMetricsA = new OriginMetrics(appMetrics, originA);
-        OriginMetrics originMetricsB = new OriginMetrics(appMetrics, originB);
+        OriginMetrics originMetricsA = new OriginMetrics(appMetrics, originA.id());
+        OriginMetrics originMetricsB = new OriginMetrics(appMetrics, originB.id());
 
         originMetricsA.requestSuccess();
         originMetricsA.requestSuccess();
@@ -164,8 +164,8 @@ public class OriginMetricsTest {
                 .applicationId(this.appId)
                 .build();
 
-        OriginMetrics originMetricsA = new OriginMetrics(appMetrics, originA);
-        OriginMetrics originMetricsB = new OriginMetrics(appMetrics, originB);
+        OriginMetrics originMetricsA = new OriginMetrics(appMetrics, originA.id());
+        OriginMetrics originMetricsB = new OriginMetrics(appMetrics, originB.id());
 
         originMetricsA.requestError();
         originMetricsA.requestError();

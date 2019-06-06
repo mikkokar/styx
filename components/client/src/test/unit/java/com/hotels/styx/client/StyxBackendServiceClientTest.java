@@ -182,7 +182,7 @@ public class StyxBackendServiceClientTest {
         assertThat(lbPreference.getValue(), notNullValue());
 
         assertThat(lbContext.getValue().preferredOrigins(), is(Optional.empty()));
-        assertThat(lbContext.getValue().avoidOrigins(), is(asList(ORIGIN_1)));
+        assertThat(lbContext.getValue().avoidOrigins(), is(asList(ORIGIN_1.id())));
 
         assertThat(response.status(), is(OK));
 
@@ -344,6 +344,11 @@ public class StyxBackendServiceClientTest {
 
     @Test
     public void updatesCountersWhenTransactionIsCancelled() {
+        BackendService backendService = backendBuilderWithOrigins(SOME_ORIGIN.port())
+                .id("App-X")
+                .stickySessionConfig(stickySessionConfig)
+                .build();
+
         Origin origin = originWithId("localhost:234", "App-X", "Origin-Y");
         Processor<LiveHttpResponse, LiveHttpResponse> processor = EmitterProcessor.create();
 
