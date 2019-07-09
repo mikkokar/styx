@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -157,8 +157,10 @@ public class HttpRequestOperation implements Operation<NettyConnection, LiveHttp
                             if (nettyConnection.isConnected()) {
                                 removeProxyBridgeHandlers(nettyConnection);
                                 if (requestIsOngoing(requestRequestBodyChunkSubscriber.get())) {
-                                    LOGGER.warn("Origin responded too quickly to an ongoing request, or it was cancelled. Connection={}, Request={}.",
-                                            new Object[]{nettyConnection.channel(), this.request});
+                                    long elapsedTime = System.currentTimeMillis() - requestTime;
+
+                                    LOGGER.warn("Origin responded before request is fully sent, or it was cancelled. elapsedTime={}, connection={}, request={}, response={}.",
+                                            new Object[]{elapsedTime, nettyConnection.channel(), this.request, response});
                                     nettyConnection.close();
                                 }
                             }
