@@ -176,7 +176,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
                 .transition(TERMINATED, ChannelInactiveEvent.class, event -> TERMINATED)
 
                 .onInappropriateEvent((state, event) -> {
-                    LOGGER.warn(warningMessage(event.getClass().getSimpleName()));
+                    LOGGER.warn("Inappropriate FSM event {}", event.getClass().getSimpleName());
                     return state;
                 })
 
@@ -204,7 +204,8 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        String loggingPrefix = format("%s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
+        String loggingPrefix = ctx.channel().remoteAddress() + " -> " + ctx.channel().localAddress();
+
         this.eventProcessor = new QueueDrainingEventProcessor(new FsmEventProcessor<>(stateMachine, (throwable, state) -> {
         }, loggingPrefix));
         super.channelActive(ctx);

@@ -36,14 +36,14 @@ public class ResponseInfoFormatTest {
         request = get("/").build();
     }
 
-    @Test
+    @Test(enabled = false)
     public void defaultFormatDoesNotIncludeVersion() {
         String info = new ResponseInfoFormat(defaultEnvironment()).format(request);
 
         assertThat(info, is("noJvmRouteSet;" + request.id()));
     }
 
-    @Test
+    @Test(enabled = false)
     public void canConfigureCustomHeaderFormatWithVersion() {
         StyxHeaderConfig styxHeaderConfig = new StyxHeaderConfig(
                 new StyxHeaderConfig.StyxHeader(
