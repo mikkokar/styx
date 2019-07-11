@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.hotels.styx.api.LiveHttpResponse.response;
 import static com.hotels.styx.api.HttpResponseStatus.statusWithCode;
 import static io.netty.util.ReferenceCountUtil.retain;
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.StreamSupport.stream;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -180,9 +179,13 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
         }
     }
 
+    private static String getPrefixMessage(LiveHttpRequest request) {
+        return "Request(method=" + request.method() + ", url=" + request.url() + ", id=" + request.id() + ")";
+    }
+
     private FlowControllingHttpContentProducer createProducer(ChannelHandlerContext ctx, LiveHttpRequest request) {
-        String requestPrefix = request != null ? format("Request(method=%s, url=%s, id=%s)", request.method(), request.url(), request.id()) : "Request NA";
-        String loggingPrefix = format("%s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
+        String requestPrefix = request != null ? getPrefixMessage(request) : "Request NA";
+        String loggingPrefix = ctx.channel().remoteAddress() + " -> " + ctx.channel().localAddress();
 
         return new FlowControllingHttpContentProducer(
                 () -> ctx.channel().read(),
@@ -192,7 +195,7 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
                 },
                 this::emitResponseError,
                 () -> scheduleResourcesTearDown(ctx),
-                format("%s, %s", loggingPrefix, requestPrefix),
+                loggingPrefix + ", " + requestPrefix,
                 origin);
     }
 

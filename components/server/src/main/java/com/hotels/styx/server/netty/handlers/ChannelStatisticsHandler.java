@@ -27,7 +27,6 @@ import io.netty.channel.ChannelPromise;
 import org.slf4j.Logger;
 
 import static com.codahale.metrics.MetricRegistry.name;
-import static java.lang.String.format;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -92,7 +91,7 @@ public class ChannelStatisticsHandler extends ChannelDuplexHandler {
         } else if (msg instanceof ByteBufHolder) {
             receivedBytesCount.inc(((ByteBufHolder) msg).content().readableBytes());
         } else {
-            LOGGER.warn(format("channelRead(): Expected byte buffers, but got [%s]", msg));
+            LOGGER.warn("channelRead(): Expected byte buffers, but got [{}]", msg);
         }
         super.channelRead(ctx, msg);
     }

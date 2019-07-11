@@ -136,10 +136,7 @@ class FlowControllingHttpContentProducer {
                 .transition(TERMINATED, ContentSubscribedEvent.class, this::contentSubscribedInTerminatedState)
                 .transition(TERMINATED, RxBackpressureRequestEvent.class, ev -> TERMINATED)
 
-                .onInappropriateEvent((state, event) -> {
-                    LOGGER.warn(warningMessage("Inappropriate event=" + event.getClass().getSimpleName()));
-                    return state;
-                })
+                .onInappropriateEvent((state, event) -> state)
 
                 .build();
 

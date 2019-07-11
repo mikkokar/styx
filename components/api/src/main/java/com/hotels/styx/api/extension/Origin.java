@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ public class Origin implements Comparable<Origin> {
     private final String hostAsString;
     private final Id originId;
     private final int hashCode;
+    private final String asString;
 
     private Origin(Builder builder) {
         this.host = builder.host;
@@ -46,6 +47,7 @@ public class Origin implements Comparable<Origin> {
         this.applicationId = requireNonNull(builder.applicationId);
         this.originId = requireNonNull(builder.originId);
         this.hashCode = Objects.hash(this.applicationId, this.host, this.originId);
+        this.asString = format("%s:%s:%s", applicationId, originId, hostAsString);
     }
 
     Origin(String originId, String host) {
@@ -57,6 +59,7 @@ public class Origin implements Comparable<Origin> {
         this.hostAsString = hostAndPort.toString();
         this.applicationId = GENERIC_APP;
         this.hashCode = Objects.hash(this.host, this.originId);
+        this.asString = format("%s:%s:%s", applicationId, originId, hostAsString);
     }
 
     /**
@@ -188,7 +191,7 @@ public class Origin implements Comparable<Origin> {
 
     @Override
     public String toString() {
-        return format("%s:%s:%s", applicationId, originId, hostAsString);
+        return asString;
     }
 
     private static String string(String host, int port) {
