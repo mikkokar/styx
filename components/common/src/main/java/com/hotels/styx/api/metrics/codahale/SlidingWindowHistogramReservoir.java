@@ -45,7 +45,8 @@ public class SlidingWindowHistogramReservoir implements Reservoir {
     public SlidingWindowHistogramReservoir() {
         this(new SlidingWindowHistogram.Builder()
                 .numberOfIntervals(12)
-                .intervalDuration(10, SECONDS)
+                // TODO: Mikko: Back this off:
+                .intervalDuration(100, SECONDS)
                 .autoResize(true)
                 .build());
     }
