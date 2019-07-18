@@ -31,6 +31,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
@@ -64,6 +65,7 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
     private final Origin origin;
     private final Long idleTimeoutMillis;
     private Optional<FlowControllingHttpContentProducer> contentProducer = Optional.empty();
+    private boolean toBeClosed;
 
     NettyToStyxResponsePropagator(Subscriber<? super LiveHttpResponse> responseObserver, Origin origin) {
         this(responseObserver, origin, 5L, TimeUnit.SECONDS);
@@ -123,6 +125,9 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
         if (msg instanceof io.netty.handler.codec.http.HttpResponse) {
             io.netty.handler.codec.http.HttpResponse nettyResponse = (io.netty.handler.codec.http.HttpResponse) msg;
             if (nettyResponse.getDecoderResult().isFailure()) {
+
+                // TODO, closes a connection on response decode error?
+
                 emitResponseError(new BadHttpResponseException(origin, nettyResponse.getDecoderResult().cause()));
                 return;
             }
@@ -139,6 +144,10 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
                         eventLoop.submit(() -> this.contentProducer.ifPresent(FlowControllingHttpContentProducer::unsubscribe));
                     });
 
+            if ("close".equalsIgnoreCase(nettyResponse.headers().get(HttpHeaderNames.CONNECTION))) {
+                toBeClosed = true;
+            }
+
             LiveHttpResponse response = toStyxResponse(nettyResponse, contentObservable, origin);
             this.responseObserver.onNext(response);
         }
@@ -151,6 +160,9 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
                 // Note: Netty may send a LastHttpContent as a response to TCP connection close.
                 // In this case channelReadComplete event will _not_ follow the LastHttpContent.
                 contentProducer.ifPresent(FlowControllingHttpContentProducer::lastHttpContent);
+                if (toBeClosed) {
+                    ctx.channel().close();
+                }
             }
         }
     }

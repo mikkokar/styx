@@ -98,19 +98,19 @@ public class ResponseEventListener {
                                 whenFinishedAction.run();
                                 state = TERMINATED;
                             } else if (event instanceof MessageError) {
-                                responseErrorAction.accept(((MessageError)event).cause());
+                                responseErrorAction.accept(((MessageError) event).cause());
                                 whenFinishedAction.run();
                                 state = TERMINATED;
                             }
 
                             break;
-                        case STREAMING: {
+                        case STREAMING:
                             if (event instanceof ContentEnd) {
                                 onCompletedAction.run();
                                 whenFinishedAction.run();
                                 state = COMPLETED;
                             } else if (event instanceof ContentError) {
-                                contentErrorAction.accept(((ContentError)event).cause());
+                                contentErrorAction.accept(((ContentError) event).cause());
                                 whenFinishedAction.run();
                                 state = TERMINATED;
                             } else if (event instanceof ContentCancelled) {
@@ -120,7 +120,7 @@ public class ResponseEventListener {
                             }
 
                             break;
-                        }
+
                     }
                 });
 
