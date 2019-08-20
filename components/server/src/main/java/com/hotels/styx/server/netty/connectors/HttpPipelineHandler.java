@@ -72,7 +72,6 @@ import static com.hotels.styx.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static com.hotels.styx.api.HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE;
 import static com.hotels.styx.api.HttpResponseStatus.REQUEST_TIMEOUT;
 import static com.hotels.styx.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
-import static com.hotels.styx.api.HttpVersion.HTTP_1_1;
 import static com.hotels.styx.server.HttpErrorStatusListener.IGNORE_ERROR_STATUS;
 import static com.hotels.styx.server.RequestProgressListener.IGNORE_REQUEST_PROGRESS;
 import static com.hotels.styx.server.netty.connectors.HttpPipelineHandler.State.ACCEPTING_REQUESTS;
@@ -257,7 +256,9 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
 
     private State onLegitimateRequest(LiveHttpRequest request, ChannelHandlerContext ctx) {
         statsSink.onRequest(request.id());
-        LiveHttpRequest v11Request = request.newBuilder().version(HTTP_1_1).build();
+
+//        LiveHttpRequest v11Request = request.newBuilder().version(HTTP_1_1).build();
+
         tracker.trackRequest(request, () -> this.state().toString());
         ongoingRequest = request;
 
@@ -265,7 +266,7 @@ public class HttpPipelineHandler extends SimpleChannelInboundHandler<LiveHttpReq
         // the same call stack as "onLegitimateRequest" handler. This happens when a plugin
         // generates a response.
         try {
-            Observable<LiveHttpResponse> responseObservable = toObservable(httpPipeline.handle(v11Request, newInterceptorContext(ctx)));
+            Observable<LiveHttpResponse> responseObservable = toObservable(httpPipeline.handle(request, newInterceptorContext(ctx)));
             subscription = responseObservable
                     .subscribe(new Subscriber<LiveHttpResponse>() {
                                    @Override

@@ -17,13 +17,11 @@ package com.hotels.styx;
 
 import com.google.common.collect.ImmutableList;
 import com.hotels.styx.api.HttpInterceptor;
+import com.hotels.styx.proxy.interceptors.CombinedInterceptor;
 import com.hotels.styx.proxy.interceptors.ConfigurationContextResolverInterceptor;
-import com.hotels.styx.proxy.interceptors.HopByHopHeadersRemovingInterceptor;
 import com.hotels.styx.proxy.interceptors.HttpMessageLoggingInterceptor;
-import com.hotels.styx.proxy.interceptors.RequestEnrichingInterceptor;
 import com.hotels.styx.proxy.interceptors.TcpTunnelRequestRejector;
 import com.hotels.styx.proxy.interceptors.UnexpectedRequestContentLengthRemover;
-import com.hotels.styx.proxy.interceptors.ViaHeaderAppendingInterceptor;
 
 import java.util.List;
 
@@ -52,9 +50,7 @@ final class BuiltInInterceptors {
         builder.add(new TcpTunnelRequestRejector())
                 .add(new ConfigurationContextResolverInterceptor(EMPTY_CONFIGURATION_CONTEXT_RESOLVER))
                 .add(new UnexpectedRequestContentLengthRemover())
-                .add(new ViaHeaderAppendingInterceptor())
-                .add(new HopByHopHeadersRemovingInterceptor())
-                .add(new RequestEnrichingInterceptor(config.styxHeaderConfig()));
+                .add(new CombinedInterceptor(config.styxHeaderConfig()));
 
         return builder.build();
     }
