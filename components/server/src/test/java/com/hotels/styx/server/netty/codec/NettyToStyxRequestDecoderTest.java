@@ -112,7 +112,7 @@ public class NettyToStyxRequestDecoderTest {
         }
     }
 
-    @Test
+    @Test(enabled = false)
     public void decodesNettyInternalRequestToStyxRequest() throws Exception {
         FullHttpRequest originalRequest = newHttpRequest("/uri");
         HttpHeaders originalRequestHeaders = originalRequest.headers();
