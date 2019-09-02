@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -64,8 +64,8 @@ public class HttpMessageLoggingInterceptorTest {
                 .cookies(responseCookie("RespCookie", "RespCookieValue").build())
         )));
 
-        String requestPattern = "request=\\{method=GET, uri=/, origin=\"N/A\", headers=\\[ReqHeader=ReqHeaderValue, Cookie=ReqCookie=ReqCookieValue\\]\\}";
-        String responsePattern = "response=\\{status=200 OK, headers=\\[RespHeader=RespHeaderValue\\, Set-Cookie=RespCookie=RespCookieValue]\\}";
+        String requestPattern = "request=\\{method=GET, uri=/, origin=\"N/A\", headers=\\[Cookie=ReqCookie=ReqCookieValue, ReqHeader=ReqHeaderValue\\]\\}";
+        String responsePattern = "response=\\{status=200 OK, headers=\\[Set-Cookie=RespCookie=RespCookieValue\\, RespHeader=RespHeaderValue]\\}";
 
         assertThat(responseLogSupport.log(), contains(
                 loggingEvent(INFO, "requestId=" + request.id() + ", secure=true, " + requestPattern),
@@ -103,7 +103,7 @@ public class HttpMessageLoggingInterceptorTest {
 
         consume(interceptor.intercept(request, chain(response(OK))));
 
-        String requestPattern = "request=\\{method=GET, uri=/, origin=\"N/A\", headers=\\[ReqHeader=ReqHeaderValue, Cookie=ReqCookie=ReqCookieValue\\]\\}";
+        String requestPattern = "request=\\{method=GET, uri=/, origin=\"N/A\", headers=\\[Cookie=ReqCookie=ReqCookieValue, ReqHeader=ReqHeaderValue\\]\\}";
         String responsePattern = "response=\\{status=200 OK, headers=\\[\\]\\}";
 
         assertThat(responseLogSupport.log(), contains(

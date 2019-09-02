@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hotels.styx.api;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.netty.util.AsciiString;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
@@ -137,7 +138,7 @@ public class LiveHttpRequestTest {
                 .cookies(requestCookie("cfoo", "bar"))
                 .build();
 
-        assertThat(request.toString(), is("LiveHttpRequest{version=HTTP/1.0, method=PATCH, uri=https://hotels.com, headers=[headerName=a, Cookie=cfoo=bar, Host=hotels.com], id=id}"));
+        assertThat(request.toString(), is("LiveHttpRequest{version=HTTP/1.0, method=PATCH, uri=https://hotels.com, headers=[Cookie=cfoo=bar, Host=hotels.com, headerName=a], id=id}"));
 
         assertThat(request.headers("headerName"), is(singletonList("a")));
     }
@@ -562,6 +563,9 @@ public class LiveHttpRequestTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Invalid Content-Length found. -3")
     public void ensuresContentLengthIsPositive() {
+        AsciiString a1 = new AsciiString("abc");
+        AsciiString a2 = new AsciiString("ABC");
+
         LiveHttpRequest.post("/y")
                 .header("Content-Length", -3)
                 .build();
