@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class HttpHeadersTest {
 
     @Test
     public void returnsAllRegisteredHeaderNames() {
-        assertThat(headers.names(), contains("header1", "header2"));
+        assertThat(headers.names(), contains("header2", "header1"));
     }
 
     @Test
