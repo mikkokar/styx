@@ -16,6 +16,7 @@
 package com.hotels.styx.support.origins;
 
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
@@ -51,7 +52,7 @@ public class AppHandler implements WebServiceHandler {
     public Eventual<HttpResponse> handle(HttpRequest request, HttpInterceptor.Context context) {
         HttpResponse.Builder responseBuilder = standardResponse.newBuilder()
                 .headers(request.headers())
-                .header(STUB_ORIGIN_INFO, origin.applicationInfo());
+                .header(HeaderKey.headerKey(STUB_ORIGIN_INFO), origin.applicationInfo());
 
         return Eventual.of(Optional.ofNullable(responseBuilder)
                 .map(it -> request.queryParam("status")

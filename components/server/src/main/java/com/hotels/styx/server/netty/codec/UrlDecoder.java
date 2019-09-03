@@ -28,7 +28,7 @@ final class UrlDecoder {
     }
 
     static Url decodeUrl(UnwiseCharsEncoder unwiseCharEncoder, HttpRequest request) {
-        String host = request.headers().get(HOST);
+        String host = request.headers().get(HOST.toString());
 
         if (request.uri().startsWith("/") && host != null) {
             URI uri = URI.create("http://" + host + unwiseCharEncoder.encode(request.uri()));

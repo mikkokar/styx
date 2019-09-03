@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package com.hotels.styx.infrastructure
 
-import com.hotels.styx.api.HttpResponse
+import com.hotels.styx.api.HeaderKey.headerKey
+import com.hotels.styx.api.{HeaderKey, HttpResponse}
 
 
 trait HttpResponseImplicits {
@@ -23,9 +24,9 @@ trait HttpResponseImplicits {
   class RichHttpResponse(val response: HttpResponse) {
 
     def isNotCacheAble(): Boolean = {
-      response.header("Pragma").get().equals("no-cache") &&
-        response.header("Expires").get().equals("Mon, 1 Jan 2007 08:00:00 GMT") &&
-        response.header("Cache-Control").get().equals("no-cache,must-revalidate,no-store")
+      response.header(headerKey("Pragma")).get().equals("no-cache") &&
+        response.header(headerKey("Expires")).get().equals("Mon, 1 Jan 2007 08:00:00 GMT") &&
+        response.header(headerKey("Cache-Control")).get().equals("no-cache,must-revalidate,no-store")
     }
 
   }

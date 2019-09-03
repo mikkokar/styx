@@ -36,7 +36,7 @@ public class EarlyReturnExamplePluginTest {
         EarlyReturnExamplePlugin plugin = new EarlyReturnExamplePlugin();
 
         LiveHttpRequest request = LiveHttpRequest.get("/")
-                .header("X-Respond", "foo")
+                .header(HeaderKey.headerKey("X-Respond"), "foo")
                 .build();
 
         HttpInterceptor.Chain chain = request1 -> Eventual.of(LiveHttpResponse.response().build());

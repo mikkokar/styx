@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import org.testng.annotations.Test;
 import static com.github.tomakehurst.wiremock.http.RequestMethod.POST;
 import static com.hotels.styx.api.HttpHeaderNames.CONNECTION;
 import static com.hotels.styx.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
-import static io.netty.handler.codec.http.HttpHeaderNames.USER_AGENT;
+import static com.hotels.styx.api.HttpHeaderNames.HOST;
+import static com.hotels.styx.api.HttpHeaderNames.USER_AGENT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -107,12 +107,12 @@ public class WiremockStyxRequestAdapterTest {
 
     @Test
     public void adaptsGetHeaders() {
-        assertThat(adapter.getHeaders().keys(), containsInAnyOrder("Content-Type", "host", "Connection", "user-agent", "Content-Length"));
+        assertThat(adapter.getHeaders().keys(), containsInAnyOrder("Content-Type", "Host", "Connection", "User-Agent", "Content-Length"));
 
         assertThat(adapter.getHeader("Content-Type"), is("application/json; charset=UTF-8"));
         assertThat(adapter.getHeader("host"), is("localhost"));
         assertThat(adapter.getHeader("Connection"), is("Keep-Alive"));
-        assertThat(adapter.getHeader("user-agent"), is("Apache-HttpClient/4.3.5 (java 1.5)"));
+        assertThat(adapter.getHeader("User-Agent"), is("Apache-HttpClient/4.3.5 (java 1.5)"));
         assertThat(adapter.getHeader("Content-Length"), is("246"));
     }
 

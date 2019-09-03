@@ -16,6 +16,7 @@
 package com.hotels.styx;
 
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
@@ -42,7 +43,7 @@ public class ModifyHeadersExamplePluginTest {
     public void addsExtraHeaders() {
         // a simple way to mock the downstream system
         HttpInterceptor.Chain chain = request -> {
-            assertThat(request.header("myRequestHeader").orElse(null), is("foo"));
+            assertThat(request.header(HeaderKey.headerKey("myRequestHeader")).orElse(null), is("foo"));
 
             return Eventual.of(response(OK).build());
         };
@@ -55,6 +56,6 @@ public class ModifyHeadersExamplePluginTest {
         // since this is a test, we want to wait for the response
         LiveHttpResponse response = Mono.from(plugin.intercept(request, chain)).block();
 
-        assertThat(response.header("myResponseHeader").orElse(null), is("bar"));
+        assertThat(response.header(HeaderKey.headerKey("myResponseHeader")).orElse(null), is("bar"));
     }
 }

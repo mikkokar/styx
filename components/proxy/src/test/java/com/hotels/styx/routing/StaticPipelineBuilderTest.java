@@ -17,6 +17,7 @@ package com.hotels.styx.routing;
 
 import com.google.common.collect.ImmutableList;
 import com.hotels.styx.Environment;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.extension.service.BackendService;
@@ -84,7 +85,7 @@ public class StaticPipelineBuilderTest {
 
         LiveHttpResponse response = Mono.from(handler.handle(get("/foo").build(), HttpInterceptorContext.create())).block();
         assertThat(response.status(), is(OK));
-        assertThat(response.headers("X-From-Plugin"), hasItems("B", "A"));
+        assertThat(response.headers(HeaderKey.headerKey("X-From-Plugin")), hasItems("B", "A"));
     }
 
     private Registry<BackendService> backendRegistry(BackendService... backendServices) {
@@ -109,7 +110,7 @@ public class StaticPipelineBuilderTest {
     }
 
     private static Plugin appendResponseHeader(String header, String value) {
-        return (request, chain) -> chain.proceed(request).map(response -> response.newBuilder().addHeader(header, value).build());
+        return (request, chain) -> chain.proceed(request).map(response -> response.newBuilder().addHeader(HeaderKey.headerKey(header), value).build());
     }
 
 }

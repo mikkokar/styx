@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.hotels.styx.support.matchers.LoggingTestSupport
 import com.hotels.styx.support.server.UrlMatchingStrategies._
 import com.hotels.styx.{DefaultStyxConfiguration, StyxClientSupplier, StyxProxySpec}
 import org.scalatest.FunSpec
+import com.hotels.styx.api.HttpHeaderNames._
 
 import scala.concurrent.duration._
 
@@ -59,7 +60,7 @@ class OriginsConnectionSpec extends FunSpec
 
       for (i <- 1 to 5) {
         val request = post(styxServer.routerURL("/foobar"))
-          .addHeader("Content-Length", "0")
+          .addHeader(CONTENT_LENGTH, "0")
           .build()
 
         val response = decodedRequest(request)
@@ -81,7 +82,7 @@ class OriginsConnectionSpec extends FunSpec
 
       for (i <- 1 to 5) {
         val request = post(styxServer.routerURL("/foobar"))
-          .addHeader("Content-Length", "0")
+          .addHeader(CONTENT_LENGTH, "0")
           .build()
 
         val response = decodedRequest(request)

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hotels.styx.plugins;
 
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.plugins.spi.Plugin;
@@ -34,8 +35,8 @@ public class AggregationTesterPlugin implements Plugin {
                         response.aggregate(maxContentBytes)
                         .map(fullHttpResponse ->
                                 fullHttpResponse.newBuilder()
-                                        .addHeader("test_plugin", "yes")
-                                        .addHeader("bytes_aggregated", fullHttpResponse.body().length)
+                                        .addHeader(HeaderKey.headerKey("test_plugin"), "yes")
+                                        .addHeader(HeaderKey.headerKey("bytes_aggregated"), fullHttpResponse.body().length)
                                         .build()
                                         .stream()
                         ));

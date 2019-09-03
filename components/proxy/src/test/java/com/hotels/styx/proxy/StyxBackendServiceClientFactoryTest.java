@@ -17,6 +17,7 @@ package com.hotels.styx.proxy;
 
 import com.hotels.styx.Environment;
 import com.hotels.styx.StyxConfig;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.client.BackendServiceClient;
@@ -115,11 +116,11 @@ public class StyxBackendServiceClientFactoryTest {
                         newOriginsInventoryBuilder(backendService)
                                 .hostClientFactory((pool) -> {
                                     if (pool.getOrigin().id().equals(id("x"))) {
-                                        return hostClient(response(OK).header("X-Origin-Id", "x").build());
+                                        return hostClient(response(OK).header(HeaderKey.headerKey("X-Origin-Id"), "x").build());
                                     } else if (pool.getOrigin().id().equals(id("y"))) {
-                                        return hostClient(response(OK).header("X-Origin-Id", "y").build());
+                                        return hostClient(response(OK).header(HeaderKey.headerKey("X-Origin-Id"), "y").build());
                                     } else {
-                                        return hostClient(response(OK).header("X-Origin-Id", "z").build());
+                                        return hostClient(response(OK).header(HeaderKey.headerKey("X-Origin-Id"), "z").build());
                                     }
                                 })
                                 .build(),
@@ -133,9 +134,9 @@ public class StyxBackendServiceClientFactoryTest {
         LiveHttpResponse responsex = Mono.from(styxBackendServiceClient.sendRequest(requestx)).block();
         LiveHttpResponse responsey = Mono.from(styxBackendServiceClient.sendRequest(requesty)).block();
 
-        assertThat(responsex.header("X-Origin-Id").get(), is("x"));
-        assertThat(responsey.header("X-Origin-Id").get(), is("y"));
-        assertThat(responsez.header("X-Origin-Id").get(), is("z"));
+        assertThat(responsex.header(HeaderKey.headerKey("X-Origin-Id")).get(), is("x"));
+        assertThat(responsey.header(HeaderKey.headerKey("X-Origin-Id")).get(), is("y"));
+        assertThat(responsez.header(HeaderKey.headerKey("X-Origin-Id")).get(), is("z"));
     }
 
     @Test
@@ -160,11 +161,11 @@ public class StyxBackendServiceClientFactoryTest {
                         newOriginsInventoryBuilder(backendService)
                                 .hostClientFactory((pool) -> {
                                     if (pool.getOrigin().id().equals(id("x"))) {
-                                        return hostClient(response(OK).header("X-Origin-Id", "x").build());
+                                        return hostClient(response(OK).header(HeaderKey.headerKey("X-Origin-Id"), "x").build());
                                     } else if (pool.getOrigin().id().equals(id("y"))) {
-                                        return hostClient(response(OK).header("X-Origin-Id", "y").build());
+                                        return hostClient(response(OK).header(HeaderKey.headerKey("X-Origin-Id"), "y").build());
                                     } else {
-                                        return hostClient(response(OK).header("X-Origin-Id", "z").build());
+                                        return hostClient(response(OK).header(HeaderKey.headerKey("X-Origin-Id"), "z").build());
                                     }
                                 })
                                 .build(),
@@ -178,9 +179,9 @@ public class StyxBackendServiceClientFactoryTest {
         LiveHttpResponse responsex = Mono.from(styxBackendServiceClient.sendRequest(requestx)).block();
         LiveHttpResponse responsey = Mono.from(styxBackendServiceClient.sendRequest(requesty)).block();
 
-        assertThat(responsex.header("X-Origin-Id").get(), is("x"));
-        assertThat(responsey.header("X-Origin-Id").get(), is("y"));
-        assertThat(responsez.header("X-Origin-Id").get(), is("z"));
+        assertThat(responsex.header(HeaderKey.headerKey("X-Origin-Id")).get(), is("x"));
+        assertThat(responsey.header(HeaderKey.headerKey("X-Origin-Id")).get(), is("y"));
+        assertThat(responsez.header(HeaderKey.headerKey("X-Origin-Id")).get(), is("z"));
     }
 
     private StyxHostHttpClient hostClient(LiveHttpResponse response) {

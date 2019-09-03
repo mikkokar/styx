@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hotels.styx.proxy
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.hotels.styx.api.HeaderKey
 import com.hotels.styx.api.HttpRequest.get
 import com.hotels.styx.api.HttpHeaderNames.HOST
 import com.hotels.styx.api.HttpResponseStatus._
@@ -66,8 +67,8 @@ class HeaderNamesSpec  extends FunSpec
       val resp = decodedRequest(req)
       backend.verify(getRequestedFor(urlPathEqualTo("/")))
       assert(resp.status() == OK)
-      assertThat(resp.header("styx-info-foo"), matches(matchesRegex("^noJvmRouteSet;[0-9a-f-]+$")))
-      assertThat(resp.header("origin-id-bar"), matches(is("generic-app-01")))
+      assertThat(resp.header(HeaderKey.headerKey("styx-info-foo")), matches(matchesRegex("^noJvmRouteSet;[0-9a-f-]+$")))
+      assertThat(resp.header(HeaderKey.headerKey("origin-id-bar")), matches(is("generic-app-01")))
 
       verify(getRequestedFor(urlPathEqualTo("/"))
         .withHeader("request-id-baz", matching("[0-9a-f-]+")))

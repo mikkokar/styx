@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class HttpMessageSupport {
 
     public static HttpRequest httpRequest(HttpMethod method, String url) {
         HttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, method, url);
-        request.headers().set(HOST, url);
+        request.headers().set(HOST.toString(), url);
         return request;
     }
 

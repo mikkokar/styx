@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class OriginCancellationMetrics extends FunSpec
     it("Is not incremented on success") {
       originRespondingWith(
         responseWithHeaders(
-          HttpHeader(CONTENT_LENGTH, "0")
+          HttpHeader(CONTENT_LENGTH.toString, "0")
         ))
 
       val request = get(styxServer.routerURL("/OriginCancellationMetrics/1")).build()

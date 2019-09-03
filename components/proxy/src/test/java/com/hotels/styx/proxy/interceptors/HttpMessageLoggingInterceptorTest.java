@@ -16,6 +16,7 @@
 package com.hotels.styx.proxy.interceptors;
 
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
@@ -54,13 +55,13 @@ public class HttpMessageLoggingInterceptorTest {
     @Test
     public void logsRequestsAndResponses() {
         LiveHttpRequest request = get("/")
-                .header("ReqHeader", "ReqHeaderValue")
+                .header(HeaderKey.headerKey("ReqHeader"), "ReqHeaderValue")
                 .cookies(requestCookie("ReqCookie", "ReqCookieValue"))
                 .build();
 
         consume(interceptor.intercept(request, chain(
                 response(OK)
-                .header("RespHeader", "RespHeaderValue")
+                .header(HeaderKey.headerKey("RespHeader"), "RespHeaderValue")
                 .cookies(responseCookie("RespCookie", "RespCookieValue").build())
         )));
 
@@ -76,13 +77,13 @@ public class HttpMessageLoggingInterceptorTest {
     public void logsRequestsAndResponsesShort() {
         interceptor = new HttpMessageLoggingInterceptor(false);
         LiveHttpRequest request = get("/")
-                .header("ReqHeader", "ReqHeaderValue")
+                .header(HeaderKey.headerKey("ReqHeader"), "ReqHeaderValue")
                 .cookies(requestCookie("ReqCookie", "ReqCookieValue"))
                 .build();
 
         consume(interceptor.intercept(request, chain(
                 response(OK)
-                        .header("RespHeader", "RespHeaderValue")
+                        .header(HeaderKey.headerKey("RespHeader"), "RespHeaderValue")
                         .cookies(responseCookie("RespCookie", "RespCookieValue").build())
         )));
 
@@ -97,7 +98,7 @@ public class HttpMessageLoggingInterceptorTest {
     @Test
     public void logsSecureRequests() {
         LiveHttpRequest request = get("/")
-                .header("ReqHeader", "ReqHeaderValue")
+                .header(HeaderKey.headerKey("ReqHeader"), "ReqHeaderValue")
                 .cookies(requestCookie("ReqCookie", "ReqCookieValue"))
                 .build();
 

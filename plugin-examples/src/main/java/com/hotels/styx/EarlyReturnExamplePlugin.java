@@ -16,6 +16,7 @@
 package com.hotels.styx;
 
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
@@ -36,7 +37,7 @@ public class EarlyReturnExamplePlugin implements Plugin {
 
     @Override
     public Eventual<LiveHttpResponse> intercept(LiveHttpRequest request, Chain chain) {
-        if (request.header("X-Respond").isPresent()) {
+        if (request.header(HeaderKey.headerKey("X-Respond")).isPresent()) {
             return Eventual.of(HttpResponse.response(OK)
                     .header(CONTENT_TYPE, "text/plain; charset=utf-8")
                     .body("Responding from plugin", UTF_8)

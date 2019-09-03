@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.hotels.styx.support.server.UrlMatchingStrategies._
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.is
 import org.scalatest.FunSpec
+import com.hotels.styx.api.HttpHeaderNames._
 
 // TODO: Mikko no longer necessary?
 
@@ -63,7 +64,7 @@ class ResubscribingPluginSpec extends FunSpec
       )
 
       val request = get(styxServer.routerURL("/foobar"))
-        .addHeader("Content-Length", "0")
+        .addHeader(CONTENT_LENGTH, "0")
         .build()
 
       val response = decodedRequest(request)

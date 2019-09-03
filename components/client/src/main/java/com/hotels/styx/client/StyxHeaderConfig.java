@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,29 +18,32 @@ package com.hotels.styx.client;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+import com.hotels.styx.api.HeaderKey;
 import io.netty.util.AsciiString;
+
+import static com.hotels.styx.api.HeaderKey.headerKey;
 
 /**
  * Contains the names for the headers that Styx will add to proxied requests/responses.
  */
 public class StyxHeaderConfig {
-    public static final String STYX_INFO_DEFAULT = "X-Styx-Info";
-    public static final String ORIGIN_ID_DEFAULT = "X-Styx-Origin-Id";
-    public static final String REQUEST_ID_DEFAULT = "X-Styx-Request-Id";
+    public static final HeaderKey STYX_INFO_DEFAULT = headerKey("X-Styx-Info");
+    public static final HeaderKey ORIGIN_ID_DEFAULT = headerKey("X-Styx-Origin-Id");
+    public static final HeaderKey REQUEST_ID_DEFAULT = headerKey("X-Styx-Request-Id");
 
     public static final String STYX_INFO_FORMAT_DEFAULT = "{INSTANCE};{REQUEST_ID}";
 
-    private final CharSequence styxInfoHeaderName;
-    private final CharSequence originIdHeaderName;
-    private final CharSequence requestIdHeaderName;
+    private final HeaderKey styxInfoHeaderName;
+    private final HeaderKey originIdHeaderName;
+    private final HeaderKey requestIdHeaderName;
     private final String styxInfoHeaderFormat;
 
     public StyxHeaderConfig(@JsonProperty("styxInfo") StyxHeader styxInfoHeader,
                             @JsonProperty("originId") StyxHeader originIdHeader,
                             @JsonProperty("requestId") StyxHeader requestIdHeader) {
-        this.styxInfoHeaderName = name(styxInfoHeader, STYX_INFO_DEFAULT);
-        this.originIdHeaderName = name(originIdHeader, ORIGIN_ID_DEFAULT);
-        this.requestIdHeaderName = name(requestIdHeader, REQUEST_ID_DEFAULT);
+        this.styxInfoHeaderName = name(styxInfoHeader, STYX_INFO_DEFAULT.toString());
+        this.originIdHeaderName = name(originIdHeader, ORIGIN_ID_DEFAULT.toString());
+        this.requestIdHeaderName = name(requestIdHeader, REQUEST_ID_DEFAULT.toString());
         this.styxInfoHeaderFormat = valueFormat(styxInfoHeader, STYX_INFO_FORMAT_DEFAULT);
     }
 
@@ -49,15 +52,15 @@ public class StyxHeaderConfig {
         this(null, null, null);
     }
 
-    public CharSequence styxInfoHeaderName() {
+    public HeaderKey styxInfoHeaderName() {
         return styxInfoHeaderName;
     }
 
-    public CharSequence originIdHeaderName() {
+    public HeaderKey originIdHeaderName() {
         return originIdHeaderName;
     }
 
-    public CharSequence requestIdHeaderName() {
+    public HeaderKey requestIdHeaderName() {
         return requestIdHeaderName;
     }
 
@@ -65,12 +68,12 @@ public class StyxHeaderConfig {
         return styxInfoHeaderFormat;
     }
 
-    private static AsciiString name(StyxHeader header, String defaultName) {
+    private static HeaderKey name(StyxHeader header, String defaultName) {
         if (header == null || header.name == null) {
-            return new AsciiString(defaultName);
+            return new HeaderKey(defaultName);
         }
 
-        return new AsciiString(header.name);
+        return new HeaderKey(header.name);
     }
 
     private static String valueFormat(StyxHeader header, String formatDefault) {

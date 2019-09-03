@@ -266,7 +266,7 @@ public class HttpRequestOperation implements Operation<NettyConnection, LiveHttp
             DefaultHttpRequest nettyRequest = toNettyRequest(request);
             Optional<String> host = request.header(HOST);
             if (!host.isPresent()) {
-                nettyRequest.headers().set(HOST, nettyConnection.getOrigin().hostAndPortString());
+                nettyRequest.headers().set(HOST.toString(), nettyConnection.getOrigin().hostAndPortString());
             }
             return nettyRequest;
         }

@@ -16,6 +16,7 @@
 package com.hotels.styx.routing.handlers
 
 import com.hotels.styx.api.Eventual
+import com.hotels.styx.api.HeaderKey
 import com.hotels.styx.api.HttpRequest
 import com.hotels.styx.api.HttpResponseStatus.BAD_GATEWAY
 import com.hotels.styx.api.HttpResponseStatus.OK
@@ -46,8 +47,8 @@ class ConditionRouterConfigTest : FeatureSpec({
 
     val context = RoutingObjectFactoryContext(
             routeRefLookup = routeLookup {
-                ref("secureHandler" to RoutingObject { _, _ -> Eventual.of(response(OK).header("source", "secure").build()) })
-                ref("fallbackHandler" to RoutingObject { _, _ -> Eventual.of(response(OK).header("source", "fallback").build()) })
+                ref("secureHandler" to RoutingObject { _, _ -> Eventual.of(response(OK).header(HeaderKey.headerKey("source"), "secure").build()) })
+                ref("fallbackHandler" to RoutingObject { _, _ -> Eventual.of(response(OK).header(HeaderKey.headerKey("source"), "fallback").build()) })
             })
 
     val config = routingObjectDef("""
@@ -107,7 +108,7 @@ class ConditionRouterConfigTest : FeatureSpec({
             router.handle(request, HttpInterceptorContext())
                     .toMono()
                     .block()!!
-                    .header("source").get() shouldBe ("fallback")
+                    .header(HeaderKey.headerKey("source")).get() shouldBe ("fallback")
         }
 
         scenario("Route destination can be specified as a handler reference") {
@@ -125,7 +126,7 @@ class ConditionRouterConfigTest : FeatureSpec({
             router.handle(request, HttpInterceptorContext(true))
                     .toMono()
                     .block()!!
-                    .header("source").get() shouldBe ("secure")
+                    .header(HeaderKey.headerKey("source")).get() shouldBe ("secure")
         }
 
 

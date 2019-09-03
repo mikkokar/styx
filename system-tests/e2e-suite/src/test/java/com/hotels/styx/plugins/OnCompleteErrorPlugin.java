@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hotels.styx.plugins;
 
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.plugins.spi.Plugin;
@@ -30,7 +31,7 @@ public class OnCompleteErrorPlugin implements Plugin {
 
         return new Eventual<>(toPublisher(toObservable(chain.proceed(request))
                 .doOnCompleted(() -> {
-                    if (request.header("Fail_at_onCompleted").isPresent()) {
+                    if (request.header(HeaderKey.headerKey("Fail_at_onCompleted")).isPresent()) {
                         throw new RuntimeException("foobar");
                     }
                 })));

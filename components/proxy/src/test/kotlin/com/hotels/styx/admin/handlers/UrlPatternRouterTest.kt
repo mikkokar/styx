@@ -17,6 +17,7 @@ package com.hotels.styx.admin.handlers
 
 import ch.qos.logback.classic.Level
 import com.hotels.styx.api.Eventual
+import com.hotels.styx.api.HeaderKey
 import com.hotels.styx.api.HttpInterceptor
 import com.hotels.styx.api.HttpRequest
 import com.hotels.styx.api.HttpRequest.post
@@ -42,58 +43,58 @@ class UrlPatternRouterTest : FeatureSpec({
             .get("/admin/apps/:appId") { request, context ->
                 Eventual.of(
                         response(OK)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
                                 .build())
             }
             .get("/admin/apps/:appId/origin/:originId") { request, context ->
                 Eventual.of(
                         response(OK)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
-                                .header("originId", UrlPatternRouter.placeholders(context)["originId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("originId"), UrlPatternRouter.placeholders(context)["originId"])
                                 .build())
             }
             .post("/admin/apps/:appId") { request, context ->
                 Eventual.of(
                         response(CREATED)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
                                 .build()
                 )
             }
             .post("/admin/apps/:appId/origin/:originId") { request, context ->
                 Eventual.of(
                         response(CREATED)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
-                                .header("originId", UrlPatternRouter.placeholders(context)["originId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("originId"), UrlPatternRouter.placeholders(context)["originId"])
                                 .build()
                 )
             }
             .put("/admin/apps/:appId") { request, context ->
                 Eventual.of(
                         response(NO_CONTENT)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
                                 .build()
                 )
             }
             .put("/admin/apps/:appId/origin/:originId") { request, context ->
                 Eventual.of(
                         response(NO_CONTENT)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
-                                .header("originId", UrlPatternRouter.placeholders(context)["originId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("originId"), UrlPatternRouter.placeholders(context)["originId"])
                                 .build()
                 )
             }
             .delete("/admin/apps/:appId") { request, context ->
                 Eventual.of(
                         response(ACCEPTED)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
                                 .build()
                 )
             }
             .delete("/admin/apps/:appId/origin/:originId") { request, context ->
                 Eventual.of(
                         response(ACCEPTED)
-                                .header("appId", UrlPatternRouter.placeholders(context)["appId"])
-                                .header("originId", UrlPatternRouter.placeholders(context)["originId"])
+                                .header(HeaderKey.headerKey("appId"), UrlPatternRouter.placeholders(context)["appId"])
+                                .header(HeaderKey.headerKey("originId"), UrlPatternRouter.placeholders(context)["originId"])
                                 .build()
                 )
             }
@@ -107,16 +108,16 @@ class UrlPatternRouterTest : FeatureSpec({
                     .block()
 
             response1!!.status() shouldBe OK
-            response1.header("appId") shouldBe Optional.of("234")
-            response1.header("originId") shouldBe Optional.empty()
+            response1.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response1.header(HeaderKey.headerKey("originId")) shouldBe Optional.empty()
 
             val response2 = router.handle(HttpRequest.get("/admin/apps/234/origin/123").build(), HttpInterceptorContext.create())
                     .toMono()
                     .block()
 
             response2!!.status() shouldBe OK
-            response2.header("appId") shouldBe Optional.of("234")
-            response2.header("originId") shouldBe Optional.of("123")
+            response2.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response2.header(HeaderKey.headerKey("originId")) shouldBe Optional.of("123")
         }
 
         scenario("POST requests") {
@@ -125,16 +126,16 @@ class UrlPatternRouterTest : FeatureSpec({
                     .block()
 
             response1!!.status() shouldBe CREATED
-            response1.header("appId") shouldBe Optional.of("234")
-            response1.header("originId") shouldBe Optional.empty()
+            response1.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response1.header(HeaderKey.headerKey("originId")) shouldBe Optional.empty()
 
             val response2 = router.handle(HttpRequest.post("/admin/apps/234/origin/123").build(), HttpInterceptorContext.create())
                     .toMono()
                     .block()
 
             response2!!.status() shouldBe CREATED
-            response2.header("appId") shouldBe Optional.of("234")
-            response2.header("originId") shouldBe Optional.of("123")
+            response2.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response2.header(HeaderKey.headerKey("originId")) shouldBe Optional.of("123")
         }
 
         scenario("PUT requests") {
@@ -143,16 +144,16 @@ class UrlPatternRouterTest : FeatureSpec({
                     .block()
 
             response1!!.status() shouldBe NO_CONTENT
-            response1.header("appId") shouldBe Optional.of("234")
-            response1.header("originId") shouldBe Optional.empty()
+            response1.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response1.header(HeaderKey.headerKey("originId")) shouldBe Optional.empty()
 
             val response2 = router.handle(HttpRequest.put("/admin/apps/234/origin/123").build(), HttpInterceptorContext.create())
                     .toMono()
                     .block()
 
             response2!!.status() shouldBe NO_CONTENT
-            response2.header("appId") shouldBe Optional.of("234")
-            response2.header("originId") shouldBe Optional.of("123")
+            response2.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response2.header(HeaderKey.headerKey("originId")) shouldBe Optional.of("123")
         }
 
         scenario("DELETE requests") {
@@ -161,16 +162,16 @@ class UrlPatternRouterTest : FeatureSpec({
                     .block()
 
             response1!!.status() shouldBe ACCEPTED
-            response1.header("appId") shouldBe Optional.of("234")
-            response1.header("originId") shouldBe Optional.empty()
+            response1.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response1.header(HeaderKey.headerKey("originId")) shouldBe Optional.empty()
 
             val response2 = router.handle(HttpRequest.delete("/admin/apps/234/origin/123").build(), HttpInterceptorContext.create())
                     .toMono()
                     .block()
 
             response2!!.status() shouldBe ACCEPTED
-            response2.header("appId") shouldBe Optional.of("234")
-            response2.header("originId") shouldBe Optional.of("123")
+            response2.header(HeaderKey.headerKey("appId")) shouldBe Optional.of("234")
+            response2.header(HeaderKey.headerKey("originId")) shouldBe Optional.of("123")
         }
 
     }

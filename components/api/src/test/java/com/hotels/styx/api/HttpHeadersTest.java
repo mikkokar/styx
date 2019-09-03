@@ -22,6 +22,7 @@ import org.testng.annotations.Test;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 
+import static com.hotels.styx.api.HeaderKey.headerKey;
 import static com.hotels.styx.api.HttpHeader.header;
 import static com.hotels.styx.support.matchers.IsOptional.isAbsent;
 import static com.hotels.styx.support.matchers.IsOptional.isValue;
@@ -39,8 +40,8 @@ public class HttpHeadersTest {
     @BeforeMethod
     public void setUp() {
         headers = new HttpHeaders.Builder()
-                .add("header1", "val1")
-                .add("header2", asList("val2a", "val2b"))
+                .add(headerKey("header1"), "val1")
+                .add(headerKey("header2"), asList("val2a", "val2b"))
                 .build();
     }
 
@@ -57,31 +58,31 @@ public class HttpHeadersTest {
 
     @Test
     public void checksWhetherHeadersExist() {
-        assertThat(headers.contains("header1"), is(true));
-        assertThat(headers.contains("header2"), is(true));
-        assertThat(headers.contains("nonExistent"), is(false));
+        assertThat(headers.contains(headerKey("header1")), is(true));
+        assertThat(headers.contains(headerKey("header2")), is(true));
+        assertThat(headers.contains(headerKey("nonExistent")), is(false));
     }
 
     @Test
     public void providesSingleHeaderValue() {
-        assertThat(headers.get("header1").get(), is("val1"));
+        assertThat(headers.get(headerKey("header1")).get(), is("val1"));
     }
 
     @Test
     public void providesFirstHeaderValueWhenSeveralExist() {
-        assertThat(headers.get("header2").get(), is("val2a"));
+        assertThat(headers.get(headerKey("header2")).get(), is("val2a"));
     }
 
     @Test
     public void providesOptionalAbsentWhenNoSuchHeaderExists() {
-        assertThat(headers.get("nonExistent"), isAbsent());
+        assertThat(headers.get(headerKey("nonExistent")), isAbsent());
     }
 
     @Test
     public void providesIterableOfHeaderValues() {
-        assertThat(headers.getAll("header1"), contains("val1"));
-        assertThat(headers.getAll("header2"), contains("val2a", "val2b"));
-        assertThat(headers.getAll("nonExistent"), is(emptyIterable()));
+        assertThat(headers.getAll(headerKey("header1")), contains("val1"));
+        assertThat(headers.getAll(headerKey("header2")), contains("val2a", "val2b"));
+        assertThat(headers.getAll(headerKey("nonExistent")), is(emptyIterable()));
     }
 
     @Test
@@ -100,7 +101,7 @@ public class HttpHeadersTest {
     @Test
     public void setsHeaders() {
         HttpHeaders newHeaders = new HttpHeaders.Builder()
-                .add("foo", "bar")
+                .add(headerKey("foo"), "bar")
                 .build();
 
         HttpHeaders headers = new HttpHeaders.Builder(newHeaders)
@@ -112,14 +113,14 @@ public class HttpHeadersTest {
     @Test(expectedExceptions = NullPointerException.class)
     public void doesNotAllowNullValue() {
         new HttpHeaders.Builder()
-                .add("header1", (String) null)
+                .add(headerKey("header1"), (String) null)
                 .build();
     }
 
     @Test
     public void removesNullValues() {
         HttpHeaders headers = new Builder()
-                .add("header1", asList("val1", null, "val2"))
+                .add(headerKey("header1"), asList("val1", null, "val2"))
                 .build();
 
         assertThat(headers, contains(header("header1", "val1"), header("header1", "val2")));
@@ -137,9 +138,9 @@ public class HttpHeadersTest {
         Instant time = ZonedDateTime.of(2015, 9, 10, 12, 2, 28, 0, UTC).toInstant();
 
         HttpHeaders headers = new HttpHeaders.Builder()
-                .set("foo", time)
+                .set(headerKey("foo"), time)
                 .build();
 
-        assertThat(headers.get("foo"), isValue("Thu, 10 Sep 2015 12:02:28 GMT"));
+        assertThat(headers.get(headerKey("foo")), isValue("Thu, 10 Sep 2015 12:02:28 GMT"));
     }
 }

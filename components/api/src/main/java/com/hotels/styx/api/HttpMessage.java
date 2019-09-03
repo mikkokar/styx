@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ interface HttpMessage {
      *
      * @return the value of the header with the specified {@code name} if present
      */
-    default Optional<String> header(CharSequence name) {
+    default Optional<String> header(HeaderKey name) {
         return headers().get(name);
     }
 
@@ -75,7 +75,7 @@ interface HttpMessage {
      * @param name the name of the headers
      * @return A {@link List} of header values which will be empty if no values are found
      */
-    default List<String> headers(CharSequence name) {
+    default List<String> headers(HeaderKey name) {
         return headers().getAll(name);
     }
 

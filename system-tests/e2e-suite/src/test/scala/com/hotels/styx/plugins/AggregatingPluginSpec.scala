@@ -18,7 +18,8 @@ package com.hotels.styx.plugins
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.hotels.styx.MockServer.responseSupplier
-import com.hotels.styx.api.{Buffer, ByteStream}
+import com.hotels.styx.api.HeaderKey.headerKey
+import com.hotels.styx.api.{Buffer, ByteStream, HeaderKey}
 import com.hotels.styx.api.HttpRequest.get
 import com.hotels.styx.api.LiveHttpResponse.response
 import com.hotels.styx.api.HttpResponseStatus.OK
@@ -59,8 +60,8 @@ class AggregatingPluginSpec extends FunSpec
       val resp = decodedRequest(request)
 
       assert(resp.status() == OK)
-      assert(resp.header("test_plugin").get() == "yes")
-      assert(resp.header("bytes_aggregated").get() == "0")
+      assert(resp.header(headerKey("test_plugin")).get() == "yes")
+      assert(resp.header(headerKey("bytes_aggregated")).get() == "0")
       assert(resp.bodyAs(UTF_8) == "")
     }
 
@@ -73,8 +74,8 @@ class AggregatingPluginSpec extends FunSpec
       val resp = decodedRequest(request)
 
       assert(resp.status() == OK)
-      assert(resp.header("test_plugin").get() == "yes")
-      assert(resp.header("bytes_aggregated").get() == "2500")
+      assert(resp.header(headerKey("test_plugin")).get() == "yes")
+      assert(resp.header(headerKey("bytes_aggregated")).get() == "2500")
       assert(resp.bodyAs(UTF_8) == chunkString("a") + chunkString("b") + chunkString("c") + chunkString("d") + chunkString("e"))
     }
   }

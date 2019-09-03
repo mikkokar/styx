@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.hotels.styx.Environment;
 import com.hotels.styx.StyxConfig;
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
@@ -56,13 +57,13 @@ public class InterceptorPipelineBuilderTest {
                         (request, chain) ->
                                 chain.proceed(request)
                                         .map(response -> response.newBuilder()
-                                                .header("plug1", "1")
+                                                .header(HeaderKey.headerKey("plug1"), "1")
                                                 .build())),
                 namedPlugin("plug2",
                         (request, chain) ->
                                 chain.proceed(request)
                                         .map(response -> response.newBuilder()
-                                                .header("plug2", "1")
+                                                .header(HeaderKey.headerKey("plug2"), "1")
                                                 .build()))
         );
 
@@ -75,8 +76,8 @@ public class InterceptorPipelineBuilderTest {
         HttpHandler pipeline = new InterceptorPipelineBuilder(environment, plugins, handler, false).build();
         LiveHttpResponse response = Mono.from(pipeline.handle(get("/foo").build(), HttpInterceptorContext.create())).block();
 
-        assertThat(response.header("plug1"), isValue("1"));
-        assertThat(response.header("plug2"), isValue("1"));
+        assertThat(response.header(HeaderKey.headerKey("plug1")), isValue("1"));
+        assertThat(response.header(HeaderKey.headerKey("plug2")), isValue("1"));
 
         assertThat(response.status(), is(OK));
     }

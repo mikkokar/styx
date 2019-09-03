@@ -24,8 +24,8 @@ import com.hotels.styx.api.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH;
+import static com.hotels.styx.api.HttpHeaderNames.CONTENT_TYPE;
 import static com.hotels.styx.api.HttpResponseStatus.OK;
 import static java.util.Objects.requireNonNull;
 

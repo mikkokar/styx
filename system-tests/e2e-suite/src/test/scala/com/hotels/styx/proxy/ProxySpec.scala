@@ -24,7 +24,7 @@ import com.hotels.styx.MockServer.responseSupplier
 import com.hotels.styx.api.HttpHeaderNames._
 import com.hotels.styx.api.HttpMethod.CONNECT
 import com.hotels.styx.api.HttpRequest.{get, head}
-import com.hotels.styx.api.HttpResponse
+import com.hotels.styx.api.{HeaderKey, HttpResponse}
 import com.hotels.styx.api.HttpResponseStatus._
 import com.hotels.styx.api.HttpVersion._
 import com.hotels.styx.api.LiveHttpResponse.response
@@ -89,7 +89,7 @@ class ProxySpec extends FunSpec
 
       recordingBackend.verify(getRequestedFor(urlPathEqualTo("/")))
       assert(resp.status() == OK)
-      assertThat(resp.header("headerName"), isValue("headerValue"))
+      assertThat(resp.header(HeaderKey.headerKey("headerName")), isValue("headerValue"))
       assert(resp.bodyAs(UTF_8) == "bodyContent")
       assertThat(resp.header(STYX_INFO_DEFAULT), matches(matchesRegex("noJvmRouteSet;[0-9a-f-]+")))
     }
@@ -246,7 +246,7 @@ class ProxySpec extends FunSpec
 
     def assertThatResponseIsBodiless(response: HttpResponse) {
       val headers = response.headers()
-      assert(response.contentLength().orElse(0) == 0, s"\nexpected headers with no Content-Length header but found $headers")
+      assert(response.contentLength().orElse(0L) == 0, s"\nexpected headers with no Content-Length header but found $headers")
       assert(!response.chunked(), s"\nexpected headers with no Transfer-Encoding header but found $headers")
       assert(response.bodyAs(UTF_8).isEmpty, s"\nexpected response with no body but found ${response.bodyAs(UTF_8)}")
     }

@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.admin.handlers;
 
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
@@ -60,7 +61,7 @@ public class IndexHandler extends BaseHttpHandler {
     protected HttpResponse doHandle(HttpRequest request, HttpInterceptor.Context context) {
         return response(OK)
                 .addHeader(CONTENT_TYPE, HTML_UTF_8.toString())
-                .header(CONTENT_LANGUAGE, "en")
+                .header(HeaderKey.headerKey(CONTENT_LANGUAGE), "en")
                 .body(html, UTF_8)
                 .build();
     }

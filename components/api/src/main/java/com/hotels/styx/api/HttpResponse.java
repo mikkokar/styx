@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -28,7 +28,10 @@ import java.util.function.Predicate;
 
 import static com.google.common.base.Objects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.hotels.styx.api.HttpHeaderNames.CACHE_CONTROL;
 import static com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH;
+import static com.hotels.styx.api.HttpHeaderNames.EXPIRES;
+import static com.hotels.styx.api.HttpHeaderNames.PRAGMA;
 import static com.hotels.styx.api.HttpHeaderNames.SET_COOKIE;
 import static com.hotels.styx.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static com.hotels.styx.api.HttpHeaderValues.CHUNKED;
@@ -97,12 +100,12 @@ public class HttpResponse implements HttpMessage {
     }
 
     @Override
-    public Optional<String> header(CharSequence name) {
+    public Optional<String> header(HeaderKey name) {
         return headers.get(name);
     }
 
     @Override
-    public List<String> headers(CharSequence name) {
+    public List<String> headers(HeaderKey name) {
         return headers.getAll(name);
     }
 
@@ -372,9 +375,9 @@ public class HttpResponse implements HttpMessage {
          * @return {@code this}
          */
         public Builder disableCaching() {
-            header("Pragma", "no-cache");
-            header("Expires", "Mon, 1 Jan 2007 08:00:00 GMT");
-            header("Cache-Control", "no-cache,must-revalidate,no-store");
+            header(PRAGMA, "no-cache");
+            header(EXPIRES, "Mon, 1 Jan 2007 08:00:00 GMT");
+            header(CACHE_CONTROL, "no-cache,must-revalidate,no-store");
             return this;
         }
 
@@ -490,7 +493,7 @@ public class HttpResponse implements HttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        public Builder header(CharSequence name, Object value) {
+        public Builder header(HeaderKey name, Object value) {
             this.headers.set(name, value);
             return this;
         }
@@ -504,7 +507,7 @@ public class HttpResponse implements HttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        public Builder addHeader(CharSequence name, Object value) {
+        public Builder addHeader(HeaderKey name, Object value) {
             headers.add(name, value);
             return this;
         }
@@ -515,7 +518,7 @@ public class HttpResponse implements HttpMessage {
          * @param name The name of the header to remove
          * @return {@code this}
          */
-        public Builder removeHeader(CharSequence name) {
+        public Builder removeHeader(HeaderKey name) {
             headers.remove(name);
             return this;
         }
