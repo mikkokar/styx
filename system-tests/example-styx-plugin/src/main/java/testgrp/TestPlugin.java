@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package testgrp;
 
 import com.google.common.base.Charsets;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.LiveHttpRequest;
@@ -50,11 +51,11 @@ public class TestPlugin implements Plugin {
         String pluginsList = environment.configuration().get("plugins.active").get();
 
         LiveHttpRequest newRequest = request.newBuilder()
-                .header(X_HCOM_PLUGINS_HEADER, header)
-                .header(X_HCOM_PLUGINS_CONFIGURATION_PATH, configPath)
-                .header(X_HCOM_PLUGINS_LIST, pluginsList)
-                .header("X-Hcom-Styx-Started", styxStarted)
-                .header("X-Hcom-Styx-Stopped", styxStopped)
+                .header(HeaderKey.headerKey(X_HCOM_PLUGINS_HEADER), header)
+                .header(HeaderKey.headerKey(X_HCOM_PLUGINS_CONFIGURATION_PATH), configPath)
+                .header(HeaderKey.headerKey(X_HCOM_PLUGINS_LIST), pluginsList)
+                .header(HeaderKey.headerKey("X-Hcom-Styx-Started"), styxStarted)
+                .header(HeaderKey.headerKey("X-Hcom-Styx-Stopped"), styxStopped)
                 .build();
 
         Function<ByteBuf, String> byteBufStringFunction = byteBuf -> byteBuf.toString(Charsets.UTF_8);
@@ -63,17 +64,17 @@ public class TestPlugin implements Plugin {
                 .flatMap(response -> response.aggregate(1 * 1024 * 1024))
                 .map(response ->
                         response.newBuilder()
-                                .header(X_HCOM_PLUGINS_HEADER, header)
-                                .header(X_HCOM_PLUGINS_CONFIGURATION_PATH, configPath)
-                                .header(X_HCOM_PLUGINS_LIST, pluginsList)
-                                .header("X-Hcom-Styx-Started", styxStarted)
-                                .header("X-Hcom-Styx-Stopped", styxStopped)
+                                .header(HeaderKey.headerKey(X_HCOM_PLUGINS_HEADER), header)
+                                .header(HeaderKey.headerKey(X_HCOM_PLUGINS_CONFIGURATION_PATH), configPath)
+                                .header(HeaderKey.headerKey(X_HCOM_PLUGINS_LIST), pluginsList)
+                                .header(HeaderKey.headerKey("X-Hcom-Styx-Started"), styxStarted)
+                                .header(HeaderKey.headerKey("X-Hcom-Styx-Stopped"), styxStopped)
                                 .build())
                 .map(HttpResponse::stream);
     }
 
     private String xHcomPluginsHeader(LiveHttpRequest message) {
-        return message.headers().get(X_HCOM_PLUGINS_HEADER).orElse("")
+        return message.headers().get(HeaderKey.headerKey(X_HCOM_PLUGINS_HEADER)).orElse("")
                 .concat(" test-plugin-a")
                 .trim();
     }

@@ -16,6 +16,7 @@
 package com.hotels.styx.proxy;
 
 import com.hotels.styx.Environment;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
@@ -33,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 public final class ProxyServerBuilder {
     private final Environment environment;
     private final ResponseInfoFormat responseInfoFormat;
-    private final CharSequence styxInfoHeaderName;
+    private final HeaderKey styxInfoHeaderName;
 
     private Supplier<HttpHandler> handlerFactory;
     private Runnable onStartupAction = () -> {

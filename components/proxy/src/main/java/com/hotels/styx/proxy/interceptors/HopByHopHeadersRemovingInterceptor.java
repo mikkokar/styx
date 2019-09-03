@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.proxy.interceptors;
 
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.Eventual;
@@ -45,7 +46,7 @@ public class HopByHopHeadersRemovingInterceptor implements HttpInterceptor {
         response.header(CONNECTION).ifPresent(connection -> {
             for (String connectToken : connection.split(",")) {
                 String header = connectToken.trim();
-                newResponse.removeHeader(header);
+                newResponse.removeHeader(HeaderKey.headerKey(header));
             }
             newResponse.removeHeader(CONNECTION);
         });
@@ -68,7 +69,7 @@ public class HopByHopHeadersRemovingInterceptor implements HttpInterceptor {
         request.header(CONNECTION).ifPresent(connection -> {
             for (String connectToken : connection.split(",")) {
                 String header = connectToken.trim();
-                newRequest.removeHeader(header);
+                newRequest.removeHeader(HeaderKey.headerKey(header));
             }
             newRequest.removeHeader(CONNECTION);
         });

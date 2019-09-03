@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.google.common.base.Charsets.UTF_8
 import com.google.common.net.HostAndPort._
+import com.hotels.styx.api.HeaderKey.headerKey
 import com.hotels.styx.{DefaultStyxConfiguration, StyxProxySpec, api}
 import com.hotels.styx.api.HttpRequest.get
 import com.hotels.styx.api.HttpResponseStatus.{BAD_REQUEST, OK}
@@ -88,8 +89,8 @@ class BadFramingSpec extends FunSpec
       originRespondingWith(status200OkResponse)
       val request = get(styxServer.routerURL("/badFramingSpec/one/foo/e"))
         .disableValidation()
-        .addHeader(CONTENT_LENGTH, "50")
-        .addHeader(CONTENT_LENGTH, "60")
+        .addHeader(headerKey(CONTENT_LENGTH), "50")
+        .addHeader(headerKey(CONTENT_LENGTH), "60")
         .build()
 
       val response = decodedRequest(request)
@@ -102,7 +103,7 @@ class BadFramingSpec extends FunSpec
       originRespondingWith(status200OkResponse)
       val request = get(styxServer.routerURL("/badFramingSpec/one/foo/f"))
         .disableValidation()
-        .header(CONTENT_LENGTH, "50, 60")
+        .header(headerKey(CONTENT_LENGTH), "50, 60")
         .build()
 
       val response = decodedRequest(request)
@@ -115,7 +116,7 @@ class BadFramingSpec extends FunSpec
       originRespondingWith(status200OkResponse)
       val request = get(styxServer.routerURL("/badFramingSpec/one/foo/g"))
         .disableValidation()
-        .header(CONTENT_LENGTH, "50, 50")
+        .header(headerKey(CONTENT_LENGTH), "50, 50")
         .build()
 
       val response = decodedRequest(request)
@@ -140,7 +141,7 @@ class BadFramingSpec extends FunSpec
         .build()
       val response = decodedRequest(request)
       response.status() should be(OK)
-      response.header(CONTENT_LENGTH).isPresent should be(false)
+      response.header(headerKey(CONTENT_LENGTH)).isPresent should be(false)
 
       assert(response.bodyAs(UTF_8) == "a" * 10 + "b" * 20 + "c" * 30, s"\nReceived incorrect body: ${response.bodyAs(UTF_8)}")
     }

@@ -61,7 +61,7 @@ public class LiveHttpRequestTest {
     public void decodesToFullHttpRequest() throws Exception {
         LiveHttpRequest streamingRequest = post("/foo/bar", body("foo", "bar"))
                 .version(HTTP_1_0)
-                .header("HeaderName", "HeaderValue")
+                .header(HeaderKey.headerKey("HeaderName"), "HeaderValue")
                 .cookies(requestCookie("CookieName", "CookieValue"))
                 .build();
 
@@ -118,11 +118,11 @@ public class LiveHttpRequestTest {
         assertThat(request.id(), is(notNullValue()));
         assertThat(request.cookies(), is(emptyIterable()));
         assertThat(request.headers(), is(emptyIterable()));
-        assertThat(request.headers("any"), is(emptyIterable()));
+        assertThat(request.headers(HeaderKey.headerKey("any")), is(emptyIterable()));
 
         assertThat(bytesToString(request.body()), is(""));
         assertThat(request.cookie("any"), isAbsent());
-        assertThat(request.header("any"), isAbsent());
+        assertThat(request.header(HeaderKey.headerKey("any")), isAbsent());
         assertThat(request.keepAlive(), is(true));
         assertThat(request.method(), is(GET));
         assertThat(request.queryParam("any"), isAbsent());
@@ -134,24 +134,24 @@ public class LiveHttpRequestTest {
         LiveHttpRequest request = patch("https://hotels.com")
                 .version(HTTP_1_0)
                 .id("id")
-                .header("headerName", "a")
+                .header(HeaderKey.headerKey("headerName"), "a")
                 .cookies(requestCookie("cfoo", "bar"))
                 .build();
 
         assertThat(request.toString(), is("LiveHttpRequest{version=HTTP/1.0, method=PATCH, uri=https://hotels.com, headers=[Cookie=cfoo=bar, Host=hotels.com, headerName=a], id=id}"));
 
-        assertThat(request.headers("headerName"), is(singletonList("a")));
+        assertThat(request.headers(HeaderKey.headerKey("headerName")), is(singletonList("a")));
     }
 
     @Test
     public void canModifyPreviouslyCreatedRequest() {
         LiveHttpRequest request = get("/foo")
-                .header("remove", "remove")
+                .header(HeaderKey.headerKey("remove"), "remove")
                 .build();
 
         LiveHttpRequest newRequest = request.newBuilder()
                 .uri("/home")
-                .header("remove", "notanymore")
+                .header(HeaderKey.headerKey("remove"), "notanymore")
                 .build();
 
         assertThat(newRequest.url().path(), is("/home"));
@@ -176,7 +176,7 @@ public class LiveHttpRequestTest {
     public void createsRequestBuilderFromRequest() {
         LiveHttpRequest originalRequest = get("/home")
                 .cookies(requestCookie("fred", "blogs"))
-                .header("some", "header")
+                .header(HeaderKey.headerKey("some"), "header")
                 .build();
 
         LiveHttpRequest clonedRequest = originalRequest.newBuilder().build();
@@ -278,11 +278,11 @@ public class LiveHttpRequestTest {
     public void canRemoveAHeader() {
         Object hdValue = "b";
         LiveHttpRequest request = get("/")
-                .header("a", hdValue)
-                .addHeader("c", hdValue)
+                .header(HeaderKey.headerKey("a"), hdValue)
+                .addHeader(HeaderKey.headerKey("c"), hdValue)
                 .build();
         LiveHttpRequest shouldRemoveHeader = request.newBuilder()
-                .removeHeader("c")
+                .removeHeader(HeaderKey.headerKey("c"))
                 .build();
 
         assertThat(shouldRemoveHeader.headers(), contains(header("a", "b")));
@@ -445,50 +445,50 @@ public class LiveHttpRequestTest {
 
     @Test
     public void transformsHeader() {
-        LiveHttpRequest request = LiveHttpRequest.get("/").header("X-Styx-ID", "test").build()
+        LiveHttpRequest request = LiveHttpRequest.get("/").header(HeaderKey.headerKey("X-Styx-ID"), "test").build()
                 .newBuilder()
-                .header("X-Styx-ID", "bar")
+                .header(HeaderKey.headerKey("X-Styx-ID"), "bar")
                 .build();
 
-        assertEquals(request.header("X-Styx-ID"), Optional.of("bar"));
+        assertEquals(request.header(HeaderKey.headerKey("X-Styx-ID")), Optional.of("bar"));
     }
 
     @Test
     public void transformsHeaders() {
         LiveHttpRequest request = LiveHttpRequest.get("/").headers(
                 new HttpHeaders.Builder()
-                        .add("x", "y")
+                        .add(HeaderKey.headerKey("x"), "y")
                         .build())
                 .build()
                 .newBuilder()
                 .headers(
                         new HttpHeaders.Builder()
-                        .add("a", "b")
+                        .add(HeaderKey.headerKey("a"), "b")
                         .build())
                 .build();
 
-        assertThat(request.header("x"), is(Optional.empty()));
-        assertThat(request.header("a"), is(Optional.of("b")));
+        assertThat(request.header(HeaderKey.headerKey("x")), is(Optional.empty()));
+        assertThat(request.header(HeaderKey.headerKey("a")), is(Optional.of("b")));
     }
 
     @Test
     public void transformerAddsHeader() {
         LiveHttpRequest request = LiveHttpRequest.get("/").build()
                 .newBuilder()
-                .addHeader("x", "y")
+                .addHeader(HeaderKey.headerKey("x"), "y")
                 .build();
 
-        assertEquals(request.header("x"), Optional.of("y"));
+        assertEquals(request.header(HeaderKey.headerKey("x")), Optional.of("y"));
     }
 
     @Test
     public void transformerRemovesHeader() {
-        LiveHttpRequest request = LiveHttpRequest.get("/").addHeader("x", "y").build()
+        LiveHttpRequest request = LiveHttpRequest.get("/").addHeader(HeaderKey.headerKey("x"), "y").build()
                 .newBuilder()
-                .removeHeader("x")
+                .removeHeader(HeaderKey.headerKey("x"))
                 .build();
 
-        assertEquals(request.header("x"), Optional.empty());
+        assertEquals(request.header(HeaderKey.headerKey("x")), Optional.empty());
     }
 
     @Test
@@ -567,7 +567,7 @@ public class LiveHttpRequestTest {
         AsciiString a2 = new AsciiString("ABC");
 
         LiveHttpRequest.post("/y")
-                .header("Content-Length", -3)
+                .header(CONTENT_LENGTH, -3)
                 .build();
     }
 

@@ -19,6 +19,7 @@ import java.lang.Thread.sleep
 
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, urlMatching}
 import com.hotels.styx._
+import com.hotels.styx.api.HeaderKey.headerKey
 import com.hotels.styx.{BackendServicesRegistrySupplier, StyxClientSupplier, StyxConfiguration, StyxServerSupport}
 import com.hotels.styx.api.HttpHeaderNames.HOST
 import com.hotels.styx.api.HttpInterceptor.Chain
@@ -97,7 +98,7 @@ class ErrorMetricsSpec extends FunSpec
       for (i <- 1 to 2) {
         val request = get("/foo")
           .addHeader(HOST, styxServer.proxyHost)
-          .header("Fail_at_onCompleted", "true")
+          .header(headerKey("Fail_at_onCompleted"), "true")
           .build()
 
         val response = decodedRequest(request)
@@ -113,7 +114,7 @@ class ErrorMetricsSpec extends FunSpec
     it("Records 500s created in plugins as plugin errors") {
       val request = get("/foo")
         .addHeader(HOST, styxServer.proxyHost)
-        .header("Generate_error_status", "true")
+        .header(headerKey("Generate_error_status"), "true")
         .build()
 
       val response = decodedRequest(request)
@@ -136,7 +137,7 @@ class ErrorMetricsSpec extends FunSpec
     it("Records 500s mapped from responses in plugins as plugin errors") {
       val request = get("/foo")
         .addHeader(HOST, styxServer.proxyHost)
-        .header("Map_to_error_status", "true")
+        .header(headerKey("Map_to_error_status"), "true")
         .build()
 
       val response = decodedRequest(request)
@@ -182,7 +183,7 @@ class ErrorMetricsSpec extends FunSpec
     it("Does not record non-500 5xxs created in plugins as plugin errors or styx errors") {
       val request = get("/foo")
         .addHeader(HOST, styxServer.proxyHost)
-        .header("Generate_bad_gateway_status", "true")
+        .header(headerKey("Generate_bad_gateway_status"), "true")
         .build()
 
       val response = decodedRequest(request)
@@ -199,7 +200,7 @@ class ErrorMetricsSpec extends FunSpec
     it("Does not record non-500 5xxs mapped from responses in plugins as plugin errors or styx errors") {
       val request = get("/foo")
         .addHeader(HOST, styxServer.proxyHost)
-        .header("Map_to_bad_gateway_status", "true")
+        .header(headerKey("Map_to_bad_gateway_status"), "true")
         .build()
 
       val response = decodedRequest(request)
@@ -216,7 +217,7 @@ class ErrorMetricsSpec extends FunSpec
     it("Records Exceptions from plugins as plugin exceptions") {
       val request = get("/foo")
         .addHeader(HOST, styxServer.proxyHost)
-        .header("Throw_an_exception", "true")
+        .header(headerKey("Throw_an_exception"), "true")
         .build()
 
       val response = decodedRequest(request)
@@ -241,7 +242,7 @@ class ErrorMetricsSpec extends FunSpec
     it("Records Exceptions from plugin response mapping as plugin exceptions") {
       val request = get("/foo")
         .addHeader(HOST, styxServer.proxyHost)
-        .header("Map_to_exception", "true")
+        .header(headerKey("Map_to_exception"), "true")
         .build()
 
       val response = decodedRequest(request)
@@ -296,7 +297,7 @@ class ErrorMetricsSpec extends FunSpec
 
   private class Return500Interceptor extends PluginAdapter {
     override def intercept(request: LiveHttpRequest, chain: Chain): Eventual[LiveHttpResponse] = {
-      if (request.header("Generate_error_status").asScala.contains("true"))
+      if (request.header(headerKey("Generate_error_status")).asScala.contains("true"))
         Eventual.of(response(HttpResponseStatus.INTERNAL_SERVER_ERROR).build())
       else
         chain.proceed(request)
@@ -307,7 +308,7 @@ class ErrorMetricsSpec extends FunSpec
 
   private class MapTo500Interceptor extends PluginAdapter {
     override def intercept(request: LiveHttpRequest, chain: Chain): Eventual[LiveHttpResponse] = {
-      if (request.header("Map_to_error_status").asScala.contains("true"))
+      if (request.header(headerKey("Map_to_error_status")).asScala.contains("true"))
         chain.proceed(request).flatMap(
           asJavaFunction((t: LiveHttpResponse) => Eventual.of(response(HttpResponseStatus.INTERNAL_SERVER_ERROR).build())
           ))
@@ -318,7 +319,7 @@ class ErrorMetricsSpec extends FunSpec
 
   private class Return502Interceptor extends PluginAdapter {
     override def intercept(request: LiveHttpRequest, chain: Chain): Eventual[LiveHttpResponse] = {
-      if (request.header("Generate_bad_gateway_status").asScala.contains("true"))
+      if (request.header(headerKey("Generate_bad_gateway_status")).asScala.contains("true"))
         Eventual.of(response(HttpResponseStatus.BAD_GATEWAY).build())
       else
         chain.proceed(request)
@@ -327,7 +328,7 @@ class ErrorMetricsSpec extends FunSpec
 
   private class MapTo502Interceptor extends PluginAdapter {
     override def intercept(request: LiveHttpRequest, chain: Chain): Eventual[LiveHttpResponse] = {
-      if (request.header("Map_to_bad_gateway_status").asScala.contains("true"))
+      if (request.header(headerKey("Map_to_bad_gateway_status")).asScala.contains("true"))
         chain.proceed(request).flatMap(
           asJavaFunction((t: LiveHttpResponse) => Eventual.of(response(HttpResponseStatus.BAD_GATEWAY).build())
           ))
@@ -338,7 +339,7 @@ class ErrorMetricsSpec extends FunSpec
 
   private class ThrowExceptionInterceptor extends PluginAdapter {
     override def intercept(request: LiveHttpRequest, chain: Chain): Eventual[LiveHttpResponse] = {
-      if (request.header("Throw_an_exception").asScala.contains("true"))
+      if (request.header(headerKey("Throw_an_exception")).asScala.contains("true"))
         throw new TestException()
       else
         chain.proceed(request)
@@ -348,7 +349,7 @@ class ErrorMetricsSpec extends FunSpec
   private class MapToExceptionInterceptor extends PluginAdapter {
 
     override def intercept(request: LiveHttpRequest, chain: Chain): Eventual[LiveHttpResponse] = {
-      if (request.header("Map_to_exception").asScala.contains("true"))
+      if (request.header(headerKey("Map_to_exception")).asScala.contains("true"))
         chain.proceed(request).flatMap(asJavaFunction((t: LiveHttpResponse) => Eventual.error(new TestException())))
       else
         chain.proceed(request)

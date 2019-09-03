@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.google.common.collect.ImmutableMap;
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.client.HttpClient;
@@ -228,11 +229,11 @@ public class StyxServerTest {
         HttpResponse response1 = await(client.sendRequest(get(format("http://localhost:%d/foo", styxServer.proxyHttpPort())).build()));
 
         assertThat(response1.status(), is(OK));
-        assertThat(response1.header("origin"), isValue("first"));
+        assertThat(response1.header(HeaderKey.headerKey("origin")), isValue("first"));
 
         HttpResponse response2 = await(client.sendRequest(get(format("http://localhost:%d/o2/foo", styxServer.proxyHttpPort())).build()));
         assertThat(response2.status(), is(OK));
-        assertThat(response2.header("origin"), isValue("second"));
+        assertThat(response2.header(HeaderKey.headerKey("origin")), isValue("second"));
 
         configureFor(originServer1.port());
         WireMock.verify(getRequestedFor(urlPathEqualTo("/foo")));
@@ -244,7 +245,7 @@ public class StyxServerTest {
     public void executesPluginsWhenProxying() {
         Plugin responseDecorator = (request, chain) -> chain.proceed(request)
                 .map(response -> response.newBuilder()
-                        .header("plugin-executed", "yes")
+                        .header(HeaderKey.headerKey("plugin-executed"), "yes")
                         .build());
 
         PluginFactory pluginFactory = environment -> responseDecorator;
@@ -256,8 +257,8 @@ public class StyxServerTest {
 
         HttpResponse response = await(client.sendRequest(get(format("http://localhost:%d/foo", styxServer.proxyHttpPort())).build()));
         assertThat(response.status(), is(OK));
-        assertThat(response.header("origin"), isValue("first"));
-        assertThat(response.header("plugin-executed"), isValue("yes"));
+        assertThat(response.header(HeaderKey.headerKey("origin")), isValue("first"));
+        assertThat(response.header(HeaderKey.headerKey("plugin-executed")), isValue("yes"));
 
         configureFor(originServer1.port());
         WireMock.verify(getRequestedFor(urlPathEqualTo("/foo")));
@@ -304,17 +305,17 @@ public class StyxServerTest {
     @Test
     public void exposesAdminEndpoints() {
         setUpStyxAndPluginWithAdminPages(ImmutableMap.of(
-                "adminPage1", (request, ctx) -> Eventual.of(LiveHttpResponse.response().header("AdminPage1", "yes").build()),
-                "adminPage2", (request, ctx) -> Eventual.of(LiveHttpResponse.response().header("AdminPage2", "yes").build())
+                "adminPage1", (request, ctx) -> Eventual.of(LiveHttpResponse.response().header(HeaderKey.headerKey("AdminPage1"), "yes").build()),
+                "adminPage2", (request, ctx) -> Eventual.of(LiveHttpResponse.response().header(HeaderKey.headerKey("AdminPage2"), "yes").build())
         ));
 
         HttpResponse response = doAdminRequest("/admin/plugins/plugin-with-admin-pages/adminPage1");
         assertThat(response.status(), is(OK));
-        assertThat(response.header("AdminPage1"), isValue("yes"));
+        assertThat(response.header(HeaderKey.headerKey("AdminPage1")), isValue("yes"));
 
         response = doAdminRequest("/admin/plugins/plugin-with-admin-pages/adminPage2");
         assertThat(response.status(), is(OK));
-        assertThat(response.header("AdminPage2"), isValue("yes"));
+        assertThat(response.header(HeaderKey.headerKey("AdminPage2")), isValue("yes"));
     }
 
     private void setUpStyxAndPluginWithAdminPages(Map<String, HttpHandler> adminInterfaceHandlers) {
@@ -369,11 +370,11 @@ public class StyxServerTest {
 
         HttpResponse response1 = await(client.sendRequest(get(format("http://localhost:%d/foo", styxServer.proxyHttpPort())).build()));
         assertThat(response1.status(), is(OK));
-        assertThat(response1.header("origin"), isValue("first"));
+        assertThat(response1.header(HeaderKey.headerKey("origin")), isValue("first"));
 
         HttpResponse response2 = await(client.sendRequest(get(format("http://localhost:%d/o2/foo", styxServer.proxyHttpPort())).build()));
         assertThat(response2.status(), is(OK));
-        assertThat(response2.header("origin"), isValue("second"));
+        assertThat(response2.header(HeaderKey.headerKey("origin")), isValue("second"));
 
         configureFor(originServer1.port());
         WireMock.verify(getRequestedFor(urlPathEqualTo("/foo")));
@@ -390,11 +391,11 @@ public class StyxServerTest {
 
         HttpResponse response1 = await(client.sendRequest(get(format("http://localhost:%d/foo", styxServer.proxyHttpPort())).build()));
         assertThat(response1.status(), is(OK));
-        assertThat(response1.header("origin"), isValue("first"));
+        assertThat(response1.header(HeaderKey.headerKey("origin")), isValue("first"));
 
         HttpResponse response2 = await(client.sendRequest(get(format("http://localhost:%d/o2/foo", styxServer.proxyHttpPort())).build()));
         assertThat(response2.status(), is(OK));
-        assertThat(response2.header("origin"), isValue("second"));
+        assertThat(response2.header(HeaderKey.headerKey("origin")), isValue("second"));
 
         configureFor(originServer1.port());
         WireMock.verify(getRequestedFor(urlPathEqualTo("/foo")));

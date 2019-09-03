@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.server.routing.antlr;
 
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.RequestCookie;
@@ -37,7 +38,7 @@ public class AntlrConditionTest {
             .registerFunction("method", (request, context) -> request.method().name())
             .registerFunction("path", (request, context) -> request.path())
             .registerFunction("userAgent", (request, context) -> request.header(USER_AGENT).orElse(""))
-            .registerFunction("header", (request, context, input) -> request.header(input).orElse(""))
+            .registerFunction("header", (request, context, input) -> request.header(HeaderKey.headerKey(input)).orElse(""))
             .registerFunction("cookie", (request, context, input) ->
                     request.cookie(input).map(RequestCookie::value).orElse(""))
             .build();
@@ -240,7 +241,7 @@ public class AntlrConditionTest {
         LiveHttpRequest request = newRequest()
                 .header(HOST, "bbc.co.uk")
                 .header(CONTENT_LENGTH, "7")
-                .header("App-Name", "app1")
+                .header(HeaderKey.headerKey("App-Name"), "app1")
                 .build();
         assertThat(condition.evaluate(request, context), is(true));
     }
@@ -275,7 +276,7 @@ public class AntlrConditionTest {
                 "OR header('App-Name') =~ 'app[0-9]'");
 
         LiveHttpRequest request = newRequest()
-                .header("App-Name", "app5")
+                .header(HeaderKey.headerKey("App-Name"), "app5")
                 .build();
         assertThat(condition.evaluate(request, context), is(true));
 
@@ -294,7 +295,7 @@ public class AntlrConditionTest {
         request = newRequest()
                 .header(HOST, "hotels.com")
                 .header(CONTENT_LENGTH, "7")
-                .header("App-Name", "appX")
+                .header(HeaderKey.headerKey("App-Name"), "appX")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
     }
@@ -306,7 +307,7 @@ public class AntlrConditionTest {
                 "AND header('Content-Length') == '7'");
 
         LiveHttpRequest request = newRequest()
-                .header("App-Name", "app5")
+                .header(HeaderKey.headerKey("App-Name"), "app5")
                 .build();
         assertThat(condition.evaluate(request, context), is(true));
 
@@ -325,7 +326,7 @@ public class AntlrConditionTest {
         request = newRequest()
                 .header(HOST, "hotels.com")
                 .header(CONTENT_LENGTH, "7")
-                .header("App-Name", "appX")
+                .header(HeaderKey.headerKey("App-Name"), "appX")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
     }
@@ -351,19 +352,19 @@ public class AntlrConditionTest {
 
         LiveHttpRequest request1 = newRequest()
                 .header(HOST, "bbc.co.uk")
-                .header("App-Name", "app1")
+                .header(HeaderKey.headerKey("App-Name"), "app1")
                 .build();
         assertThat(condition.evaluate(request1, context), is(true));
 
         LiveHttpRequest request2 = newRequest()
                 .header(HOST, "bbc.co.uk")
-                .header("App-Name", "shop2")
+                .header(HeaderKey.headerKey("App-Name"), "shop2")
                 .build();
         assertThat(condition.evaluate(request2, context), is(true));
 
         LiveHttpRequest request3 = newRequest()
                 .header(HOST, "bbc.co.uk")
-                .header("App-Name", "landing3")
+                .header(HeaderKey.headerKey("App-Name"), "landing3")
                 .build();
         assertThat(condition.evaluate(request3, context), is(false));
     }
@@ -375,19 +376,19 @@ public class AntlrConditionTest {
 
         LiveHttpRequest request1 = newRequest()
                 .header(HOST, "bbc.co.uk")
-                .header("App-Name", "landing1")
+                .header(HeaderKey.headerKey("App-Name"), "landing1")
                 .build();
         assertThat(condition.evaluate(request1, context), is(true));
 
         LiveHttpRequest request2 = newRequest()
                 .header(HOST, "bbc.co.uk")
-                .header("App-Name", "app2")
+                .header(HeaderKey.headerKey("App-Name"), "app2")
                 .build();
         assertThat(condition.evaluate(request2, context), is(false));
 
         LiveHttpRequest request3 = newRequest()
                 .header(HOST, "bbc.co.uk")
-                .header("App-Name", "shop1")
+                .header(HeaderKey.headerKey("App-Name"), "shop1")
                 .build();
         assertThat(condition.evaluate(request3, context), is(true));
 
@@ -398,18 +399,18 @@ public class AntlrConditionTest {
         Condition condition = condition("cookie('TheCookie')");
         LiveHttpRequest request = newRequest()
                 .cookies(requestCookie("TheCookie", "foobar-foobar-baz"))
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(true));
 
         request = newRequest()
                 .cookies(requestCookie("AnotherCookie", "foobar-foobar-baz"))
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
 
         request = newRequest()
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
     }
@@ -420,18 +421,18 @@ public class AntlrConditionTest {
         Condition condition = condition("cookie('TheCookie') == 'foobar-foobar-baz'");
         LiveHttpRequest request = newRequest()
                 .cookies(requestCookie("TheCookie", "foobar-foobar-baz"))
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(true));
 
         request = newRequest()
                 .cookies(requestCookie("AnotherCookie", "foobar-baz"))
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
 
         request = newRequest()
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
     }
@@ -442,18 +443,18 @@ public class AntlrConditionTest {
 
         LiveHttpRequest request = newRequest()
                 .cookies(requestCookie("TheCookie", "foobar-foobar-baz"))
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(true));
 
         request = newRequest()
                 .cookies(requestCookie("AnotherCookie", "foobar-x-baz"))
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
 
         request = newRequest()
-                .header("App-Name", "app3")
+                .header(HeaderKey.headerKey("App-Name"), "app3")
                 .build();
         assertThat(condition.evaluate(request, context), is(false));
     }

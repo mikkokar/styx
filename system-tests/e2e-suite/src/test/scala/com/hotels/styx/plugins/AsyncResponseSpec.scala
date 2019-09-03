@@ -25,8 +25,7 @@ import com.hotels.styx.api._
 import com.hotels.styx.support.backends.FakeHttpServer
 import com.hotels.styx.support.configuration.{HttpBackend, Origins, StyxConfig}
 import com.hotels.styx.support.server.UrlMatchingStrategies._
-import io.netty.handler.codec.http.HttpHeaders.Names._
-import io.netty.handler.codec.http.HttpHeaders.Values._
+import com.hotels.styx.api.HttpHeaderNames._
 import org.scalatest.{FunSpec, Matchers}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -59,12 +58,12 @@ class AsyncPluginResponseSpec extends FunSpec
     it("Proxies requests when plugin processes response headers asynchronously on a separate thread pool") {
       mockServer.stub(urlStartingWith("/foobar"), aResponse
         .withStatus(200)
-        .withHeader(TRANSFER_ENCODING, CHUNKED)
+        .withHeader(TRANSFER_ENCODING.toString, CHUNKED.toString)
         .withBody("I should be here!")
       )
 
       val request = get(styxServer.routerURL("/foobar"))
-        .addHeader("Content-Length", "0")
+        .addHeader(CONTENT_LENGTH, "0")
         .build()
 
       val response = decodedRequest(request)

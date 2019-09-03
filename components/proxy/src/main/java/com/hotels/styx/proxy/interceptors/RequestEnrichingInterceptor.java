@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.proxy.interceptors;
 
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
@@ -36,7 +37,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class RequestEnrichingInterceptor implements HttpInterceptor {
     private static final Logger LOGGER = getLogger(RequestEnrichingInterceptor.class);
 
-    private final CharSequence requestIdHeaderName;
+    private final HeaderKey requestIdHeaderName;
 
     public RequestEnrichingInterceptor(StyxHeaderConfig styxHeaderConfig) {
         this.requestIdHeaderName = styxHeaderConfig.requestIdHeaderName();

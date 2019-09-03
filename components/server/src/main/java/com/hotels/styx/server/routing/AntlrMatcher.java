@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.server.routing;
 
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.RequestCookie;
@@ -31,7 +32,7 @@ public final class AntlrMatcher implements Matcher {
             .registerFunction("path", (request, context) -> request.path())
             .registerFunction("userAgent", (request, context) -> request.header(USER_AGENT).orElse(""))
             .registerFunction("protocol", (request, context) -> context.isSecure() ? "https" : "http")
-            .registerFunction("header", (request, context, input) -> request.header(input).orElse(""))
+            .registerFunction("header", (request, context, input) -> request.header(HeaderKey.headerKey(input)).orElse(""))
             .registerFunction("cookie", (request, context, input) -> request.cookie(input).map(RequestCookie::value).orElse(""))
             .build();
     private final Condition condition;

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package loadtest.plugins;
 
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.Eventual;
@@ -46,7 +47,7 @@ public class AsyncRequestContentDecoderPluginFactory implements PluginFactory {
         public Eventual<LiveHttpResponse> intercept(LiveHttpRequest request, Chain chain) {
             return request.aggregate(config.maxContentLength())
                             .flatMap(fullHttpRequest -> Eventual.from(asyncOperation(config.delayMillis())))
-                            .map(outcome -> request.newBuilder().header("X-Outcome", outcome.result()))
+                            .map(outcome -> request.newBuilder().header(HeaderKey.headerKey("X-Outcome"), outcome.result()))
                             .flatMap(x -> chain.proceed(request));
         }
     }

@@ -17,6 +17,7 @@ package com.hotels.styx.server.netty.codec;
 
 import com.google.common.base.Strings;
 import com.hotels.styx.api.Buffer;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpHeader;
 import com.hotels.styx.api.HttpMethod;
 import com.hotels.styx.api.ByteStream;
@@ -136,7 +137,7 @@ public class NettyToStyxRequestDecoderTest {
 
         LiveHttpRequest styxRequest = decode(originalRequest);
 
-        assertThat(styxRequest.header(EXPECT).isPresent(), is(false));
+        assertThat(styxRequest.header(HeaderKey.headerKey(EXPECT)).isPresent(), is(false));
     }
 
     @Test
@@ -186,7 +187,7 @@ public class NettyToStyxRequestDecoderTest {
 
         LiveHttpRequest styxRequest = decode(request);
 
-        assertThat(styxRequest.headers().get(HOST).get(), is("example.net"));
+        assertThat(styxRequest.headers().get(HeaderKey.headerKey(HOST)).get(), is("example.net"));
     }
 
     @Test

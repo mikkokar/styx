@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hotels.styx.servers;
 
 import com.github.tomakehurst.wiremock.client.ValueMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.client.HttpClient;
 import com.hotels.styx.api.extension.service.TlsSettings;
@@ -34,6 +35,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.hotels.styx.api.HttpHeaderNames.X_FORWARDED_PROTO;
 import static com.hotels.styx.api.HttpRequest.get;
 import static com.hotels.styx.api.HttpResponseStatus.OK;
 import static com.hotels.styx.common.StyxFutures.await;
@@ -75,11 +77,11 @@ public class MockOriginServerTest {
 
         HttpResponse response = await(client.sendRequest(
                 get(format("http://localhost:%d/mock", server.port()))
-                        .header("X-Forwarded-Proto", "http")
+                        .header(X_FORWARDED_PROTO, "http")
                         .build()));
 
         assertThat(response.status(), is(OK));
-        assertThat(response.header("a"), is(Optional.of("b")));
+        assertThat(response.header(HeaderKey.headerKey("a")), is(Optional.of("b")));
         assertThat(response.bodyAs(UTF_8), is("Hello, World!"));
 
         server.verify(getRequestedFor(urlEqualTo("/mock"))
@@ -101,11 +103,11 @@ public class MockOriginServerTest {
         HttpResponse response = await(
                 tlsClient.sendRequest(
                         get(format("https://localhost:%d/mock", server.port()))
-                                .header("X-Forwarded-Proto", "http")
+                                .header(X_FORWARDED_PROTO, "http")
                                 .build()));
 
         assertThat(response.status(), is(OK));
-        assertThat(response.header("a"), is(Optional.of("b")));
+        assertThat(response.header(HeaderKey.headerKey("a")), is(Optional.of("b")));
 
         server.verify(getRequestedFor(urlEqualTo("/mock"))
                 .withHeader("X-Forwarded-Proto", valueMatchingStrategy("http")));

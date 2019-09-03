@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package com.hotels.styx.server.routing.antlr;
 
 import com.google.common.collect.ImmutableMap;
+import com.hotels.styx.api.HeaderKey;
+import com.hotels.styx.api.HttpHeaderNames;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.RequestCookie;
@@ -37,7 +39,7 @@ public class FunctionResolverTest {
             "method", (request, context) -> request.method().name());
 
     private final Map<String, Function1> oneArgumentFunctions = ImmutableMap.of(
-            "header", (request, context, name) -> request.header(name).orElse(""),
+            "header", (request, context, name) -> request.header(HeaderKey.headerKey(name)).orElse(""),
             "cookie", (request, context, name) -> request.cookie(name).map(RequestCookie::value).orElse(""));
 
     private final FunctionResolver functionResolver = new FunctionResolver(zeroArgumentFunctions, oneArgumentFunctions);
@@ -63,7 +65,7 @@ public class FunctionResolverTest {
     @Test
     public void resolvesOneArgumentFunctions() {
         LiveHttpRequest request = get("/foo")
-                .header("Host", "www.hotels.com")
+                .header(HttpHeaderNames.HOST, "www.hotels.com")
                 .cookies(requestCookie("lang", "en_US|en-us_hotels_com"))
                 .build();
 
@@ -75,7 +77,7 @@ public class FunctionResolverTest {
             expectedExceptionsMessageRegExp = "No such function=\\[foobar\\], with n=\\[1\\] arguments=\\[barfoo\\]")
     public void throwsExceptionIfOneArgumentFunctionDoesNotExist() {
         LiveHttpRequest request = get("/foo")
-                .header("Host", "www.hotels.com")
+                .header(HttpHeaderNames.HOST, "www.hotels.com")
                 .cookies(requestCookie("lang", "en_US|en-us_hotels_com"))
                 .build();
 

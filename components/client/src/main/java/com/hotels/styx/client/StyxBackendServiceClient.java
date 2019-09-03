@@ -16,6 +16,7 @@
 package com.hotels.styx.client;
 
 import com.google.common.collect.ImmutableList;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpResponseStatus;
 import com.hotels.styx.api.Id;
 import com.hotels.styx.api.LiveHttpRequest;
@@ -76,7 +77,7 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
     private final boolean contentValidation;
     private final String originsRestrictionCookieName;
     private final StickySessionConfig stickySessionConfig;
-    private final CharSequence originIdHeader;
+    private final HeaderKey originIdHeader;
 
     private StyxBackendServiceClient(Builder builder) {
         this.id = requireNonNull(builder.backendServiceId);
@@ -345,7 +346,7 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
         private OriginStatsFactory originStatsFactory;
         private String originsRestrictionCookieName;
         private StickySessionConfig stickySessionConfig = stickySessionDisabled();
-        private CharSequence originIdHeader = ORIGIN_ID_DEFAULT;
+        private HeaderKey originIdHeader = ORIGIN_ID_DEFAULT;
 
         public Builder(Id backendServiceId) {
             this.backendServiceId = requireNonNull(backendServiceId);
@@ -392,7 +393,7 @@ public final class StyxBackendServiceClient implements BackendServiceClient {
             return this;
         }
 
-        public Builder originIdHeader(CharSequence originIdHeader) {
+        public Builder originIdHeader(HeaderKey originIdHeader) {
             this.originIdHeader = requireNonNull(originIdHeader);
             return this;
         }

@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.routing.handlers
 
+import com.hotels.styx.api.HeaderKey.headerKey
 import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.api.LiveHttpRequest
 import com.hotels.styx.proxy.plugin.NamedPlugin.namedPlugin
@@ -41,8 +42,8 @@ class HttpInterceptorPipelineTest : FeatureSpec({
 
             val context = RoutingObjectFactoryContext(
                     plugins = listOf(
-                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "A").build() }) }),
-                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "A").build() }) })
+                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "A").build() }) }),
+                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "A").build() }) })
                     ))
 
             val e = shouldThrow<java.lang.IllegalArgumentException> {
@@ -68,8 +69,8 @@ class HttpInterceptorPipelineTest : FeatureSpec({
         scenario("it errors when handler configuration is missing") {
             val context = RoutingObjectFactoryContext(
                     plugins = listOf(
-                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "A").build() }) }),
-                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "A").build() }) })
+                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "A").build() }) }),
+                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "A").build() }) })
                     ))
 
             val e = shouldThrow<IllegalArgumentException> {
@@ -90,8 +91,8 @@ class HttpInterceptorPipelineTest : FeatureSpec({
         scenario("it builds an interceptor pipeline from the configuration") {
             val context = RoutingObjectFactoryContext(
                     plugins = listOf(
-                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "A").build() }) }),
-                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "B").build() }) })))
+                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "A").build() }) }),
+                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "B").build() }) })))
 
             val handler = HttpInterceptorPipeline.Factory().build(
                     listOf("config"),
@@ -114,7 +115,7 @@ class HttpInterceptorPipelineTest : FeatureSpec({
                     .toMono()
                     .block()
                     .let {
-                        it!!.headers("X-Test-Header") shouldBe (listOf("B", "A"))
+                        it!!.headers(headerKey("X-Test-Header")) shouldBe (listOf("B", "A"))
                     }
         }
 
@@ -166,8 +167,8 @@ class HttpInterceptorPipelineTest : FeatureSpec({
         scenario("Supports inline interceptor definitions") {
             val context = RoutingObjectFactoryContext(
                     plugins = listOf(
-                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "A").build() }) }),
-                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader("X-Test-Header", "B").build() }) })
+                            namedPlugin("interceptor1", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "A").build() }) }),
+                            namedPlugin("interceptor2", { request, chain -> chain.proceed(request).map({ response -> response.newBuilder().addHeader(headerKey("X-Test-Header"), "B").build() }) })
                     ),
                     interceptorFactories = mapOf("Rewrite" to RewriteInterceptor.Factory())
             )
@@ -196,7 +197,7 @@ class HttpInterceptorPipelineTest : FeatureSpec({
             handler.handle(hwaRequest, null)
                     .toMono()
                     .block()!!
-                    .headers("X-Test-Header") shouldBe (listOf("B", "A"))
+                    .headers(headerKey("X-Test-Header")) shouldBe (listOf("B", "A"))
         }
 
 

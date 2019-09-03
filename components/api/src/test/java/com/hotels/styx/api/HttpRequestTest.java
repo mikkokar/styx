@@ -59,7 +59,7 @@ public class HttpRequestTest {
     public void convertsToStreamingHttpRequest() throws Exception {
         HttpRequest fullRequest = new HttpRequest.Builder(POST, "/foo/bar").body("foobar", UTF_8)
                 .version(HTTP_1_1)
-                .header("HeaderName", "HeaderValue")
+                .header(HeaderKey.headerKey("HeaderName"), "HeaderValue")
                 .cookies(requestCookie("CookieName", "CookieValue"))
                 .build();
 
@@ -111,11 +111,11 @@ public class HttpRequestTest {
         assertThat(request.id(), is(notNullValue()));
         assertThat(request.cookies(), is(emptyIterable()));
         assertThat(request.headers(), is(emptyIterable()));
-        assertThat(request.headers("any"), is(emptyIterable()));
+        assertThat(request.headers(HeaderKey.headerKey("any")), is(emptyIterable()));
 
         assertThat(request.body().length, is(0));
         assertThat(request.cookie("any"), isAbsent());
-        assertThat(request.header("any"), isAbsent());
+        assertThat(request.header(HeaderKey.headerKey("any")), isAbsent());
         assertThat(request.keepAlive(), is(true));
         assertThat(request.method(), is(GET));
         assertThat(request.queryParam("any"), isAbsent());
@@ -127,26 +127,26 @@ public class HttpRequestTest {
         HttpRequest request = patch("https://hotels.com")
                 .version(HTTP_1_1)
                 .id("id")
-                .header("headerName", "a")
+                .header(HeaderKey.headerKey("headerName"), "a")
                 .cookies(requestCookie("cfoo", "bar"))
                 .build();
 
         assertThat(request.toString(), is("HttpRequest{version=HTTP/1.1, method=PATCH, uri=https://hotels.com, " +
                 "headers=[Cookie=cfoo=bar, Host=hotels.com, headerName=a], id=id}"));
 
-        assertThat(request.headers("headerName"), is(singletonList("a")));
+        assertThat(request.headers(HeaderKey.headerKey("headerName")), is(singletonList("a")));
     }
 
     @Test
     public void transformsRequest() {
         HttpRequest request = get("/foo")
-                .header("remove", "remove")
+                .header(HeaderKey.headerKey("remove"), "remove")
                 .build();
 
         HttpRequest newRequest = request.newBuilder()
                 .method(DELETE)
                 .uri("/home")
-                .header("remove", "notanymore")
+                .header(HeaderKey.headerKey("remove"), "notanymore")
                 .build();
 
         assertThat(newRequest.method(), is(DELETE));
@@ -161,7 +161,7 @@ public class HttpRequestTest {
                 .build();
 
         assertThat(request.body(), is("Response content.".getBytes(UTF_16)));
-        assertThat(request.header("Content-Length"), is(Optional.of("36")));
+        assertThat(request.header(CONTENT_LENGTH), is(Optional.of("36")));
     }
 
     @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "Charset is not provided.")
@@ -177,13 +177,13 @@ public class HttpRequestTest {
                 .body("Response content.", UTF_8, true)
                 .build();
 
-        assertThat(request1.header("Content-Length"), is(Optional.of("17")));
+        assertThat(request1.header(CONTENT_LENGTH), is(Optional.of("17")));
 
         HttpRequest request2 = HttpRequest.get("/")
                 .body("Response content.", UTF_8, false)
                 .build();
 
-        assertThat(request2.header("Content-Length"), is(Optional.empty()));
+        assertThat(request2.header(CONTENT_LENGTH), is(Optional.empty()));
     }
 
     @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "Charset is not provided.")
@@ -199,14 +199,14 @@ public class HttpRequestTest {
                 .body("Response content.".getBytes(UTF_16), true)
                 .build();
         assertThat(response1.body(), is("Response content.".getBytes(UTF_16)));
-        assertThat(response1.header("Content-Length"), is(Optional.of("36")));
+        assertThat(response1.header(CONTENT_LENGTH), is(Optional.of("36")));
 
         HttpRequest response2 = HttpRequest.get("/")
                 .body("Response content.".getBytes(UTF_8), false)
                 .build();
 
         assertThat(response2.body(), is("Response content.".getBytes(UTF_8)));
-        assertThat(response2.header("Content-Length"), is(Optional.empty()));
+        assertThat(response2.header(CONTENT_LENGTH), is(Optional.empty()));
     }
 
 
@@ -269,7 +269,7 @@ public class HttpRequestTest {
     public void createsRequestBuilderFromRequest() {
         HttpRequest originalRequest = get("/home")
                 .cookies(requestCookie("fred", "blogs"))
-                .header("some", "header")
+                .header(HeaderKey.headerKey("some"), "header")
                 .build();
 
         HttpRequest clonedRequest = originalRequest.newBuilder().build();
@@ -371,11 +371,11 @@ public class HttpRequestTest {
     public void canRemoveAHeader() {
         Object hdValue = "b";
         HttpRequest request = get("/")
-                .header("a", hdValue)
-                .addHeader("c", hdValue)
+                .header(HeaderKey.headerKey("a"), hdValue)
+                .addHeader(HeaderKey.headerKey("c"), hdValue)
                 .build();
         HttpRequest shouldRemoveHeader = request.newBuilder()
-                .removeHeader("c")
+                .removeHeader(HeaderKey.headerKey("c"))
                 .build();
 
         assertThat(shouldRemoveHeader.headers(), contains(header("a", "b")));
@@ -527,7 +527,7 @@ public class HttpRequestTest {
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Invalid Content-Length found. -3")
     public void ensuresContentLengthIsPositive() {
         HttpRequest.post("/y")
-                .header("Content-Length", -3)
+                .header(CONTENT_LENGTH, -3)
                 .build();
     }
 }

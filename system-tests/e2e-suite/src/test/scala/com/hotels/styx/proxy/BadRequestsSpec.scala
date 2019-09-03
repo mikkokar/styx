@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ class BadRequestsSpec extends FunSpec
           val content = response.content().toString(UTF_8)
           assert(response.status == BAD_REQUEST, s"\nExpecting 400 Bad Request in message: \n$response \n\n$content\n\n")
           assert(content == BAD_REQUEST.reasonPhrase())
-          assertThat(response.headers().get(STYX_INFO_DEFAULT), matchesRegex("noJvmRouteSet;"))
+          assertThat(response.headers().get(STYX_INFO_DEFAULT.toString), matchesRegex("noJvmRouteSet;"))
           assertThat(response.headers().get(CONNECTION), is("close"))
 
           assertThat(loggingSupport.log(), hasItem(loggingEvent(ERROR, "Failure status=\"400 Bad Request\"", "io.netty.handler.codec.DecoderException", "com.hotels.styx.server.BadRequestException.*")))
@@ -109,7 +109,7 @@ class BadRequestsSpec extends FunSpec
 
           val content = response.content().toString(UTF_8)
           assert(response.status == BAD_REQUEST, s"\nExpecting 400 Bad Request in message: \n$response \n\n$content\n\n")
-          assertThat(response.headers().get(STYX_INFO_DEFAULT), matchesRegex("noJvmRouteSet;"))
+          assertThat(response.headers().get(STYX_INFO_DEFAULT.toString), matchesRegex("noJvmRouteSet;"))
           assert(content == BAD_REQUEST.reasonPhrase())
           assertThat(response.headers().get(CONNECTION), is("close"))
         }
@@ -132,7 +132,7 @@ class BadRequestsSpec extends FunSpec
 
           val content = response.content().toString(UTF_8)
           assert(response.status == BAD_REQUEST, s"\nExpecting 400 Bad Request in message: \n$response \n\n$content\n\n")
-          assertThat(response.headers().get(STYX_INFO_DEFAULT), matchesRegex("noJvmRouteSet;"))
+          assertThat(response.headers().get(STYX_INFO_DEFAULT.toString), matchesRegex("noJvmRouteSet;"))
           assertThat(response.headers().get(CONNECTION), is("close"))
 
           assertThat(loggingSupport.log(), hasItem(loggingEvent(ERROR, "Failure status=\"400 Bad Request\"", "io.netty.handler.codec.DecoderException", "com.hotels.styx.server.BadRequestException: Bad Host header. .*")))
@@ -156,7 +156,7 @@ class BadRequestsSpec extends FunSpec
 
           val content = response.content().toString(UTF_8)
           assert(response.status == OK, s"\nExpecting 200 OK in message: \n$response \n\n$content\n\n")
-          assertThat(response.headers().get(STYX_INFO_DEFAULT), matchesRegex("noJvmRouteSet;.*"))
+          assertThat(response.headers().get(STYX_INFO_DEFAULT.toString), matchesRegex("noJvmRouteSet;.*"))
         }
       }
 
@@ -164,7 +164,7 @@ class BadRequestsSpec extends FunSpec
         val partial: DefaultHttpRequest = new DefaultHttpRequest(HTTP_1_1, GET, "/badrequest/5")
         partial.headers()
           .add(CONTENT_TYPE.toString, "text/html; charset=UTF-8")
-          .add(HOST, styxServer.proxyHost)
+          .add(HOST.toString, styxServer.proxyHost)
         partial.headers().add("Content-Length", 500)
 
         val client = httpTestClient("localhost", styxServer.httpPort)
@@ -174,7 +174,7 @@ class BadRequestsSpec extends FunSpec
 
           val content = response.content().toString(UTF_8)
           assert(response.status == REQUEST_TIMEOUT, s"\nExpecting 408 Request Timeout in message: \n$response \n\n$content\n\n")
-          assertThat(response.headers().get(STYX_INFO_DEFAULT), matchesRegex("noJvmRouteSet;[0-9a-f-]+"))
+          assertThat(response.headers().get(STYX_INFO_DEFAULT.toString), matchesRegex("noJvmRouteSet;[0-9a-f-]+"))
           assertThat(response.headers().get(CONNECTION), is("close"))
           assertThat(loggingSupport.log(), hasItem(loggingEvent(ERROR, "Failure status=\"408 Request Timeout\"", "com.hotels.styx.server.RequestTimeoutException", "message=DefaultHttpRequest.decodeResult: success.*")))
         }
