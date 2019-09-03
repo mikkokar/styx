@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hotels.styx.servers;
 
 import com.github.tomakehurst.wiremock.http.Response;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpHeaders;
 import com.hotels.styx.api.HttpResponse;
 
@@ -40,7 +41,7 @@ final class WiremockResponseConverter {
         HttpHeaders.Builder builder = new HttpHeaders.Builder();
 
         if (headers != null) {
-            headers.all().forEach(header -> builder.add(header.key(), header.values()));
+            headers.all().forEach(header -> builder.add(HeaderKey.headerKey(header.key()), header.values()));
         }
 
         return builder.build();

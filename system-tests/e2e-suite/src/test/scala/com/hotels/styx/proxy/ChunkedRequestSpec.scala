@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.google.common.base.{Joiner, Optional}
 import com.google.common.io.ByteStreams
 import com.google.common.io.ByteStreams._
 import com.hotels.styx.{DefaultStyxConfiguration, StyxProxySpec}
-import com.hotels.styx.api.{HttpResponse, HttpResponseStatus, LiveHttpResponse}
+import com.hotels.styx.api.{HeaderKey, HttpResponse, HttpResponseStatus, LiveHttpResponse}
 import com.hotels.styx.support.TestClientSupport
 import com.hotels.styx.support.backends.FakeHttpServer
 import com.hotels.styx.support.configuration.{HttpBackend, Origins}
@@ -97,7 +97,7 @@ class ChunkedRequestSpec extends FunSpec
       import scala.collection.JavaConversions._
       for (entry <- connection.getHeaderFields.entrySet) {
         if (!isNullOrEmpty(entry.getKey)) {
-          responseBuilder.header(entry.getKey, Joiner.on(",").join(entry.getValue))
+          responseBuilder.header(HeaderKey.headerKey(entry.getKey), Joiner.on(",").join(entry.getValue))
         }
       }
     } finally {

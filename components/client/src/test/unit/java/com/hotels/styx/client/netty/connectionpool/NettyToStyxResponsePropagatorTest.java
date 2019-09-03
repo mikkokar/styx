@@ -17,6 +17,7 @@ package com.hotels.styx.client.netty.connectionpool;
 
 import com.google.common.base.Throwables;
 import com.hotels.styx.api.Buffers;
+import com.hotels.styx.api.HttpHeaderNames;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.exceptions.ResponseTimeoutException;
 import com.hotels.styx.api.exceptions.TransportLostException;
@@ -252,7 +253,7 @@ public class NettyToStyxResponsePropagatorTest {
         nettyResponse.headers().add("Set-Cookie", "SESSID=sessId; Domain=.foo.com; Path=/; HttpOnly");
         LiveHttpResponse styxResponse = toStyxResponse(nettyResponse).build();
 
-        assertThat(styxResponse.header("Set-Cookie"), isValue("SESSID=sessId; Domain=.foo.com; Path=/; HttpOnly"));
+        assertThat(styxResponse.header(HttpHeaderNames.SET_COOKIE), isValue("SESSID=sessId; Domain=.foo.com; Path=/; HttpOnly"));
         assertThat(styxResponse.cookie("SESSID"), equalTo(
                 Optional.of(responseCookie("SESSID", "sessId")
                         .domain(".foo.com")
@@ -267,7 +268,7 @@ public class NettyToStyxResponsePropagatorTest {
         nettyResponse.headers().add("Set-Cookie", "SESSID=\"sessId\"; Domain=.foo.com; Path=/; HttpOnly");
         LiveHttpResponse styxResponse = toStyxResponse(nettyResponse).build();
 
-        assertThat(styxResponse.header("Set-Cookie"), isValue("SESSID=\"sessId\"; Domain=.foo.com; Path=/; HttpOnly"));
+        assertThat(styxResponse.header(HttpHeaderNames.SET_COOKIE), isValue("SESSID=\"sessId\"; Domain=.foo.com; Path=/; HttpOnly"));
         assertThat(styxResponse.cookie("SESSID"), equalTo(
                 Optional.of(responseCookie("SESSID", "\"sessId\"")
                         .domain(".foo.com")

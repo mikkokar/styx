@@ -22,7 +22,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH
 import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.api.Id.id
-import com.hotels.styx.api.LiveHttpRequest
+import com.hotels.styx.api.{HeaderKey, LiveHttpRequest}
 import com.hotels.styx.api.LiveHttpRequest.get
 import com.hotels.styx.api.RequestCookie.requestCookie
 import com.hotels.styx.api.extension.loadbalancing.spi.LoadBalancer
@@ -146,9 +146,9 @@ class StickySessionSpec extends FunSuite with BeforeAndAfter with Matchers with 
     val response2 = Mono.from(client.sendRequest(request)).block()
     val response3 = Mono.from(client.sendRequest(request)).block()
 
-    response1.header("Stub-Origin-Info").get() should be(s"APP-localhost:${server2.port}")
-    response2.header("Stub-Origin-Info").get() should be(s"APP-localhost:${server2.port}")
-    response3.header("Stub-Origin-Info").get() should be(s"APP-localhost:${server2.port}")
+    response1.header(HeaderKey.headerKey("Stub-Origin-Info")).get() should be(s"APP-localhost:${server2.port}")
+    response2.header(HeaderKey.headerKey("Stub-Origin-Info")).get() should be(s"APP-localhost:${server2.port}")
+    response3.header(HeaderKey.headerKey("Stub-Origin-Info")).get() should be(s"APP-localhost:${server2.port}")
   }
 
   test("Routes to origins indicated by sticky session cookie when other cookies are provided.") {
@@ -168,9 +168,9 @@ class StickySessionSpec extends FunSuite with BeforeAndAfter with Matchers with 
     val response2 = Mono.from(client.sendRequest(request)).block()
     val response3 = Mono.from(client.sendRequest(request)).block()
 
-    response1.header("Stub-Origin-Info").get() should be(s"APP-localhost:${server2.port}")
-    response2.header("Stub-Origin-Info").get() should be(s"APP-localhost:${server2.port}")
-    response3.header("Stub-Origin-Info").get() should be(s"APP-localhost:${server2.port}")
+    response1.header(HeaderKey.headerKey("Stub-Origin-Info")).get() should be(s"APP-localhost:${server2.port}")
+    response2.header(HeaderKey.headerKey("Stub-Origin-Info")).get() should be(s"APP-localhost:${server2.port}")
+    response3.header(HeaderKey.headerKey("Stub-Origin-Info")).get() should be(s"APP-localhost:${server2.port}")
   }
 
   test("Routes to new origin when the origin indicated by sticky session cookie does not exist.") {

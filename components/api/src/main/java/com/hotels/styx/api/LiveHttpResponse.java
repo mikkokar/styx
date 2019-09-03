@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -346,7 +346,7 @@ public class LiveHttpResponse implements LiveHttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        BuilderTransformer header(CharSequence name, Object value);
+        BuilderTransformer header(HeaderKey name, Object value);
 
         /**
          * Adds a new header with the specified {@code name} and {@code value}.
@@ -357,7 +357,7 @@ public class LiveHttpResponse implements LiveHttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        BuilderTransformer addHeader(CharSequence name, Object value);
+        BuilderTransformer addHeader(HeaderKey name, Object value);
 
         /**
          * Removes the header with the specified name.
@@ -365,7 +365,7 @@ public class LiveHttpResponse implements LiveHttpMessage {
          * @param name The name of the header to remove
          * @return {@code this}
          */
-        BuilderTransformer removeHeader(CharSequence name);
+        BuilderTransformer removeHeader(HeaderKey name);
 
         /**
          * (UNSTABLE) Removes body stream from this request.
@@ -506,19 +506,19 @@ public class LiveHttpResponse implements LiveHttpMessage {
         }
 
         @Override
-        public Transformer header(CharSequence name, Object value) {
+        public Transformer header(HeaderKey name, Object value) {
             builder.header(name, value);
             return this;
         }
 
         @Override
-        public Transformer addHeader(CharSequence name, Object value) {
+        public Transformer addHeader(HeaderKey name, Object value) {
             builder.addHeader(name, value);
             return this;
         }
 
         @Override
-        public Transformer removeHeader(CharSequence name) {
+        public Transformer removeHeader(HeaderKey name) {
             builder.removeHeader(name);
             return this;
         }
@@ -643,9 +643,9 @@ public class LiveHttpResponse implements LiveHttpMessage {
          * @return {@code this}
          */
         public Builder disableCaching() {
-            header("Pragma", "no-cache");
-            header("Expires", "Mon, 1 Jan 2007 08:00:00 GMT");
-            header("Cache-Control", "no-cache,must-revalidate,no-store");
+            header(HttpHeaderNames.PRAGMA, "no-cache");
+            header(HttpHeaderNames.EXPIRES, "Mon, 1 Jan 2007 08:00:00 GMT");
+            header(HttpHeaderNames.CACHE_CONTROL, "no-cache,must-revalidate,no-store");
             return this;
         }
 
@@ -761,7 +761,7 @@ public class LiveHttpResponse implements LiveHttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        public Builder header(CharSequence name, Object value) {
+        public Builder header(HeaderKey name, Object value) {
             this.headers.set(name, value);
             return this;
         }
@@ -775,7 +775,7 @@ public class LiveHttpResponse implements LiveHttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        public Builder addHeader(CharSequence name, Object value) {
+        public Builder addHeader(HeaderKey name, Object value) {
             headers.add(name, value);
             return this;
         }
@@ -786,7 +786,7 @@ public class LiveHttpResponse implements LiveHttpMessage {
          * @param name The name of the header to remove
          * @return {@code this}
          */
-        public Builder removeHeader(CharSequence name) {
+        public Builder removeHeader(HeaderKey name) {
             headers.remove(name);
             return this;
         }

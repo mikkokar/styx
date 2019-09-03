@@ -22,6 +22,7 @@ import com.hotels.styx._
 import com.hotels.styx.api.HttpRequest.get
 import com.hotels.styx.api._
 import HttpResponseStatus.INTERNAL_SERVER_ERROR
+import com.hotels.styx.api.HeaderKey.headerKey
 import com.hotels.styx.support.configuration.{ConnectionPoolSettings, HttpBackend, Origins, StyxConfig}
 import com.hotels.styx.support.backends.FakeHttpServer
 import org.scalatest.FunSpec
@@ -61,7 +62,7 @@ class PluginErrorHandlingSpec extends FunSpec
 
     it("Catches exceptions from plugins handling requests, and maps them to INTERNAL_SERVER_ERRORs") {
       val request = get(styxServer.routerURL("/foo"))
-        .header("Fail_before_handle", "true")
+        .header(headerKey("Fail_before_handle"), "true")
         .build()
       val resp = decodedRequest(request)
       assert(resp.status() == INTERNAL_SERVER_ERROR)
@@ -70,7 +71,7 @@ class PluginErrorHandlingSpec extends FunSpec
     it("Catches exceptions from plugins handling responses, and maps them to INTERNAL_SERVER_ERRORs") {
       for (i <- 1 to 2) {
         val request = get(styxServer.routerURL("/foo"))
-          .header("Fail_after_handle", "true")
+          .header(headerKey("Fail_after_handle"), "true")
           .body("foo", UTF_8)
           .build()
         val resp = decodedRequest(request)
@@ -91,7 +92,7 @@ class PluginErrorHandlingSpec extends FunSpec
     override def intercept(request: LiveHttpRequest, chain: HttpInterceptor.Chain): Eventual[LiveHttpResponse] = {
       chain.proceed(request).map(
         asJavaFunction((response: LiveHttpResponse) => {
-          val fail: Optional[String] = request.header("Fail_after_handle")
+          val fail: Optional[String] = request.header(headerKey("Fail_after_handle"))
           if (isTrue(fail)) {
             throw new RuntimeException("something went wrong")
           }
@@ -101,7 +102,7 @@ class PluginErrorHandlingSpec extends FunSpec
   }
 
   private def failIfHeaderPresent(request: LiveHttpRequest) {
-    val fail: Optional[String] = request.header("Fail_before_handle")
+    val fail: Optional[String] = request.header(headerKey("Fail_before_handle"))
     if (isTrue(fail)) {
       throw new RuntimeException("something went wrong")
     }

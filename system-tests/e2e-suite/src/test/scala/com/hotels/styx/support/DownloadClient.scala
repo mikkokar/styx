@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -158,9 +158,9 @@ class DownloadClient extends LoggingFSM[State, Data] {
       LOGGER.warn("{}: {}: Received: ChannelActive, {} -> {}", Array(self.path.name, stateName, ctx.channel().localAddress(), ctx.channel().remoteAddress()).asInstanceOf[Array[Object]])
 
       val request = new DefaultFullHttpRequest(HTTP_1_1, GET, targetUrl.getPath)
-      request.headers().add(HOST, "localhost")
-      request.headers().add(CONTENT_LENGTH, "0")
-      request.headers().add(USER_AGENT, "Download Client %s".format(self.path.name))
+      request.headers().add(HOST.toString, "localhost")
+      request.headers().add(CONTENT_LENGTH.toString, "0")
+      request.headers().add(USER_AGENT.toString, "Download Client %s".format(self.path.name))
 
       Future {
         val requestOp = ctx.writeAndFlush(request).await()

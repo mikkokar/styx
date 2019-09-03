@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class StyxHeaderConfigTest {
 
         StyxHeaderConfig config = new StyxHeaderConfig(styxInfoHeader, originIdHeader, requestIdHeader);
 
-        assertThat(config.styxInfoHeaderName().toString(), is(STYX_INFO_DEFAULT));
+        assertThat(config.styxInfoHeaderName().toString(), is(STYX_INFO_DEFAULT.toString()));
     }
 
     @Test
@@ -74,7 +74,7 @@ public class StyxHeaderConfigTest {
 
         StyxHeaderConfig config = new StyxHeaderConfig(styxInfoHeader, originIdHeader, requestIdHeader);
 
-        assertThat(config.originIdHeaderName().toString(), is(ORIGIN_ID_DEFAULT));
+        assertThat(config.originIdHeaderName().toString(), is(ORIGIN_ID_DEFAULT.toString()));
     }
 
     @Test
@@ -83,7 +83,7 @@ public class StyxHeaderConfigTest {
 
         StyxHeaderConfig config = new StyxHeaderConfig(styxInfoHeader, originIdHeader, requestIdHeader);
 
-        assertThat(config.requestIdHeaderName().toString(), is(REQUEST_ID_DEFAULT));
+        assertThat(config.requestIdHeaderName().toString(), is(REQUEST_ID_DEFAULT.toString()));
     }
 
 }

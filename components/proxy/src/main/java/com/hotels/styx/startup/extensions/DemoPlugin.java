@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.LiveHttpRequest;
@@ -60,7 +61,7 @@ public class DemoPlugin implements Plugin {
         return chain.proceed(request).map(response -> {
             LOGGER.info("Demo plugin has propagating response from the chain");
             return response.newBuilder()
-                    .header("Demo-Plugin", config.responseHeaderValue)
+                    .header(HeaderKey.headerKey("Demo-Plugin"), config.responseHeaderValue)
                     .build();
         });
     }

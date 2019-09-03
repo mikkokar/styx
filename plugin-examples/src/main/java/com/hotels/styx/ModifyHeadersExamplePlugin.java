@@ -16,6 +16,7 @@
 package com.hotels.styx;
 
 import com.hotels.styx.api.Eventual;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
@@ -65,13 +66,13 @@ public class ModifyHeadersExamplePlugin implements Plugin {
 
         // Here is a simple example of modifying an incoming request.
         LiveHttpRequest newRequest = request.newBuilder()
-                .header("myRequestHeader", config.requestHeaderValue())
+                .header(HeaderKey.headerKey("myRequestHeader"), config.requestHeaderValue())
                 .build();
 
         return chain.proceed(newRequest).map(response ->
                 // Here is a simple example of modifying an outgoing response.
                 response.newBuilder()
-                        .header("myResponseHeader", config.responseHeaderValue())
+                        .header(HeaderKey.headerKey("myResponseHeader"), config.responseHeaderValue())
                         .build()
         );
     }

@@ -16,6 +16,7 @@
 package com.hotels.styx.routing.handlers
 
 import com.hotels.styx.Environment
+import com.hotels.styx.api.HeaderKey
 import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.api.LiveHttpRequest
 import com.hotels.styx.api.LiveHttpResponse
@@ -67,17 +68,17 @@ class BackendServiceProxyTest : StringSpec({
         handler.handle(hwaRequest, HttpInterceptorContext.create())
                 .toMono()
                 .block()!!
-                .header("X-Backend-Service").get() shouldBe("hwa")
+                .header(HeaderKey.headerKey("X-Backend-Service")).get() shouldBe("hwa")
 
         handler.handle(laRequest, HttpInterceptorContext.create())
                 .toMono()
                 .block()!!
-                .header("X-Backend-Service").get() shouldBe("la")
+                .header(HeaderKey.headerKey("X-Backend-Service")).get() shouldBe("la")
 
         handler.handle(baRequest, HttpInterceptorContext.create())
                 .toMono()
                 .block()!!
-                .header("X-Backend-Service").get() shouldBe("ba")
+                .header(HeaderKey.headerKey("X-Backend-Service")).get() shouldBe("ba")
     }
 
     "errors when backendProvider attribute is not specified" {
@@ -114,7 +115,7 @@ private fun clientFactory(): BackendServiceClientFactory = BackendServiceClientF
                 request -> Mono.just(
                         LiveHttpResponse
                                 .response(OK)
-                                .addHeader("X-Backend-Service", backendService.id())
+                                .addHeader(HeaderKey.headerKey("X-Backend-Service"), backendService.id())
                                 .build())
             }
         }

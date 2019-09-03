@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ class BadClientSpec extends FunSpec
     (ctx: ChannelHandlerContext, msg: scala.Any) => {
       if (msg.isInstanceOf[LastHttpContent]) {
         val response = new DefaultHttpResponse(HTTP_1_1, OK)
-        response.headers().set(CONTENT_LENGTH, "5")
+        response.headers().set(CONTENT_LENGTH.toString, "5")
         ctx.writeAndFlush(response)
       }
     }

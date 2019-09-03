@@ -18,6 +18,7 @@ package com.hotels.styx.client.netty.connectionpool;
 import com.google.common.annotations.VisibleForTesting;
 import com.hotels.styx.api.Buffers;
 import com.hotels.styx.api.ByteStream;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.exceptions.ResponseTimeoutException;
@@ -225,7 +226,7 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
         LiveHttpResponse.Builder responseBuilder = response(statusWithCode(nettyResponse.getStatus().code()));
 
         stream(nettyResponse.headers().spliterator(), false)
-                .forEach(header -> responseBuilder.addHeader(header.getKey(), header.getValue()));
+                .forEach(header -> responseBuilder.addHeader(HeaderKey.headerKey(header.getKey()), header.getValue()));
 
         return responseBuilder;
     }

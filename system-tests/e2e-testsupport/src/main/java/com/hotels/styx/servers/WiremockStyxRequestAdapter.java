@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.google.common.collect.ImmutableList;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpRequest;
 
 import java.util.HashSet;
@@ -29,8 +30,8 @@ import java.util.List;
 import java.util.Set;
 
 import static com.github.tomakehurst.wiremock.http.HttpHeader.httpHeader;
-import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
-import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
+import static com.hotels.styx.api.HttpHeaderNames.CONTENT_TYPE;
+import static com.hotels.styx.api.HttpHeaderNames.HOST;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -63,12 +64,12 @@ public class WiremockStyxRequestAdapter implements Request {
 
     @Override
     public String getHeader(String key) {
-        return styxRequest.header(key).orElse(null);
+        return styxRequest.header(HeaderKey.headerKey(key)).orElse(null);
     }
 
     @Override
     public HttpHeader header(String key) {
-        List<String> values = styxRequest.headers(key);
+        List<String> values = styxRequest.headers(HeaderKey.headerKey(key));
         return httpHeader(key, values.toArray(new String[values.size()]));
     }
 
@@ -90,7 +91,7 @@ public class WiremockStyxRequestAdapter implements Request {
 
     @Override
     public boolean containsHeader(String key) {
-        return styxRequest.headers().contains(key);
+        return styxRequest.headers().contains(HeaderKey.headerKey(key));
     }
 
     @Override

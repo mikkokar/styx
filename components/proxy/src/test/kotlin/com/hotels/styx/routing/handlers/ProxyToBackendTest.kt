@@ -16,6 +16,7 @@
 package com.hotels.styx.routing.handlers
 
 import com.hotels.styx.Environment
+import com.hotels.styx.api.HeaderKey
 import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.api.Id.id
 import com.hotels.styx.api.LiveHttpRequest
@@ -110,7 +111,7 @@ private fun clientFactory() = BackendServiceClientFactory { backendService, orig
         backendService.origins().first()!!.id() shouldBe (id("ba1"))
         backendService.origins().first()!!.port() shouldBe (9094)
         Mono.just(LiveHttpResponse.response(OK)
-                .addHeader("X-Backend-Service", "y")
+                .addHeader(HeaderKey.headerKey("X-Backend-Service"), "y")
                 .build())
 
     }

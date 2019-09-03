@@ -223,7 +223,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
      * @return all values for a given HTTP header name or an empty list if the header is not present
      */
     @Override
-    public List<String> headers(CharSequence name) {
+    public List<String> headers(HeaderKey name) {
         return headers.getAll(name);
     }
 
@@ -408,7 +408,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        BuilderTransformer header(CharSequence name, Object value);
+        BuilderTransformer header(HeaderKey name, Object value);
 
         /**
          * Sets the headers.
@@ -427,7 +427,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        BuilderTransformer addHeader(CharSequence name, Object value);
+        BuilderTransformer addHeader(HeaderKey name, Object value);
 
         /**
          * Removes the header with the specified name.
@@ -435,7 +435,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
          * @param name The name of the header to remove
          * @return {@code this}
          */
-        BuilderTransformer removeHeader(CharSequence name);
+        BuilderTransformer removeHeader(HeaderKey name);
 
         /**
          * Sets the request fully qualified url.
@@ -566,7 +566,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
         }
 
         @Override
-        public Transformer header(CharSequence name, Object value) {
+        public Transformer header(HeaderKey name, Object value) {
             builder.header(name, value);
             return this;
         }
@@ -578,13 +578,13 @@ public class LiveHttpRequest implements LiveHttpMessage {
         }
 
         @Override
-        public Transformer addHeader(CharSequence name, Object value) {
+        public Transformer addHeader(HeaderKey name, Object value) {
             builder.addHeader(name, value);
             return this;
         }
 
         @Override
-        public Transformer removeHeader(CharSequence name) {
+        public Transformer removeHeader(HeaderKey name) {
             builder.removeHeader(name);
             return this;
         }
@@ -765,7 +765,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
          * @return {@code this}
          */
         @Override
-        public Builder header(CharSequence name, Object value) {
+        public Builder header(HeaderKey name, Object value) {
             this.headers.set(name, value);
             return this;
         }
@@ -792,7 +792,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
          * @return {@code this}
          */
         @Override
-        public Builder addHeader(CharSequence name, Object value) {
+        public Builder addHeader(HeaderKey name, Object value) {
             this.headers.add(name, value);
             return this;
         }
@@ -804,7 +804,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
          * @return {@code this}
          */
         @Override
-        public Builder removeHeader(CharSequence name) {
+        public Builder removeHeader(HeaderKey name) {
             headers.remove(name);
             return this;
         }
@@ -1007,7 +1007,7 @@ public class LiveHttpRequest implements LiveHttpMessage {
             );
         }
 
-        private Optional<String> requireNotDuplicatedHeader(CharSequence headerName) {
+        private Optional<String> requireNotDuplicatedHeader(HeaderKey headerName) {
             List<String> headerValues = headers.build().getAll(headerName);
 
             checkArgument(headerValues.size() <= 1, "Duplicate %s found. %s", headerName, headerValues);

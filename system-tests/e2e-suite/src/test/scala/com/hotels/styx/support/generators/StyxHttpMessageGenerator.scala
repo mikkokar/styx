@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hotels.styx.support.generators
 import java.nio.charset.StandardCharsets.UTF_8
 
 import com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH
-import com.hotels.styx.api.{HttpRequest, LiveHttpRequest}
+import com.hotels.styx.api.{HeaderKey, HttpRequest, LiveHttpRequest}
 import com.hotels.styx.api.HttpMethod._
 import com.hotels.styx.api.HttpVersion._
 import com.hotels.styx.support.generators.HttpHeadersGenerator.{HeaderTuple, contentTypeCharset, httpHeaders}
@@ -47,7 +47,7 @@ class StyxHttpMessageGenerator {
 
   def addHeaders(builder: HttpRequest.Builder, headers: List[HeaderTuple]) = {
     for (header <- headers) {
-      builder.addHeader(header._1, header._2)
+      builder.addHeader(HeaderKey.headerKey(header._1), header._2)
     }
   }
 

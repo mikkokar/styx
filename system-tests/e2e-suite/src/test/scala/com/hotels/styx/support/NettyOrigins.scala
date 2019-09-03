@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ trait NettyOrigins {
   val status200OkResponse = (ctx: ChannelHandlerContext, msg: scala.Any) => {
     if (msg.isInstanceOf[LastHttpContent]) {
       val response = new DefaultFullHttpResponse(HTTP_1_1, OK)
-      response.headers().set(CONTENT_LENGTH, "0")
+      response.headers().set(CONTENT_LENGTH.toString, "0")
       ctx.writeAndFlush(response)
     }
   }

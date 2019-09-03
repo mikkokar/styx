@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import static com.hotels.styx.api.HttpHeader.header;
 import static com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH;
+import static com.hotels.styx.api.HttpHeaderNames.CONTENT_TYPE;
 import static com.hotels.styx.api.HttpResponseStatus.BAD_GATEWAY;
 import static com.hotels.styx.api.HttpResponseStatus.BAD_REQUEST;
 import static com.hotels.styx.api.HttpResponseStatus.CREATED;
@@ -41,7 +42,6 @@ import static com.hotels.styx.api.HttpResponseStatus.TEMPORARY_REDIRECT;
 import static com.hotels.styx.api.HttpVersion.HTTP_1_0;
 import static com.hotels.styx.api.HttpVersion.HTTP_1_1;
 import static com.hotels.styx.api.ResponseCookie.responseCookie;
-import static com.hotels.styx.api.matchers.HttpHeadersMatcher.isNotCacheable;
 import static com.hotels.styx.support.matchers.IsOptional.isAbsent;
 import static com.hotels.styx.support.matchers.IsOptional.isValue;
 import static io.netty.buffer.Unpooled.copiedBuffer;
@@ -62,7 +62,7 @@ public class LiveHttpResponseTest {
     public void encodesToFullHttpResponse() {
         LiveHttpResponse response = response(CREATED)
                 .version(HTTP_1_0)
-                .header("HeaderName", "HeaderValue")
+                .header(HeaderKey.headerKey("HeaderName"), "HeaderValue")
                 .cookies(responseCookie("CookieName", "CookieValue").build())
                 .body(new ByteStream(Flux.just("foo", "bar").map(it -> new Buffer(copiedBuffer(it, UTF_8)))))
                 .build();
@@ -154,11 +154,11 @@ public class LiveHttpResponseTest {
     public void canRemoveAHeader() {
         Object headerValue = "b";
         LiveHttpResponse response = response()
-                .header("a", headerValue)
-                .addHeader("c", headerValue)
+                .header(HeaderKey.headerKey("a"), headerValue)
+                .addHeader(HeaderKey.headerKey("c"), headerValue)
                 .build();
         LiveHttpResponse shouldRemoveHeader = response.newBuilder()
-                .removeHeader("c")
+                .removeHeader(HeaderKey.headerKey("c"))
                 .build();
 
         assertThat(shouldRemoveHeader.headers(), contains(header("a", "b")));
@@ -166,19 +166,14 @@ public class LiveHttpResponseTest {
 
     @Test
     public void supportsCaseInsensitiveHeaderNames() {
-        LiveHttpResponse response = response(OK).header("Content-Type", "text/plain").build();
-        assertThat(response.header("content-type"), isValue("text/plain"));
+        LiveHttpResponse response = response(OK).header(CONTENT_TYPE, "text/plain").build();
+        assertThat(response.header(CONTENT_TYPE), isValue("text/plain"));
     }
 
     @Test
     public void headerValuesAreCaseSensitive() {
-        LiveHttpResponse response = response(OK).header("Content-Type", "TEXT/PLAIN").build();
-        assertThat(response.header("content-type"), not(isValue("text/plain")));
-    }
-
-    @Test
-    public void createsANonCacheableResponse() {
-        assertThat(response().disableCaching().build().headers(), is(isNotCacheable()));
+        LiveHttpResponse response = response(OK).header(CONTENT_TYPE, "TEXT/PLAIN").build();
+        assertThat(response.header(HeaderKey.headerKey("CONTENT-TYPE")), not(isValue("text/plain")));
     }
 
     @Test
@@ -208,8 +203,8 @@ public class LiveHttpResponseTest {
     @Test
     public void addsHeaderValue() {
         LiveHttpResponse response = response()
-                .header("name", "value1")
-                .addHeader("name", "value2")
+                .header(HeaderKey.headerKey("name"), "value1")
+                .addHeader(HeaderKey.headerKey("name"), "value2")
                 .build();
 
         assertThat(response.headers(), hasItem(header("name", "value1")));
@@ -426,30 +421,30 @@ public class LiveHttpResponseTest {
     public void transformerAddsHeaders() {
         LiveHttpResponse response = response().build()
                 .newBuilder()
-                .addHeader("X-Styx-ID", "y")
+                .addHeader(HeaderKey.headerKey("X-Styx-ID"), "y")
                 .build();
 
-        assertEquals(response.header("X-Styx-ID"), Optional.of("y"));
+        assertEquals(response.header(HeaderKey.headerKey("X-Styx-ID")), Optional.of("y"));
     }
 
     @Test
     public void transformerRemovesHeaders() {
-        LiveHttpResponse response = response().addHeader("X-Styx-ID", "y").build()
+        LiveHttpResponse response = response().addHeader(HeaderKey.headerKey("X-Styx-ID"), "y").build()
                 .newBuilder()
-                .removeHeader("X-Styx-ID")
+                .removeHeader(HeaderKey.headerKey("X-Styx-ID"))
                 .build();
 
-        assertEquals(response.header("X-Styx-ID"), Optional.empty());
+        assertEquals(response.header(HeaderKey.headerKey("X-Styx-ID")), Optional.empty());
     }
 
     @Test
     public void transformerSetsHeaders() {
         LiveHttpResponse response = response().build()
                 .newBuilder()
-                .headers(new HttpHeaders.Builder().add("X-Styx-ID", "z").build())
+                .headers(new HttpHeaders.Builder().add(HeaderKey.headerKey("X-Styx-ID"), "z").build())
                 .build();
 
-        assertEquals(response.header("X-Styx-ID"), Optional.of("z"));
+        assertEquals(response.header(HeaderKey.headerKey("X-Styx-ID")), Optional.of("z"));
     }
 
     @Test
@@ -491,7 +486,7 @@ public class LiveHttpResponseTest {
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Invalid Content-Length found. -3")
     public void ensuresContentLengthIsPositive() {
         response(OK)
-                .header("Content-Length", -3)
+                .header(CONTENT_LENGTH, -3)
                 .build();
     }
 

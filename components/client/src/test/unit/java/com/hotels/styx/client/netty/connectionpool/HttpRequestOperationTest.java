@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hotels.styx.client.netty.connectionpool;
 
+import com.hotels.styx.api.HttpHeaderNames;
 import com.hotels.styx.api.LiveHttpRequest;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
@@ -32,7 +33,7 @@ public class HttpRequestOperationTest {
     public void shouldTransformStyxRequestToNettyRequestWithAllRelevantInformation() {
         LiveHttpRequest request = new LiveHttpRequest.Builder()
                 .method(GET)
-                .header("X-Forwarded-Proto", "https")
+                .header(HttpHeaderNames.X_FORWARDED_PROTO, "https")
                 .cookies(
                         requestCookie("HASESSION_V3", "asdasdasd"),
                         requestCookie("has", "123456789")
@@ -56,7 +57,7 @@ public class HttpRequestOperationTest {
     public void shouldTransformUrlQueryParametersToNettyRequest() {
         LiveHttpRequest request = new LiveHttpRequest.Builder()
                 .method(GET)
-                .header("X-Forwarded-Proto", "https")
+                .header(HttpHeaderNames.X_FORWARDED_PROTO, "https")
                 .uri("https://www.example.com/foo?some=value&blah=blah")
                 .build();
 

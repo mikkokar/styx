@@ -18,6 +18,7 @@ package com.hotels.styx.server.netty.codec;
 import com.google.common.annotations.VisibleForTesting;
 import com.hotels.styx.api.Buffers;
 import com.hotels.styx.api.ByteStream;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpVersion;
 import com.hotels.styx.api.LiveHttpRequest;
 import com.hotels.styx.api.Url;
@@ -140,7 +141,7 @@ public final class NettyToStyxRequestDecoder extends MessageToMessageDecoder<Htt
     }
 
     private static void validateHostHeader(HttpRequest request) {
-        Iterable<String> hosts = request.headers().getAll(HOST);
+        Iterable<String> hosts = request.headers().getAll(HOST.toString());
         if (size(hosts) != 1 || !isValidHostName(getOnlyElement(hosts))) {
             throw new BadRequestException("Bad Host header. Missing/Mismatch of Host header: " + request);
         }
@@ -171,7 +172,7 @@ public final class NettyToStyxRequestDecoder extends MessageToMessageDecoder<Htt
                 .body(new ByteStream(toPublisher(content.map(Buffers::fromByteBuf))));
 
         stream(request.headers().spliterator(), false)
-                .forEach(entry -> requestBuilder.addHeader(entry.getKey(), entry.getValue()));
+                .forEach(entry -> requestBuilder.addHeader(HeaderKey.headerKey(entry.getKey()), entry.getValue()));
 
         return requestBuilder;
     }

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hotels.styx.client;
 
 import com.hotels.styx.api.Buffer;
 import com.hotels.styx.api.ByteStream;
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
 import com.hotels.styx.api.LiveHttpRequest;
@@ -53,7 +54,7 @@ public class StyxHostHttpClientTest {
     public void setUp() {
         request =  HttpRequest.get("/").build().stream();
         response = HttpResponse.response(OK)
-                .header("X-Id", "123")
+                .header(HeaderKey.headerKey("X-Id"), "123")
                 .body("xyz", UTF_8)
                 .build()
                 .stream();

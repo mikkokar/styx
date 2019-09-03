@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -176,7 +176,7 @@ public class HttpRequest implements HttpMessage {
      * @return all values for a given HTTP header name or an empty list if the header is not present
      */
     @Override
-    public List<String> headers(CharSequence name) {
+    public List<String> headers(HeaderKey name) {
         return headers.getAll(name);
     }
 
@@ -495,7 +495,7 @@ public class HttpRequest implements HttpMessage {
          * @param value The value of the header
          * @return {@code this}
          */
-        public Builder header(CharSequence name, Object value) {
+        public Builder header(HeaderKey name, Object value) {
             this.headers.set(name, value);
             return this;
         }
@@ -520,7 +520,7 @@ public class HttpRequest implements HttpMessage {
          * @param value the value of the header
          * @return {@code this}
          */
-        public Builder addHeader(CharSequence name, Object value) {
+        public Builder addHeader(HeaderKey name, Object value) {
             this.headers.add(name, value);
             return this;
         }
@@ -531,7 +531,7 @@ public class HttpRequest implements HttpMessage {
          * @param name The name of the header to remove
          * @return {@code this}
          */
-        public Builder removeHeader(CharSequence name) {
+        public Builder removeHeader(HeaderKey name) {
             headers.remove(name);
             return this;
         }
@@ -720,7 +720,7 @@ public class HttpRequest implements HttpMessage {
             );
         }
 
-        private Optional<String> requireNotDuplicatedHeader(CharSequence headerName) {
+        private Optional<String> requireNotDuplicatedHeader(HeaderKey headerName) {
             List<String> headerValues = headers.build().getAll(headerName);
 
             checkArgument(headerValues.size() <= 1, "Duplicate %s found. %s", headerName, headerValues);

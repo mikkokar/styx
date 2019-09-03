@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 package com.hotels.styx.proxy
 
-import _root_.io.netty.handler.codec.http.HttpHeaders.Names.{UPGRADE, _}
-import _root_.io.netty.handler.codec.http.HttpHeaders.Values._
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.hotels.styx.api.HeaderKey.headerKey
 import com.hotels.styx.api.HttpRequest.get
-import com.hotels.styx.api.HttpHeaderNames.X_FORWARDED_FOR
-import com.hotels.styx.api.HttpHeaderValues
+import com.hotels.styx.api.HttpHeaderNames._
+import com.hotels.styx.api.HttpHeaderNames.KEEP_ALIVE
+import com.hotels.styx.api.{HeaderKey, HttpHeaderValues}
 import com.hotels.styx.api.RequestCookie.requestCookie
 import com.hotels.styx.api.ResponseCookie.responseCookie
 import com.hotels.styx.api.HttpResponseStatus._
@@ -67,8 +67,8 @@ class HeadersSpec extends FunSpec
     it("should pass through most http headers to the backend") {
       val req = get("/headers")
         .addHeader(HOST, styxServer.proxyHost)
-        .addHeader("Foo", "bar")
-        .addHeader("User-Agent", "Styx/1.0")
+        .addHeader(headerKey("Foo"), "bar")
+        .addHeader(USER_AGENT, "Styx/1.0")
         .build()
 
       val resp = decodedRequest(req)
@@ -105,7 +105,7 @@ class HeadersSpec extends FunSpec
         assert(resp.status() == OK)
 
         recordingBackend.verify(getRequestedFor(urlPathEqualTo("/headers"))
-          .withHeader(HOST, equalTo(s"localhost:${recordingBackend.port()}")))
+          .withHeader(HOST.toString, equalTo(s"localhost:${recordingBackend.port()}")))
       }
 
       it("should use host and port from an absolute URI to override the Host header") {
@@ -118,7 +118,7 @@ class HeadersSpec extends FunSpec
         assert(resp.status() == OK)
 
         recordingBackend.verify(getRequestedFor(urlPathEqualTo("/headers"))
-          .withHeader(HOST, equalTo(s"localhost:${recordingBackend.port()}")))
+          .withHeader(HOST.toString, equalTo(s"localhost:${recordingBackend.port()}")))
       }
 
     }
@@ -167,7 +167,7 @@ class HeadersSpec extends FunSpec
         assert(resp.status() == OK)
 
         recordingBackend.verify(getRequestedFor(urlPathEqualTo("/headers"))
-          .withHeader(VIA, equalTo("1.1 styx")))
+          .withHeader(VIA.toString, equalTo("1.1 styx")))
       }
 
       it("should append itself to the Via request header for an HTTP/1.1 request") {
@@ -181,7 +181,7 @@ class HeadersSpec extends FunSpec
         assert(resp.status() == OK)
 
         recordingBackend.verify(getRequestedFor(urlPathEqualTo("/headers"))
-          .withHeader(VIA, equalTo("1.1 apache, 1.1 styx")))
+          .withHeader(VIA.toString, equalTo("1.1 apache, 1.1 styx")))
       }
 
       it("should add itself to the Via response heaver") {
@@ -195,7 +195,7 @@ class HeadersSpec extends FunSpec
 
       it("should append itself to the Via response header") {
         recordingBackend.stub(urlPathEqualTo("/headers"), aResponse.withStatus(200)
-          .withHeader(VIA, "1.1 apache"))
+          .withHeader(VIA.toString, "1.1 apache"))
 
         val req = get("/headers")
           .addHeader(HOST, styxServer.proxyHost)
@@ -214,14 +214,14 @@ class HeadersSpec extends FunSpec
       it("should remove hop by hop headers, apart from Transfer-Encoding, from request") {
         val req = get("/headers")
           .header(HOST, styxServer.proxyHost)
-          .header("Keep-Alive", "true")
+          .header(KEEP_ALIVE, "true")
           .header(PROXY_AUTHENTICATE, "true")
           .header(PROXY_AUTHORIZATION, "foo")
           .header(TE, "bar")
           .header(TRAILER, "true")
           .header(TRANSFER_ENCODING, HttpHeaderValues.CHUNKED)
-          .header(UPGRADE, "true")
-          .addHeader("Test-Case", "1")
+          .header(headerKey(UPGRADE.toString), "true")
+          .addHeader(headerKey("Test-Case"), "1")
           .build()
 
         val resp = decodedRequest(req)
@@ -233,12 +233,12 @@ class HeadersSpec extends FunSpec
         recordingBackend.stub(urlPathEqualTo("/headers"), aResponse
           .withStatus(OK.code())
           .withHeader("Keep-Alive", "foo")
-          .withHeader(PROXY_AUTHENTICATE, "foo")
-          .withHeader(PROXY_AUTHORIZATION, "foo")
-          .withHeader(TE, "foo")
-          .withHeader(TRAILER, "foo")
-          .withHeader(TRANSFER_ENCODING, CHUNKED)
-          .withHeader(UPGRADE, "foo")
+          .withHeader(PROXY_AUTHENTICATE.toString, "foo")
+          .withHeader(PROXY_AUTHORIZATION.toString, "foo")
+          .withHeader(TE.toString, "foo")
+          .withHeader(TRAILER.toString, "foo")
+          .withHeader(TRANSFER_ENCODING.toString, CHUNKED.toString)
+          .withHeader(UPGRADE.toString, "foo")
         )
 
 
@@ -251,12 +251,12 @@ class HeadersSpec extends FunSpec
         recordingBackend.verify(getRequestedFor(urlPathEqualTo("/headers")))
 
         resp.status() should be(OK)
-        resp.header("Keep-Alive").isPresent should be(false)
+        resp.header(KEEP_ALIVE).isPresent should be(false)
         resp.header(PROXY_AUTHENTICATE).isPresent should be(false)
         resp.header(PROXY_AUTHORIZATION).isPresent should be(false)
         resp.header(TE).isPresent should be(false)
         resp.header(TRAILER).isPresent should be(false)
-        resp.header(UPGRADE).isPresent should be(false)
+        resp.header(headerKey(UPGRADE.toString)).isPresent should be(false)
       }
 
 
@@ -264,17 +264,17 @@ class HeadersSpec extends FunSpec
         val req = get("/headers")
           .header(HOST, styxServer.proxyHost)
           .addHeader(CONNECTION, "Foo, Bar, Baz")
-          .addHeader("Foo", "abc")
-          .addHeader("Foo", "def")
-          .header("Foo", "last")
-          .addHeader("Bar", "one, two, three")
-          .addHeader("Test-Case", "2")
+          .addHeader(headerKey("Foo"), "abc")
+          .addHeader(headerKey("Foo"), "def")
+          .header(headerKey("Foo"), "last")
+          .addHeader(headerKey("Bar"), "one, two, three")
+          .addHeader(headerKey("Test-Case"), "2")
           .build()
 
         val resp = decodedRequest(req)
 
         recordingBackend.verify(getRequestedFor(urlEqualTo("/headers"))
-          .withoutHeader(CONNECTION)
+          .withoutHeader(CONNECTION.toString)
           .withoutHeader("Foo")
           .withoutHeader("Bar")
           .withoutHeader("Baz")
@@ -287,12 +287,12 @@ class HeadersSpec extends FunSpec
         recordingBackend.stub(urlPathEqualTo("/headers"), aResponse()
           .withStatus(OK.code())
           .withHeader("Keep-Alive", "foo")
-          .withHeader(PROXY_AUTHENTICATE, "foo")
-          .withHeader(PROXY_AUTHORIZATION, "foo")
-          .withHeader(TE, "foo")
-          .withHeader(TRAILER, "foo")
-          .withHeader(TRANSFER_ENCODING, CHUNKED)
-          .withHeader(UPGRADE, "foo")
+          .withHeader(PROXY_AUTHENTICATE.toString, "foo")
+          .withHeader(PROXY_AUTHORIZATION.toString, "foo")
+          .withHeader(TE.toString, "foo")
+          .withHeader(TRAILER.toString, "foo")
+          .withHeader(TRANSFER_ENCODING.toString, CHUNKED.toString)
+          .withHeader(UPGRADE.toString, "foo")
         )
 
         val req = get("/headers")
@@ -303,9 +303,9 @@ class HeadersSpec extends FunSpec
 
         resp.status() should be(OK)
         resp.header(CONNECTION).isPresent should be(false)
-        resp.header("Foo").isPresent should be(false)
-        resp.header("Bar").isPresent should be(false)
-        resp.header("Baz").isPresent should be(false)
+        resp.header(headerKey("Foo")).isPresent should be(false)
+        resp.header(headerKey("Bar")).isPresent should be(false)
+        resp.header(headerKey("Baz")).isPresent should be(false)
 
       }
     }
@@ -314,8 +314,8 @@ class HeadersSpec extends FunSpec
 
       it("should return HTTP BAD_GATEWAY Bad Gateway if origin returns multiple differing content-length headers.") {
         recordingBackend.stub(urlPathEqualTo("/headers"), aResponse.withStatus(200)
-          .withHeader(CONTENT_LENGTH, "50")
-          .withHeader(CONTENT_LENGTH, "60")
+          .withHeader(CONTENT_LENGTH.toString, "50")
+          .withHeader(CONTENT_LENGTH.toString, "60")
         )
 
         val req = get("/headers")
@@ -332,7 +332,7 @@ class HeadersSpec extends FunSpec
       it("should return HTTP BAD_GATEWAY Bad Gateway if origin returns multiple differing content-length values.") {
         originRespondingWith(
           responseWithHeaders(
-            HttpHeader(CONTENT_LENGTH, "50, 60")))
+            HttpHeader(CONTENT_LENGTH.toString, "50, 60")))
 
         val req = get("/badheaders")
           .addHeader(HOST, styxServer.proxyHost)
@@ -346,7 +346,7 @@ class HeadersSpec extends FunSpec
       it("Returns HTTP BAD_GATEWAY Bad Gateway if origin returns multiple identical content-length values.") {
         originRespondingWith(
           responseWithHeaders(
-            HttpHeader(CONTENT_LENGTH, "50, 50")))
+            HttpHeader(CONTENT_LENGTH.toString, "50, 50")))
 
         val req = get("/badheaders")
           .addHeader(HOST, styxServer.proxyHost)
@@ -360,8 +360,8 @@ class HeadersSpec extends FunSpec
       it("should remove Content-Length from response when both Content-Length and Transfer-Encoding: chunked headers are returned by the origin") {
         originRespondingWith(
           responseWithHeaders(
-            HttpHeader(CONTENT_LENGTH, "50"),
-            HttpHeader(TRANSFER_ENCODING, CHUNKED)))
+            HttpHeader(CONTENT_LENGTH.toString, "50"),
+            HttpHeader(TRANSFER_ENCODING.toString, CHUNKED.toString)))
 
         val req = get("/badheaders")
           .addHeader(HOST, styxServer.proxyHost)
@@ -371,7 +371,7 @@ class HeadersSpec extends FunSpec
 
         assert(resp.status() == OK)
         assert(!resp.contentLength.isPresent, "content length header should be empty")
-        assert(resp.header(TRANSFER_ENCODING).get() == CHUNKED)
+        assert(resp.header(TRANSFER_ENCODING).get() == CHUNKED.toString)
       }
     }
 

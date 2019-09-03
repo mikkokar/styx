@@ -68,12 +68,10 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
      * if such an element exists.
      * If there are more than one values for the specified name, the first value is returned.
      *
-     * @param name header name
+     * @param headerKey header name
      * @return header value if header exists
      */
-    public Optional<String> get(CharSequence name) {
-        HeaderKey headerKey = new HeaderKey(name);
-
+    public Optional<String> get(HeaderKey headerKey) {
         return persistentHeaders.get(headerKey)
                 .map(value -> {
                     if (value instanceof CharSequence) {
@@ -89,13 +87,11 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
     /**
      * Returns an immutable list of header values with the specified {@code name}.
      *
-     * @param name The name of the headers
+     * @param headerKey The name of the headers
      * @return a list of header values which will be empty if no values
      * are found
      */
-    public List<String> getAll(CharSequence name) {
-        HeaderKey headerKey = new HeaderKey(name);
-
+    public List<String> getAll(HeaderKey headerKey) {
         return persistentHeaders.get(headerKey)
                 .map(value -> {
                     if (value instanceof CharSequence) {
@@ -111,12 +107,10 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
     /**
      * Returns {@code true} if this header contains a header with the specified {@code name}.
      *
-     * @param name header name
+     * @param headerKey header name
      * @return {@code true} if this map contains a header with the specified {@code name}
      */
-    public boolean contains(CharSequence name) {
-        HeaderKey headerKey = new HeaderKey(name);
-
+    public boolean contains(HeaderKey headerKey) {
         return persistentHeaders.containsKey(headerKey);
     }
 
@@ -210,9 +204,7 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
         }
 
 
-        public List<String> getAll(CharSequence name) {
-            HeaderKey headerKey = new HeaderKey(name);
-
+        public List<String> getAll(HeaderKey headerKey) {
             return this.persistentHeaders.get(headerKey)
                     .map(value -> {
                         if (value instanceof CharSequence) {
@@ -225,9 +217,7 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
                     .getOrElse(ImmutableList.of());
         }
 
-        public String get(CharSequence name) {
-            HeaderKey headerKey = new HeaderKey(name);
-
+        public String get(HeaderKey headerKey) {
             return this.persistentHeaders.get(headerKey)
                     .map(value -> {
                         if (value instanceof CharSequence) {
@@ -247,19 +237,17 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
          * <p/>
          * Will not replace any existing values for the header.
          *
-         * @param name  The name of the header
+         * @param headerKey  The name of the header
          * @param value The value of the header
          * @return this builder
          */
-        public Builder add(CharSequence name, String value) {
-            return addInternal(name, value);
+        public Builder add(HeaderKey headerKey, String value) {
+            return addInternal(headerKey, value);
         }
 
-        private Builder addInternal(CharSequence name, String value) {
-            Objects.requireNonNull(name);
+        private Builder addInternal(HeaderKey headerKey, String value) {
+            Objects.requireNonNull(headerKey);
             Objects.requireNonNull(value);
-
-            HeaderKey headerKey = new HeaderKey(name);
 
             Option<Object> previous = this.persistentHeaders.get(headerKey);
 
@@ -278,37 +266,35 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
         }
 
         /**
-         * Adds a new header with the specified {@code name} and {@code value}.
+         * Adds a new header with the specified {@code headerKey} and {@code value}.
          * <p/>
          * Will not replace any existing values for the header.
          *
-         * @param name  The name of the header
+         * @param headerKey  The headerKey of the header
          * @param value The value of the header
          * @return this builder
          */
-        public Builder add(CharSequence name, Object value) {
+        public Builder add(HeaderKey headerKey, Object value) {
             if (value instanceof Collection) {
                 ((Collection<String>) value).forEach(element -> {
                     if (element != null) {
-                        addInternal(name, element);
+                        addInternal(headerKey, element);
                     }
                 });
             } else {
-                addInternal(name, value.toString());
+                addInternal(headerKey, value.toString());
             }
 
             return this;
         }
 
         /**
-         * Removes the header with the specified {@code name}.
+         * Removes the header with the specified {@code headerKey}.
          *
-         * @param name the name of the header to remove
+         * @param headerKey the headerKey of the header to remove
          * @return this builder
          */
-        public Builder remove(CharSequence name) {
-            HeaderKey headerKey = new HeaderKey(name);
-
+        public Builder remove(HeaderKey headerKey) {
             this.persistentHeaders = this.persistentHeaders.remove(headerKey);
             return this;
         }
@@ -318,13 +304,11 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
          * <p/>
          * All existing values for the same header will be removed.
          *
-         * @param name  The name of the header
+         * @param headerKey  The name of the header
          * @param value The value of the header
          * @return this builder
          */
-        public Builder set(CharSequence name, String value) {
-            HeaderKey headerKey = new HeaderKey(name);
-
+        public Builder set(HeaderKey headerKey, String value) {
             this.persistentHeaders = this.persistentHeaders.put(headerKey, value);
             return this;
         }
@@ -334,13 +318,11 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
          * <p/>
          * All existing values for the same header will be removed.
          *
-         * @param name  The name of the header
+         * @param headerKey  The name of the header
          * @param value The value of the header
          * @return this builder
          */
-        public Builder set(CharSequence name, Instant value) {
-            HeaderKey headerKey = new HeaderKey(name);
-
+        public Builder set(HeaderKey headerKey, Instant value) {
             this.persistentHeaders = this.persistentHeaders.put(headerKey, RFC1123_DATE_FORMAT.format(value));
             return this;
         }
@@ -350,23 +332,21 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
          * <p/>
          * All existing values for the same header will be removed.
          *
-         * @param name  The name of the header
+         * @param headerKey  The name of the header
          * @param value The value of the header
          * @return this builder
          */
-        public Builder set(CharSequence name, Object value) {
-            HeaderKey headerKey = new HeaderKey(name);
-
+        public Builder set(HeaderKey headerKey, Object value) {
             this.persistentHeaders = this.persistentHeaders.remove(headerKey);
 
             if (value instanceof Collection) {
                 ((Collection<String>) value).forEach(element -> {
                     if (element != null) {
-                        this.add(name, element);
+                        this.add(headerKey, element);
                     }
                 });
             } else  {
-                this.add(name, value.toString());
+                this.add(headerKey, value.toString());
             }
 
             return this;
@@ -377,56 +357,17 @@ public final class HttpHeaders implements Iterable<HttpHeader> {
          * <p/>
          * All existing values for the same header will be removed.
          *
-         * @param name  The name of the header
+         * @param headerKey  The name of the header
          * @param value The value of the header
          * @return this builder
          */
-        public Builder set(CharSequence name, int value) {
-            HeaderKey headerKey = new HeaderKey(name);
-
+        public Builder set(HeaderKey headerKey, int value) {
             this.persistentHeaders = this.persistentHeaders.put(headerKey, Integer.toString(value));
             return this;
         }
 
         public HttpHeaders build() {
             return new HttpHeaders(this);
-        }
-    }
-
-    static class HeaderKey {
-        private final CharSequence canonicalRepresentation;
-        private final int hashCode;
-        private final String content;
-
-        public HeaderKey(CharSequence content) {
-            this.content = content.toString();
-            this.canonicalRepresentation = content.toString().toLowerCase();
-            this.hashCode = this.canonicalRepresentation.hashCode();
-        }
-
-        @Override
-        public int hashCode() {
-            return hashCode;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            HeaderKey that = (HeaderKey) o;
-
-            return canonicalRepresentation.equals(that.canonicalRepresentation);
-        }
-
-        @Override
-        public String toString() {
-            return content.toString();
         }
     }
 

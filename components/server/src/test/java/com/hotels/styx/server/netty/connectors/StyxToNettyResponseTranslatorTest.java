@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013-2018 Expedia Inc.
+  Copyright (C) 2013-2019 Expedia Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package com.hotels.styx.server.netty.connectors;
 
+import com.hotels.styx.api.HeaderKey;
 import com.hotels.styx.api.LiveHttpResponse;
 import com.hotels.styx.api.ResponseCookie;
 import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 import io.netty.handler.codec.http.cookie.Cookie;
 import org.testng.annotations.Test;
 
+import static com.hotels.styx.api.HttpHeaderNames.HOST;
 import static com.hotels.styx.api.HttpHeaderNames.SET_COOKIE;
 import static com.hotels.styx.api.ResponseCookie.responseCookie;
 import static com.hotels.styx.api.HttpResponseStatus.OK;
@@ -46,7 +48,7 @@ public class StyxToNettyResponseTranslatorTest {
     @Test
     public void shouldCreateNettyResponseWithHostHeader() {
         LiveHttpResponse styxResponse = new LiveHttpResponse.Builder(OK)
-                .header("Host", "localhost")
+                .header(HOST, "localhost")
                 .build();
         io.netty.handler.codec.http.HttpResponse nettyResponse = translator.toNettyResponse(styxResponse);
         assertTrue(nettyResponse.headers().containsValue("Host", "localhost", false));
@@ -68,7 +70,7 @@ public class StyxToNettyResponseTranslatorTest {
 
         io.netty.handler.codec.http.HttpResponse nettyResponse = translator.toNettyResponse(styxResponse);
 
-        String setCookie = nettyResponse.headers().get(SET_COOKIE);
+        String setCookie = nettyResponse.headers().get(SET_COOKIE.toString());
 
         Cookie nettyCookie = ClientCookieDecoder.LAX.decode(setCookie);
 
