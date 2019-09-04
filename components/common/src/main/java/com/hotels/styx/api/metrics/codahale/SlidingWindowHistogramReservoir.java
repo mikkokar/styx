@@ -21,10 +21,13 @@ import com.hotels.styx.api.Clock;
 import com.hotels.styx.api.metrics.SlidingWindowHistogram;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.Objects;
 
 import static com.hotels.styx.api.Clocks.systemClock;
 import static java.lang.String.format;
@@ -36,6 +39,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * A {@link Reservoir} backed by a {@link SlidingWindowHistogram}.
  */
 public class SlidingWindowHistogramReservoir implements Reservoir {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SlidingWindowHistogramReservoir.class);
+
+    private static final int NUMBER_OF_INTERVALS = integerSystemProperty("SLIDING_WINDOW_HISTOGRAM_INTERVALS", "12");
+    private static final int INTERVAL_DURATION = integerSystemProperty("SLIDING_WINDOW_HISTOGRAM_DURATION", "10");
+
     private final SlidingWindowHistogram histogram;
     private final Clock clock;
     private volatile HistogramSnapshot snapshot;
@@ -44,8 +52,8 @@ public class SlidingWindowHistogramReservoir implements Reservoir {
 
     public SlidingWindowHistogramReservoir() {
         this(new SlidingWindowHistogram.Builder()
-                .numberOfIntervals(12)
-                .intervalDuration(10, SECONDS)
+                .numberOfIntervals(NUMBER_OF_INTERVALS)
+                .intervalDuration(INTERVAL_DURATION, SECONDS)
                 .autoResize(true)
                 .build());
     }
@@ -83,6 +91,16 @@ public class SlidingWindowHistogramReservoir implements Reservoir {
 
     private boolean snapshotExpired(long currentTime) {
         return currentTime - snapshotCreationTime > histogram.windowSize() * histogram.timeIntervalMs();
+    }
+
+    private static int integerSystemProperty(String key, String def) {
+        int value = Integer.parseInt(System.getProperty(key, def));
+
+        if (Objects.nonNull(System.getProperty(key))) {
+            LOGGER.info("Setting {} to {}.", key, value);
+        }
+
+        return value;
     }
 
     static final class HistogramSnapshot extends Snapshot {
