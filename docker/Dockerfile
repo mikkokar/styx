@@ -1,5 +1,5 @@
 ARG TAG=11-jdk
-FROM openjdk:${TAG}
+FROM oracle/graalvm-ce:19.2.0.1
 
 ARG STYX_VERSION=""
 ARG STYX_IMAGE=https://github.com/HotelsDotCom/styx/releases/download/${STYX_VERSION}/${STYX_VERSION}-linux-x86_64.zip
@@ -18,6 +18,7 @@ ADD default-docker.yml /styx/default-config/default.yml
 ADD styx-env.sh /styx/default-config/styx-env.sh
 ADD origins.yml /styx/default-config/origins.yml
 
+RUN yum -y install unzip
 RUN unzip styx.zip \
     && rm styx.zip
 
