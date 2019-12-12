@@ -25,6 +25,7 @@ import io.kotlintest.matchers.string.shouldMatch
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.FunSpec
 import io.mockk.mockk
+import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.Duration
@@ -78,7 +79,7 @@ class YamlFileConfigurationServiceDuplicateIdentifiersTest : FunSpec() {
                           - { id: "app-03", host: "localhost:9093" } 
                 """.trimIndent())
 
-                Thread.sleep(500)
+                delay(500)
 
                 objectStore.entrySet().forEach {
                     LOGGER.debug("entry: ${it.key} -> ${it.value.type} - ${it.value.tags}")
@@ -111,7 +112,7 @@ class YamlFileConfigurationServiceDuplicateIdentifiersTest : FunSpec() {
                           - { id: "app-03", host: "localhost:9093" } 
                 """.trimIndent())
 
-                Thread.sleep(500)
+                delay(500)
 
                 objectStore.entrySet().forEach {
                     LOGGER.debug("routing entry: ${it.key} -> ${it.value.type} - ${it.value.tags}")

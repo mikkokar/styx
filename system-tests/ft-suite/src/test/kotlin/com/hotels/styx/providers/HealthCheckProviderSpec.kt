@@ -48,6 +48,7 @@ import io.kotlintest.matchers.withClue
 import io.kotlintest.seconds
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.FeatureSpec
+import kotlinx.coroutines.delay
 import reactor.core.publisher.toMono
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.atomic.AtomicBoolean
@@ -155,7 +156,7 @@ class HealthCheckProviderSpec : FeatureSpec() {
 
             scenario("Ignores closed origins") {
                 styxServer().newRoutingObject("aaa-04", hostProxy(lbGroupTag("aaa"), stateTag(STATE_INACTIVE), testServer03)).shouldBe(CREATED)
-                Thread.sleep(5.seconds.toMillis())
+                delay(5.seconds.toMillis())
                 styxServer().routingObject("aaa-04").get().shouldContain(stateTag(STATE_INACTIVE))
                 styxServer().routingObject("aaa-04").get().shouldNotContain(healthCheckTag("on" to 0)!!)
             }

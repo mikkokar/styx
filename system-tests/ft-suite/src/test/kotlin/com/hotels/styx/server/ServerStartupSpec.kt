@@ -35,6 +35,7 @@ import io.kotlintest.matchers.types.shouldBeNull
 import io.kotlintest.seconds
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.FeatureSpec
+import kotlinx.coroutines.delay
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 
@@ -75,7 +76,7 @@ class ServerStartupSpec : FeatureSpec() {
 
                 barrier.await()
 
-                Thread.sleep(100)
+                delay(100)
                 styxServer().proxyHttpAddress().shouldBeNull()
 
                 latch2.countDown()

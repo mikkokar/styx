@@ -39,7 +39,6 @@ object TestResultReporter : TestListener {
 
     override fun beforeTest(testCase: TestCase) {
         super.beforeTest(testCase)
-
         LOGGER.info("Running: '${testCase.name}' - ${testCase.source.fileName}:${testCase.source.lineNumber}")
     }
 

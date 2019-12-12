@@ -28,6 +28,7 @@ import io.kotlintest.Spec
 import io.kotlintest.matchers.string.shouldInclude
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.FeatureSpec
+import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets.UTF_8
 
 class PluginAdminInterfaceSpec : FeatureSpec() {
@@ -113,7 +114,10 @@ class PluginAdminInterfaceSpec : FeatureSpec() {
     }
 
     override fun afterSpec(spec: Spec) {
+        val LOGGER = LoggerFactory.getLogger("Styx-Tests")
+        LOGGER.info("afterSpec - 1")
         styxServer.stop()
+        LOGGER.info("afterSpec - 2")
     }
 }
 

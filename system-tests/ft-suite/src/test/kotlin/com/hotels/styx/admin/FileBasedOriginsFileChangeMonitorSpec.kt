@@ -120,8 +120,11 @@ class FileBasedOriginsFileChangeMonitorSpec: StringSpec() {
     }
 
     override fun afterSpec(spec: Spec) {
+        val LOGGER = LoggerFactory.getLogger("Styx-Tests")
+        LOGGER.info("afterSpec - 1")
         styxServer.stop()
         mockServer.stop()
+        LOGGER.info("afterSpec - 2")
     }
 }
 

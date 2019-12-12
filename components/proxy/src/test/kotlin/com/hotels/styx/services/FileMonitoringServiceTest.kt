@@ -21,6 +21,7 @@ import io.kotlintest.eventually
 import io.kotlintest.seconds
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
+import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.charset.StandardCharsets.UTF_8
@@ -116,7 +117,7 @@ class FileMonitoringServiceTest : StringSpec() {
                 }
 
                 monitoredFile.writeText("Hello, world!", UTF_8)
-                Thread.sleep(2.seconds.toMillis())
+                delay(2.seconds.toMillis())
 
                 // TODO: Fails due to underlying FileChangeMonitor bug. It emits a change even if md5 sum stays the same.
                 result.get() shouldBe "Hello, world!"

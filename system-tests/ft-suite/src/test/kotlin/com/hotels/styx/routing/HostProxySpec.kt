@@ -48,6 +48,7 @@ import io.kotlintest.matchers.withClue
 import io.kotlintest.seconds
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.FeatureSpec
+import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets.UTF_8
 import kotlin.system.measureTimeMillis
@@ -220,8 +221,7 @@ class HostProxySpec : FeatureSpec() {
                     }
                 }
 
-                // Wait for connection to expiry
-                Thread.sleep(connectinExpiryInSeconds*1000L)
+                delay(connectinExpiryInSeconds*1000L)
 
                 client.send(get("/")
                         .header(HOST, styxServer().proxyHttpHostHeader())
