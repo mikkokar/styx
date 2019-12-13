@@ -275,6 +275,13 @@ public final class StyxServer extends AbstractService {
         });
     }
 
+    @Override
+    protected void doStop() {
+        this.phase2Services.stopAsync().awaitStopped();
+        this.phase1Services.stopAsync().awaitStopped();
+//        shutdownLogging(true);
+    }
+
     private void printBanner() {
         try {
             try (Reader reader = new InputStreamReader(getClass().getResourceAsStream("/banner.txt"))) {
@@ -284,13 +291,6 @@ public final class StyxServer extends AbstractService {
             LOG.debug("Could not display banner: ", ignored);
             LOG.info("Starting styx");
         }
-    }
-
-    @Override
-    protected void doStop() {
-        this.phase1Services.stopAsync();
-        this.phase2Services.stopAsync();
-        shutdownLogging(true);
     }
 
     private static Service toGuavaService(StyxService styxService) {

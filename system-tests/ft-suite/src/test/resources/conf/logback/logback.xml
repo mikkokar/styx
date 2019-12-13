@@ -6,6 +6,12 @@
     </encoder>
   </appender>
 
+  <root level="DEBUG">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+
+  <logger name="com.hotels.styx.*" level="OFF"/>
+
   <logger name="Styx-Tests" level="INFO"/>
   <logger name="com.hotels.styx.http-messages.inbound" level="INFO"/>
   <logger name="com.hotels.styx.http-messages.outbound" level="INFO"/>
@@ -16,7 +22,4 @@
   <logger name="com.hotels.styx.server.netty.connectors.HttpPipelineHandler" level="OFF"/>
   <logger name="com.hotels.styx.servers.MockOriginServer" level="OFF"/>
 
-  <root level="OFF">
-    <appender-ref ref="CONSOLE"/>
-  </root>
 </configuration>
