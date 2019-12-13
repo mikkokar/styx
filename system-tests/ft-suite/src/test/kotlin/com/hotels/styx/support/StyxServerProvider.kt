@@ -39,6 +39,7 @@ import java.util.HashMap
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.system.measureTimeMillis
 
 val defaultServerConfig = """                    
     proxy:
@@ -83,8 +84,11 @@ class StyxServerProvider(
             additionalPlugins: Map<String, Plugin> = this.defaultAdditionalPlugins,
             loggingConfig: Path? = this.defaultLoggingConfig,
             validateConfig: Boolean = this.validateConfig): StyxServerProvider {
-        restartAsync(configuration, additionalRoutingObjects, additionalPlugins, loggingConfig, validateConfig)
-        serverRef.get()?.awaitRunning()
+        val duration = measureTimeMillis {
+            restartAsync(configuration, additionalRoutingObjects, additionalPlugins, loggingConfig, validateConfig)
+            serverRef.get()?.awaitRunning()
+        }
+        LOGGER.info("server restart took $duration ms")
         return this
     }
 
@@ -115,12 +119,15 @@ class StyxServerProvider(
 
 
     fun stop() {
-        serverRef.getAndSet(null)
-                ?.let {
-                    if (it.isRunning()) {
-                        it.stopAsync().awaitTerminated()
+        val duration = measureTimeMillis {
+            serverRef.getAndSet(null)
+                    ?.let {
+                        if (it.isRunning()) {
+                            it.stopAsync().awaitTerminated()
+                        }
                     }
-                }
+        }
+        LOGGER.info("server stop took $duration ms")
     }
 }
 

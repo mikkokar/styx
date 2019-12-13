@@ -48,6 +48,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.google.common.base.Optional.absent;
 import static com.hotels.styx.servers.WiremockResponseConverter.toStyxResponse;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyMap;
 
@@ -138,13 +139,23 @@ public final class MockOriginServer {
     }
 
     public MockOriginServer start() {
+        long current = System.currentTimeMillis();
+
         services = new ServiceManager(ImmutableList.of(adminServer, mockServer));
         services.startAsync().awaitHealthy();
+
+        LOGGER.info(format("Server started in %d ms", System.currentTimeMillis() - current));
+
         return this;
     }
 
     public MockOriginServer stop() {
+        long current = System.currentTimeMillis();
+
         services.stopAsync().awaitStopped();
+
+        LOGGER.info(format("Server stopped in %d ms", System.currentTimeMillis() - current));
+
         return this;
     }
 

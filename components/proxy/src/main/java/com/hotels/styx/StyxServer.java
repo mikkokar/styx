@@ -279,7 +279,7 @@ public final class StyxServer extends AbstractService {
     protected void doStop() {
         this.phase2Services.stopAsync().awaitStopped();
         this.phase1Services.stopAsync().awaitStopped();
-        shutdownLogging(true);
+//        shutdownLogging(true);
     }
 
     private void printBanner() {
