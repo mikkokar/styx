@@ -165,10 +165,15 @@ public final class StyxServer extends AbstractService {
     public StyxServer(StyxServerComponents components, Stopwatch stopwatch) {
         this.stopwatch = stopwatch;
 
+        long start = System.currentTimeMillis();
         registerCoreMetrics(components.environment().buildInfo(), components.environment().metricRegistry());
+
+        // 3.3 seconds
+        LOG.info("core metrics time {} ms", System.currentTimeMillis() - start);
 
         // The plugins are loaded, but not initialised.
         // And therefore not able to accept traffic.
+        start = System.currentTimeMillis();
         HttpHandler httpHandler = new StyxPipelineFactory(
                 components.routingObjectFactoryContext(),
                 components.environment(),
@@ -178,17 +183,26 @@ public final class StyxServer extends AbstractService {
                 components.nettySocketChannelClass())
                 .create();
 
+        // 1.7 seconds
+        LOG.info("pipeline factory time {} ms", System.currentTimeMillis() - start);
+
         // Startup phase 1: start plugins, control plane providers, and other services:
         ArrayList<Service> services = new ArrayList<>();
 
+        start = System.currentTimeMillis();
         adminServer = createAdminServer(components);
+        // 6.8 seconds
+        LOG.info("admin server and phase 1 time {} ms", System.currentTimeMillis() - start);
+
         services.add(adminServer);
         services.add(toGuavaService(new PluginsManager("Styx-Plugins-Manager", components)));
         services.add(toGuavaService(new ServiceProviderMonitor("Styx-Service-Monitor", components.servicesDatabase())));
         components.services().values().forEach(it -> services.add(toGuavaService(it)));
         this.phase1Services = new ServiceManager(services);
 
+
         // Phase 2: start HTTP services;
+        start = System.currentTimeMillis();
         StyxConfig styxConfig = components.environment().configuration();
         httpServer = styxConfig.proxyServerConfig()
                 .httpConnectorConfig()
@@ -207,6 +221,8 @@ public final class StyxServer extends AbstractService {
         Optional.ofNullable(httpsServer).ifPresent(services2::add);
 
         this.phase2Services = new ServiceManager(services2);
+        // 6.6 seconds
+        LOG.info("phase 2 time {} ms", System.currentTimeMillis() - start);
     }
 
     public InetSocketAddress proxyHttpAddress() {
@@ -267,18 +283,27 @@ public final class StyxServer extends AbstractService {
         printBanner();
         CompletableFuture.runAsync(() -> {
             // doStart should return quicly. Therefore offload waiting on a separate thread:
+            long start = System.currentTimeMillis();
             this.phase1Services.addListener(new Phase1ServerStatusListener(this));
             this.phase1Services.startAsync().awaitHealthy();
+            LOG.info("Phase 1 services started in: {} ms.", System.currentTimeMillis() - start);
 
+            start = System.currentTimeMillis();
             this.phase2Services.addListener(new Phase2ServerStatusListener(this));
             this.phase2Services.startAsync();
+            LOG.info("Phase 2 services started in: {} ms.", System.currentTimeMillis() - start);
         });
     }
 
     @Override
     protected void doStop() {
+        long start = System.currentTimeMillis();
         this.phase2Services.stopAsync().awaitStopped();
+        LOG.info("Phase 1 services stopped in: {} ms.", System.currentTimeMillis() - start);
+
+        start = System.currentTimeMillis();
         this.phase1Services.stopAsync().awaitStopped();
+        LOG.info("Phase 2 services stopped in: {} ms.", System.currentTimeMillis() - start);
 //        shutdownLogging(true);
     }
 

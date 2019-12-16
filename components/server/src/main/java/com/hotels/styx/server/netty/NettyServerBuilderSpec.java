@@ -46,7 +46,7 @@ public class NettyServerBuilderSpec {
     }
 
     public NettyServerBuilder toNettyServerBuilder(NettyServerConfig serverConfig) {
-        LOG.info("connectors={} name={}", serverConfig.connectors(), name);
+        long start = System.currentTimeMillis();
 
         NettyServerBuilder builder = NettyServerBuilder.newBuilder()
                 .setMetricsRegistry(environment.metricRegistry())
@@ -54,6 +54,8 @@ public class NettyServerBuilderSpec {
 
         serverConfig.httpConnectorConfig().ifPresent(httpConnector ->
                 builder.setProtocolConnector(connectorFactory.create(httpConnector)));
+
+        LOG.info("toNettyServerBuilder time: {}", System.currentTimeMillis() - start);
 
         return builder;
     }

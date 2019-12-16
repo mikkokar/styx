@@ -116,7 +116,6 @@ public class AdminServerBuilder {
     }
 
     public HttpServer build() {
-        LOG.info("event bus that will be used is {}", environment.eventBus());
         StyxConfig styxConfig = environment.configuration();
         AdminServerConfig adminServerConfig = styxConfig.adminServerConfig();
 
@@ -127,54 +126,20 @@ public class AdminServerBuilder {
     }
 
     private HttpHandler adminEndpoints(StyxConfig styxConfig, StartupConfig startupConfig) {
-        Optional<Duration> metricsCacheExpiration = styxConfig.adminServerConfig().metricsCacheExpiration();
+        long start = System.currentTimeMillis();
 
         AdminHttpRouter httpRouter = new AdminHttpRouter();
-        httpRouter.aggregate("/", new IndexHandler(indexLinkPaths(styxConfig)));
-        httpRouter.aggregate("/version.txt", new VersionTextHandler(styxConfig.versionFiles(startupConfig)));
-        httpRouter.aggregate("/admin", new IndexHandler(indexLinkPaths(styxConfig)));
-        httpRouter.aggregate("/admin/uptime", new UptimeHandler(environment.metricRegistry()));
-        httpRouter.aggregate("/admin/ping", new PingHandler());
-        httpRouter.aggregate("/admin/threads", new ThreadsHandler());
-        httpRouter.aggregate("/admin/current_requests", new CurrentRequestsHandler(CurrentRequestTracker.INSTANCE));
-        MetricsHandler metricsHandler = new MetricsHandler(environment.metricRegistry(), metricsCacheExpiration);
-        httpRouter.aggregate("/admin/metrics", metricsHandler);
-        httpRouter.aggregate("/admin/metrics/", metricsHandler);
-        httpRouter.aggregate("/admin/configuration", new StyxConfigurationHandler(configuration));
-        httpRouter.aggregate("/admin/jvm", new JVMMetricsHandler(environment.metricRegistry(), metricsCacheExpiration));
-        httpRouter.aggregate("/admin/configuration/logging", new LoggingConfigurationHandler(startupConfig.logConfigLocation()));
-        httpRouter.aggregate("/admin/configuration/startup", new StartupConfigHandler(startupConfig));
 
+        // No influence
         RoutingObjectHandler routingObjectHandler = new RoutingObjectHandler(routeDatabase, routingObjectFactoryContext);
         httpRouter.aggregate("/admin/routing", routingObjectHandler);
         httpRouter.aggregate("/admin/routing/", routingObjectHandler);
 
-        ServiceProviderHandler serviceProvideHandler = new ServiceProviderHandler(providerDatabase);
-        httpRouter.aggregate("/admin/service/providers", serviceProvideHandler);
-        httpRouter.aggregate("/admin/service/provider/", serviceProvideHandler);
+        //
+        httpRouter.aggregate("/admin/providers", new ProviderListHandler(providerDatabase));
+        httpRouter.aggregate("/admin/plugins", new PluginListHandler(environment.configStore()));
 
-        if (configVersion(styxConfig) == ROUTING_CONFIG_V1) {
-            httpRouter.aggregate("/admin/dashboard/data.json", dashboardDataHandler(styxConfig));
-            httpRouter.aggregate("/admin/dashboard/", new ClassPathResourceHandler("/admin/dashboard/"));
-        }
-
-        // Replace them in the backwards compatibility mode only.
-        // Remove altogether when Routing Engine is enabled:
-        httpRouter.aggregate("/admin/origins/status", new OriginsInventoryHandler(environment.eventBus()));
-        httpRouter.aggregate("/admin/configuration/origins", new OriginsHandler(backendServicesRegistry));
-        httpRouter.aggregate("/admin/tasks/origins/reload", new HttpMethodFilteringHandler(POST, new OriginsReloadCommandHandler(backendServicesRegistry)));
-        httpRouter.aggregate("/admin/tasks/origins", new HttpMethodFilteringHandler(POST, new OriginsCommandHandler(environment.eventBus())));
-
-        httpRouter.aggregate("/admin/tasks/plugin/", new PluginToggleHandler(environment.configStore()));
-
-        // Plugins Handler
-        environment.configStore().watchAll("plugins", NamedPlugin.class)
-                .forEach(entry -> {
-                    NamedPlugin namedPlugin = entry.value();
-                    extensionEndpoints("plugins", namedPlugin.name(), namedPlugin.adminInterfaceHandlers())
-                            .forEach(route -> httpRouter.stream(route.path(), route.handler()));
-                });
-
+        // 10% Influence Plugins, and provider object databases: Some influence
         providerDatabase.entrySet().forEach(record -> {
             String root = "providers";
             String extensionName = record.getKey();
@@ -184,9 +149,53 @@ public class AdminServerBuilder {
                     .forEach(route -> httpRouter.stream(route.path(), route.handler()));
         });
 
-        httpRouter.aggregate("/admin/providers", new ProviderListHandler(providerDatabase));
+        // 4% influence (86/3643)
+        httpRouter.aggregate("/", new IndexHandler(indexLinkPaths(styxConfig)));
+        httpRouter.aggregate("/admin", new IndexHandler(indexLinkPaths(styxConfig)));
 
-        httpRouter.aggregate("/admin/plugins", new PluginListHandler(environment.configStore()));
+        // 3% influence: 1586/3467
+        ServiceProviderHandler serviceProvideHandler = new ServiceProviderHandler(providerDatabase);
+        httpRouter.aggregate("/admin/service/providers", serviceProvideHandler);
+        httpRouter.aggregate("/admin/service/provider/", serviceProvideHandler);
+
+        // 20% -  26%
+        httpRouter.aggregate("/admin/configuration/startup", new StartupConfigHandler(startupConfig));
+
+        // 3%-4%
+        httpRouter.aggregate("/admin/configuration/logging", new LoggingConfigurationHandler(startupConfig.logConfigLocation()));
+        httpRouter.aggregate("/admin/uptime", new UptimeHandler(environment.metricRegistry()));
+
+        // 7% - 10%: Metcis Endpoints: Some influence
+        Optional<Duration> metricsCacheExpiration = styxConfig.adminServerConfig().metricsCacheExpiration();
+        MetricsHandler metricsHandler = new MetricsHandler(environment.metricRegistry(), metricsCacheExpiration);
+        httpRouter.aggregate("/admin/jvm", new JVMMetricsHandler(environment.metricRegistry(), metricsCacheExpiration));
+        httpRouter.aggregate("/admin/metrics", metricsHandler);
+        httpRouter.aggregate("/admin/metrics/", metricsHandler);
+
+        // Before config store:
+        // Total admin server and phase 1 time: 3638
+        // add admin endpoints time: 2011
+
+        //        Total admin server and phase 1 time: 3370
+        //        add admin endpoints time: 3006
+
+        // After config store:
+        //
+        //        Total admin server and phase 1 time: 3235
+        //        add admin endpoints time: 2871
+        //
+        // 48%
+        environment.configStore().watchAll("plugins", NamedPlugin.class)
+                .forEach(entry -> {
+                    NamedPlugin namedPlugin = entry.value();
+                    extensionEndpoints("plugins", namedPlugin.name(), namedPlugin.adminInterfaceHandlers())
+                            .forEach(route -> httpRouter.stream(route.path(), route.handler()));
+                });
+
+        // 34 % influence: (164/2976)
+        httpRouter.aggregate("/admin/configuration", new StyxConfigurationHandler(configuration));
+
+        LOG.info("add admin endpoints time: {}", System.currentTimeMillis() - start);
 
         return httpRouter;
     }

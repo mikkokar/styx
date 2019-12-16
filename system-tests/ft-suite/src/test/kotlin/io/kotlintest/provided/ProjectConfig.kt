@@ -21,4 +21,5 @@ import io.kotlintest.extensions.TestListener
 
 class ProjectConfig: AbstractProjectConfig() {
     override fun listeners(): List<TestListener> = listOf(TestResultReporter)
+    override fun parallelism(): Int = 10
 }

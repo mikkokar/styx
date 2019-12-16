@@ -84,11 +84,17 @@ class StyxServerProvider(
             additionalPlugins: Map<String, Plugin> = this.defaultAdditionalPlugins,
             loggingConfig: Path? = this.defaultLoggingConfig,
             validateConfig: Boolean = this.validateConfig): StyxServerProvider {
-        val duration = measureTimeMillis {
+        measureTimeMillis {
             restartAsync(configuration, additionalRoutingObjects, additionalPlugins, loggingConfig, validateConfig)
-            serverRef.get()?.awaitRunning()
+        }.let {
+            LOGGER.info("Restart async time took $it ms")
         }
-        LOGGER.info("server restart took $duration ms")
+
+        measureTimeMillis {
+            serverRef.get()?.awaitRunning()
+        }.let {
+            LOGGER.info("server restart took $it ms")
+        }
         return this
     }
 
@@ -102,32 +108,42 @@ class StyxServerProvider(
             stop()
         }
 
-        var components = StyxServerComponents.Builder()
-                .styxConfig(StyxConfig.fromYaml(configuration, validateConfig))
-                .additionalRoutingObjects(additionalRoutingObjects)
-                .plugins(additionalPlugins)
+        measureTimeMillis {
+            val start = System.currentTimeMillis()
+            var components = StyxServerComponents.Builder()
+                    .styxConfig(StyxConfig.fromYaml(configuration, validateConfig))
+                    .additionalRoutingObjects(additionalRoutingObjects)
+                    .plugins(additionalPlugins)
+            components = if (loggingConfig != null) components.loggingSetUp(loggingConfig.toString()) else components
 
-        LOGGER.info("restarted with logging config: $loggingConfig")
-        components = if (loggingConfig != null) components.loggingSetUp(loggingConfig.toString()) else components
+            LOGGER.info("Components time: ${System.currentTimeMillis() - start} ms")
+//            LOGGER.info("restarted with logging config: $loggingConfig")
 
-        val newServer = StyxServer(components.build())
-        newServer.startAsync()
-        serverRef.set(newServer)
+            val start2 = System.currentTimeMillis()
+            val newServer = StyxServer(components.build())
+            LOGGER.info("Server constructor time: ${System.currentTimeMillis() - start2} ms")
+
+            newServer.startAsync()
+            serverRef.set(newServer)
+        }.let {
+            LOGGER.info("$it ms")
+        }
 
         return this
     }
 
 
     fun stop() {
-        val duration = measureTimeMillis {
+        measureTimeMillis {
             serverRef.getAndSet(null)
                     ?.let {
                         if (it.isRunning()) {
                             it.stopAsync().awaitTerminated()
                         }
                     }
+        }.let {
+            LOGGER.info("server stop took $it ms")
         }
-        LOGGER.info("server stop took $duration ms")
     }
 }
 
