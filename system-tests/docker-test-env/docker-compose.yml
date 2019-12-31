@@ -41,7 +41,9 @@ services:
       - JVM_DEBUG=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:8000
 
     command:
-     - /styx/config/styxconf.yml
+      - "-l"
+      - /styx/config/logback.xml
+      - /styx/config/styxconf.yml
 
     entrypoint:
       - styx/bin/startup

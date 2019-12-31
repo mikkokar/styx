@@ -23,11 +23,12 @@ import java.net.URI;
 import static com.hotels.styx.api.HttpHeaderNames.HOST;
 import static com.hotels.styx.api.Url.Builder.url;
 
-final class UrlDecoder {
+// TODO: Shouldn't be public:
+public final class UrlDecoder {
     private UrlDecoder() {
     }
 
-    static Url decodeUrl(UnwiseCharsEncoder unwiseCharEncoder, HttpRequest request) {
+    public static Url decodeUrl(UnwiseCharsEncoder unwiseCharEncoder, HttpRequest request) {
         String host = request.headers().get(HOST);
 
         if (request.uri().startsWith("/") && host != null) {

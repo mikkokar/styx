@@ -17,9 +17,16 @@ routingObjects:
 
 httpPipeline: hello1
 
+
 servers:
-  http:
-    type: HttpServer
+  h2:
+    type: Http2Server
     config:
-      port: 8081
-      handler: hello2
+      port: 8443
+      handler: foo
+      tlsSettings:
+        sslProvider:           OPENSSL
+        certificateFile:       /styx/styx/conf/tls/testCredentials.crt
+        certificateKeyFile:    /styx/styx/conf/tls/testCredentials.key
+        sessionTimeoutMillis:  300000
+        sessionCacheSize:      20000

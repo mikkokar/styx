@@ -33,6 +33,8 @@ import com.hotels.styx.routing.handlers.RouteRefLookup;
 import com.hotels.styx.routing.handlers.StaticResponseHandler;
 import com.hotels.styx.StyxObjectRecord;
 import com.hotels.styx.routing.interceptors.RewriteInterceptor;
+import com.hotels.styx.servers.StyxHttp2Server;
+import com.hotels.styx.servers.StyxHttp2ServerFactory;
 import com.hotels.styx.servers.StyxHttpServer;
 import com.hotels.styx.servers.StyxHttpServerFactory;
 import com.hotels.styx.serviceproviders.ServiceProviderFactory;
@@ -87,11 +89,13 @@ public final class Builtins {
                     YAML_FILE_CONFIGURATION_SERVICE, YamlFileConfigurationService.SCHEMA);
 
     public static final ImmutableMap<String, StyxServerFactory> BUILTIN_SERVER_FACTORIES = ImmutableMap.of(
-            "HttpServer", new StyxHttpServerFactory()
+            "HttpServer", new StyxHttpServerFactory(),
+            "Http2Server", new StyxHttp2ServerFactory()
     );
 
     public static final ImmutableMap<String, Schema.FieldType> BUILTIN_SERVER_SCHEMAS = ImmutableMap.of(
-            "HttpServer", StyxHttpServer.SCHEMA
+            "HttpServer", StyxHttpServer.SCHEMA,
+            "Http2Server", StyxHttp2Server.SCHEMA
     );
 
     public static final RouteRefLookup DEFAULT_REFERENCE_LOOKUP = reference -> (request, ctx) ->

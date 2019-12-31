@@ -42,11 +42,6 @@ public class WebServerConnectorFactory implements ServerConnectorFactory {
         }
 
         @Override
-        public String type() {
-            return this.sslContext == null ? "http" : "https";
-        }
-
-        @Override
         public int port() {
             return this.port;
         }

@@ -5,13 +5,6 @@ proxy:
   connectors:
     http:
       port: 8080
-    https:
-      port: 8443
-      sslProvider: OPENSSL # Also supports JDK
-      certificateFile: ${STYX_HOME:classpath:}/conf/tls/testCredentials.crt
-      certificateKeyFile: ${STYX_HOME:classpath:}/conf/tls/testCredentials.key
-      sessionTimeoutMillis: 300000
-      sessionCacheSize: 20000
   bossThreadsCount: 1
   clientWorkerThreadsCount: 0
   workerThreadsCount: 0

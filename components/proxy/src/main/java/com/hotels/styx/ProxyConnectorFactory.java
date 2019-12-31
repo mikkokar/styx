@@ -125,11 +125,6 @@ public class ProxyConnectorFactory implements ServerConnectorFactory {
 
 
         @Override
-        public String type() {
-            return sslContext == null ? "http" : "https";
-        }
-
-        @Override
         public int port() {
             return port;
         }

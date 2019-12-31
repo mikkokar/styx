@@ -72,14 +72,20 @@ servers:
       port: 8443
       listener: h2Handler
 
+      tlsSettings:
+        sslProvider: OPENSSL # Also supports JDK
+        certificateFile: ${STYX_HOME:classpath:}/conf/tls/testCredentials.crt
+        certificateKeyFile: ${STYX_HOME:classpath:}/conf/tls/testCredentials.key
+        sessionTimeoutMillis: 300000
+        sessionCacheSize: 20000
+
       maxInitialLength: 4096
       maxHeaderSize: 8192
       maxChunkSize: 8192
-
       requestTimeoutMillis: 12000
+
       keepAliveTimeoutMillis: 12000
       maxConnectionsCount: 4096
-
       bossThreadsCount: 1
       workerThreadsCount: 0
 
