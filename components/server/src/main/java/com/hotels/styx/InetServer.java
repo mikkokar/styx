@@ -22,7 +22,7 @@ import java.net.InetSocketAddress;
 /**
  * A Styx Server is a StyxService with a server socket.
  */
-public interface IStyxServer extends StyxService {
+public interface InetServer extends StyxService {
 
     /**
      * Return an associated server address.

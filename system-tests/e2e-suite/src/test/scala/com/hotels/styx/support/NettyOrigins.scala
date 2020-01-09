@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import com.hotels.styx.NettyExecutor
 import com.google.common.util.concurrent.Service
-import com.hotels.styx.{IStyxServer, StyxServers}
+import com.hotels.styx.{InetServer, StyxServers}
 import com.hotels.styx.api.HttpHandler
 import com.hotels.styx.api.HttpHeaderNames.CONTENT_LENGTH
 import com.hotels.styx.api.Id._
@@ -56,7 +56,7 @@ trait NettyOrigins {
   val customResponseHandler = new CustomResponseHandler()
 
   def customResponseWebServer(port: Int, responseHandler: CustomResponseHandler): HttpServer = {
-    val server: IStyxServer = new NettyServerBuilder()
+    val server: InetServer = new NettyServerBuilder()
       .setProtocolConnector(new NettyHttpServerConnector(port, responseHandler))
       .workerExecutor(NettyExecutor.create("Netty Test Origin", 1))
       .build()

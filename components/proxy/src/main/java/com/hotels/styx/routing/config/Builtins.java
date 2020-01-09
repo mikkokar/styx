@@ -16,7 +16,7 @@
 package com.hotels.styx.routing.config;
 
 import com.google.common.collect.ImmutableMap;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpInterceptor;
 import com.hotels.styx.api.extension.service.spi.StyxService;
@@ -202,10 +202,10 @@ public final class Builtins {
      *
      * @return a Styx service
      */
-    public static IStyxServer buildServer(
+    public static InetServer buildServer(
             String name,
             StyxObjectDefinition serverDef,
-            StyxObjectStore<StyxObjectRecord<IStyxServer>> serverDb,
+            StyxObjectStore<StyxObjectRecord<InetServer>> serverDb,
             Map<String, StyxServerFactory> factories,
             RoutingObjectFactory.Context context) {
         StyxServerFactory constructor = factories.get(serverDef.type());

@@ -29,4 +29,4 @@ data class StyxObjectRecord<T: StyxService>(
 
 typealias ProviderObjectRecord = StyxObjectRecord<StyxService>
 
-typealias ServerObjectRecord = StyxObjectRecord<IStyxServer>
+typealias ServerObjectRecord = StyxObjectRecord<InetServer>

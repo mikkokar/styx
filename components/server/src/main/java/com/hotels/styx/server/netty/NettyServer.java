@@ -16,7 +16,7 @@
 package com.hotels.styx.server.netty;
 
 import com.hotels.styx.NettyExecutor;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.extension.service.spi.AbstractStyxService;
 import io.netty.bootstrap.ServerBootstrap;
@@ -48,7 +48,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 /**
  * NettyServer.
  */
-final class NettyServer extends AbstractStyxService implements IStyxServer {
+final class NettyServer extends AbstractStyxService implements InetServer {
     private static final Logger LOGGER = getLogger(NettyServer.class);
 
     private final ChannelGroup channelGroup;

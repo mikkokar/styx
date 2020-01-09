@@ -16,7 +16,7 @@
 package com.hotels.styx.server.netty;
 
 import com.hotels.styx.NettyExecutor;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
 import com.hotels.styx.api.MetricRegistry;
@@ -105,7 +105,7 @@ public final class NettyServerBuilder {
         return httpConnector;
     }
 
-    public IStyxServer build() {
+    public InetServer build() {
         checkArgument(httpConnector != null, "Must configure a protocol connector");
         checkArgument(workerExecutor != null, "Must configure a worker executor");
 

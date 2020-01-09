@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.AsyncEventBus;
 import com.hotels.styx.Environment;
 import com.hotels.styx.NettyExecutor;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.StartupConfig;
 import com.hotels.styx.StyxConfig;
 import com.hotels.styx.Version;
@@ -75,7 +75,7 @@ public class StyxServerComponents {
     private final List<NamedPlugin> plugins;
     private final StyxObjectStore<RoutingObjectRecord> routeObjectStore = new StyxObjectStore<>();
     private final StyxObjectStore<StyxObjectRecord<StyxService>> providerObjectStore = new StyxObjectStore<>();
-    private final StyxObjectStore<StyxObjectRecord<IStyxServer>> serverObjectStore = new StyxObjectStore<>();
+    private final StyxObjectStore<StyxObjectRecord<InetServer>> serverObjectStore = new StyxObjectStore<>();
     private final RoutingObjectFactory.Context routingObjectContext;
     private final StartupConfig startupConfig;
 
@@ -145,8 +145,8 @@ public class StyxServerComponents {
                 .orElse(ImmutableMap.of())
                 .forEach((name, definition) -> {
                     LOGGER.warn("Loading styx server: " + name + ": " + definition);
-                    IStyxServer provider = Builtins.buildServer(name, definition, serverObjectStore, BUILTIN_SERVER_FACTORIES, routingObjectContext);
-                    StyxObjectRecord<IStyxServer> record = new StyxObjectRecord<>(definition.type(), ImmutableSet.copyOf(definition.tags()), definition.config(), provider);
+                    InetServer provider = Builtins.buildServer(name, definition, serverObjectStore, BUILTIN_SERVER_FACTORIES, routingObjectContext);
+                    StyxObjectRecord<InetServer> record = new StyxObjectRecord<>(definition.type(), ImmutableSet.copyOf(definition.tags()), definition.config(), provider);
                     serverObjectStore.insert(name, record);
                 });
     }
@@ -185,7 +185,7 @@ public class StyxServerComponents {
         return this.providerObjectStore;
     }
 
-    public StyxObjectStore<StyxObjectRecord<IStyxServer>> serversDatabase() {
+    public StyxObjectStore<StyxObjectRecord<InetServer>> serversDatabase() {
         return this.serverObjectStore;
     }
 

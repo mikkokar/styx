@@ -18,7 +18,7 @@ package com.hotels.styx.proxy;
 import com.google.common.collect.ImmutableList;
 import com.hotels.styx.NettyExecutor;
 import com.google.common.util.concurrent.Service;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.StyxServers;
 import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpInterceptor;
@@ -73,7 +73,7 @@ public class StyxProxyTest extends SSLSetup {
         HttpInterceptor echoInterceptor = (request, chain) -> textResponse("Response from http connector");
         StandardHttpRouter handler = new StandardHttpRouter();
 
-        IStyxServer styxServer = newBuilder()
+        InetServer styxServer = newBuilder()
                 .setProtocolConnector(connector(0))
                 .bossExecutor(NettyExecutor.create("Test-Server-Boss", 1))
                 .workerExecutor(NettyExecutor.create("Test-Server-Worker", 0))

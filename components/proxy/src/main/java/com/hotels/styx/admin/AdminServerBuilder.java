@@ -19,7 +19,7 @@ import com.codahale.metrics.json.MetricsModule;
 import com.google.common.collect.ImmutableList;
 import com.hotels.styx.Environment;
 import com.hotels.styx.NettyExecutor;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.StartupConfig;
 import com.hotels.styx.StyxConfig;
 import com.hotels.styx.admin.dashboard.DashboardData;
@@ -115,7 +115,7 @@ public class AdminServerBuilder {
         return this;
     }
 
-    public IStyxServer build() {
+    public InetServer build() {
         LOG.info("event bus that will be used is {}", environment.eventBus());
         StyxConfig styxConfig = environment.configuration();
         AdminServerConfig adminServerConfig = styxConfig.adminServerConfig();

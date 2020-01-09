@@ -17,7 +17,7 @@ package com.hotels.styx.http;
 
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Service;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.StyxServers;
 import com.hotels.styx.api.HttpRequest;
 import com.hotels.styx.api.HttpResponse;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 public class StaticFileOnRealServerIT {
     private final HttpClient client = new StyxHttpClient.Builder().build();
 
-    private IStyxServer webServer;
+    private InetServer webServer;
     private Service guavaService;
     private File dir;
     private String serverEndpoint;

@@ -32,7 +32,7 @@ import com.github.tomakehurst.wiremock.http.StubRequestHandler;
 import com.github.tomakehurst.wiremock.http.StubResponseRenderer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ServiceManager;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.StyxServers;
 import com.hotels.styx.api.Eventual;
 import com.hotels.styx.api.HttpHandler;
@@ -61,8 +61,8 @@ public final class MockOriginServer {
     private final int adminPort;
 
     private int serverPort;
-    private final IStyxServer adminServer;
-    private final IStyxServer mockServer;
+    private final InetServer adminServer;
+    private final InetServer mockServer;
 
     static {
         System.setProperty("org.mortbay.log.class", "com.github.tomakehurst.wiremock.jetty.LoggerAdapter");
@@ -70,7 +70,7 @@ public final class MockOriginServer {
 
     private ServiceManager services;
 
-    private MockOriginServer(String appId, String originId, int adminPort, int serverPort, IStyxServer adminServer, IStyxServer mockServer) {
+    private MockOriginServer(String appId, String originId, int adminPort, int serverPort, InetServer adminServer, InetServer mockServer) {
         this.appId = appId;
         this.originId = originId;
         this.adminPort = adminPort;
@@ -81,8 +81,8 @@ public final class MockOriginServer {
 
     public static MockOriginServer create(String appId, String originId, int adminPort, HttpConnectorConfig httpConfig) {
         WireMockApp wireMockApp = wireMockApp();
-        IStyxServer adminServer = createAdminServer(originId, adminPort, wireMockApp);
-        IStyxServer mockServer = HttpServers.createHttpServer(
+        InetServer adminServer = createAdminServer(originId, adminPort, wireMockApp);
+        InetServer mockServer = HttpServers.createHttpServer(
                 "mock-stub-" + originId,
                 httpConfig,
                 mockHandler(originId, wireMockApp, new WireMockConfiguration()));
@@ -93,8 +93,8 @@ public final class MockOriginServer {
 
     public static MockOriginServer create(String appId, String originId, int adminPort, HttpsConnectorConfig httpsConfig) {
         WireMockApp wireMockApp = wireMockApp();
-        IStyxServer adminServer = createAdminServer(originId, adminPort, wireMockApp);
-        IStyxServer mockServer = HttpServers.createHttpsServer(
+        InetServer adminServer = createAdminServer(originId, adminPort, wireMockApp);
+        InetServer mockServer = HttpServers.createHttpsServer(
                 "mock-stub-" + originId,
                 httpsConfig,
                 mockHandler(originId, wireMockApp, new WireMockConfiguration()));
@@ -215,7 +215,7 @@ public final class MockOriginServer {
         );
     }
 
-    private static IStyxServer createAdminServer(String originId, int adminPort, WireMockApp wireMockApp) {
+    private static InetServer createAdminServer(String originId, int adminPort, WireMockApp wireMockApp) {
         return HttpServers.createHttpServer(
                 "mock-admin-" + originId,
                 new HttpConnectorConfig(adminPort),

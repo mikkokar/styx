@@ -16,7 +16,7 @@
 package com.hotels.styx.serviceproviders;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hotels.styx.IStyxServer;
+import com.hotels.styx.InetServer;
 import com.hotels.styx.routing.config.RoutingObjectFactory;
 import com.hotels.styx.routing.db.StyxObjectStore;
 import com.hotels.styx.StyxObjectRecord;
@@ -37,5 +37,5 @@ public interface StyxServerFactory {
      *
      * @return Styx service instance
      */
-    IStyxServer create(String name, RoutingObjectFactory.Context context, JsonNode serviceConfiguration, StyxObjectStore<StyxObjectRecord<IStyxServer>> serviceDb);
+    InetServer create(String name, RoutingObjectFactory.Context context, JsonNode serviceConfiguration, StyxObjectStore<StyxObjectRecord<InetServer>> serviceDb);
 }

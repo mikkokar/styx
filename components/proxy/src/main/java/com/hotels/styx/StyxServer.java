@@ -76,9 +76,9 @@ public final class StyxServer extends AbstractService {
         LOG.debug("Real resource leak detection level = {}", ResourceLeakDetector.getLevel());
     }
 
-    private final IStyxServer httpServer;
-    private final IStyxServer httpsServer;
-    private final IStyxServer adminServer;
+    private final InetServer httpServer;
+    private final InetServer httpsServer;
+    private final InetServer adminServer;
 
     private final ServiceManager phase1Services;
     private final ServiceManager phase2Services;
@@ -220,13 +220,13 @@ public final class StyxServer extends AbstractService {
 
     public InetSocketAddress proxyHttpAddress() {
         return Optional.ofNullable(httpServer)
-                .map(IStyxServer::inetAddress)
+                .map(InetServer::inetAddress)
                 .orElse(null);
     }
 
     public InetSocketAddress proxyHttpsAddress() {
         return Optional.ofNullable(httpsServer)
-                .map(IStyxServer::inetAddress)
+                .map(InetServer::inetAddress)
                 .orElse(null);
     }
 
@@ -234,7 +234,7 @@ public final class StyxServer extends AbstractService {
         return adminServer.inetAddress();
     }
 
-    private static IStyxServer httpServer(Environment environment, ConnectorConfig connectorConfig, HttpHandler styxDataPlane) {
+    private static InetServer httpServer(Environment environment, ConnectorConfig connectorConfig, HttpHandler styxDataPlane) {
         CharSequence styxInfoHeaderName = environment.configuration().styxHeaderConfig().styxInfoHeaderName();
         ResponseInfoFormat responseInfoFormat = new ResponseInfoFormat(environment);
 
@@ -317,7 +317,7 @@ public final class StyxServer extends AbstractService {
         }
     }
 
-    private static IStyxServer createAdminServer(StyxServerComponents components) {
+    private static InetServer createAdminServer(StyxServerComponents components) {
         Registry<BackendService> registry = (Registry<BackendService>) components.services().get("backendServiceRegistry");
 
         return new AdminServerBuilder(components)
