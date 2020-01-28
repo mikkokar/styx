@@ -143,7 +143,7 @@ public final class NettyToStyxRequestDecoder extends MessageToMessageDecoder<Htt
     }
 
     private FlowControllingHttpContentProducer createProducer(ChannelHandlerContext ctx) {
-        String loggingPrefix = format("%s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
+        String loggingPrefix = format("Request: %s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
 
         return new FlowControllingHttpContentProducer(
                 () -> ctx.channel().read(),

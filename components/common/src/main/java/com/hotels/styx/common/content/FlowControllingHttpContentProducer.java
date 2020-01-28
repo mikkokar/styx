@@ -176,6 +176,8 @@ public class FlowControllingHttpContentProducer {
                     }
                 }).build();
         timeout = timer.newTimeout(timerTask, inactivityTimeoutMs, MILLISECONDS);
+
+        LOGGER.info("{} Created FSM. inactivityTimeoutMs={}", new Object[]{ this.loggingPrefix, inactivityTimeoutMs });
     }
     // CHECKSTYLE:ON
 
