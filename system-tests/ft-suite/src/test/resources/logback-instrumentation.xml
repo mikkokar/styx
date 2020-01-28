@@ -7,13 +7,13 @@
     </encoder>
   </appender>
 
-  <root level="DEBUG">
+  <root level="INFO">
     <appender-ref ref="STDOUT"/>
   </root>
 
   <logger name="Styx-Tests" level="INFO"/>
   <logger name="com.hotels.styx.http-messages.inbound" level="INFO"/>
   <logger name="com.hotels.styx.http-messages.outbound" level="INFO"/>
-  <logger name="com.hotels.styx.StyxServer" level="DEBUG"/>
+  <logger name="com.hotels.styx.StyxServer" level="INFO"/>
 
 </configuration>
