@@ -15,5 +15,6 @@
   <logger name="com.hotels.styx.http-messages.inbound" level="INFO"/>
   <logger name="com.hotels.styx.http-messages.outbound" level="INFO"/>
   <logger name="com.hotels.styx.StyxServer" level="INFO"/>
+  <logger name="com.hotels.styx.common.content.FlowControllingHttpContentProducer" level="DEBUG"/>
 
 </configuration>

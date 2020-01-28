@@ -116,6 +116,7 @@ public class FlowControllingHttpContentProducer {
                 .transition(BUFFERING, ChannelExceptionEvent.class, this::releaseAndTerminate)
                 .transition(BUFFERING, ContentSubscribedEvent.class, this::contentSubscribedInBuffering)
                 .transition(BUFFERING, ContentEndEvent.class, this::contentEndEventWhileBuffering)
+
                 .transition(BUFFERING_COMPLETED, RxBackpressureRequestEvent.class, this::rxBackpressureRequestInBufferingCompleted)
                 .transition(BUFFERING_COMPLETED, ContentChunkEvent.class, this::spuriousContentChunkEvent)
                 .transition(BUFFERING_COMPLETED, TearDownEvent.class, this::releaseAndTerminate)
@@ -123,6 +124,7 @@ public class FlowControllingHttpContentProducer {
                 .transition(BUFFERING_COMPLETED, ChannelExceptionEvent.class, s -> BUFFERING_COMPLETED)
                 .transition(BUFFERING_COMPLETED, ContentSubscribedEvent.class, this::contentSubscribedInBufferingCompleted)
                 .transition(BUFFERING_COMPLETED, ContentEndEvent.class, s -> BUFFERING_COMPLETED)
+
                 .transition(STREAMING, RxBackpressureRequestEvent.class, this::rxBackpressureRequestEventInStreaming)
                 .transition(STREAMING, ContentChunkEvent.class, this::contentChunkInStreaming)
                 .transition(STREAMING, TearDownEvent.class, e -> emitErrorAndTerminate(e.cause()))
@@ -140,11 +142,13 @@ public class FlowControllingHttpContentProducer {
                 .transition(EMITTING_BUFFERED_CONTENT, ContentSubscribedEvent.class, this::contentSubscribedEventWhileEmittingBufferedContent)
                 .transition(EMITTING_BUFFERED_CONTENT, ContentEndEvent.class, this::contentEndEventWhileEmittingBufferedContent)
                 .transition(EMITTING_BUFFERED_CONTENT, UnsubscribeEvent.class, this::emitErrorAndTerminateOnPrematureUnsubscription)
+
                 .transition(COMPLETED, ContentChunkEvent.class, this::spuriousContentChunkEvent)
                 .transition(COMPLETED, UnsubscribeEvent.class, ev -> COMPLETED)
                 .transition(COMPLETED, RxBackpressureRequestEvent.class, ev -> COMPLETED)
                 .transition(COMPLETED, ContentSubscribedEvent.class, this::contentSubscribedInCompletedState)
                 .transition(COMPLETED, TearDownEvent.class, ev -> COMPLETED)
+
                 .transition(TERMINATED, ContentChunkEvent.class, this::spuriousContentChunkEvent)
                 .transition(TERMINATED, ContentSubscribedEvent.class, this::contentSubscribedInTerminatedState)
                 .transition(TERMINATED, RxBackpressureRequestEvent.class, ev -> TERMINATED)
@@ -153,6 +157,8 @@ public class FlowControllingHttpContentProducer {
                     return state;
                 })
                 .onStateChange((oldState, newState, event) -> {
+                    LOGGER.debug(warningMessage(format("State transition: %s -> %s (%s)", oldState, newState, event)));
+
                     if (newState.equals(COMPLETED) || newState.equals(TERMINATED)) {
                         timeout.cancel();
                     } else if (event instanceof RxBackpressureRequestEvent || event instanceof ContentSubscribedEvent) {
