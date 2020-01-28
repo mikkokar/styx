@@ -33,6 +33,7 @@ import org.hamcrest.Matchers._
 import org.scalatest.FunSpec
 import org.scalatest.concurrent.Eventually
 import reactor.core.publisher.Mono
+import com.hotels.styx.support.ResourcePaths.fixturesHome
 
 import scala.concurrent.duration._
 
@@ -51,7 +52,8 @@ class ExpiringConnectionSpec extends FunSpec
         |  outbound:
         |    enabled: True
         |    longFormat: True
-        |""".stripMargin
+        |""".stripMargin,
+    logbackXmlLocation = fixturesHome(this.getClass, "/conf/logback/logback-instrumentation.xml")
   )
 
   val mockServer = FakeHttpServer.HttpStartupConfig()

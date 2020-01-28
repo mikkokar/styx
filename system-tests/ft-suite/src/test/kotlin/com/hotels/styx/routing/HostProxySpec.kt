@@ -26,6 +26,7 @@ import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.client.StyxHttpClient
 import com.hotels.styx.server.HttpConnectorConfig
 import com.hotels.styx.servers.MockOriginServer
+import com.hotels.styx.support.ResourcePaths
 import com.hotels.styx.support.StyxServerProvider
 import com.hotels.styx.support.metrics
 import com.hotels.styx.support.newRoutingObject
@@ -378,7 +379,9 @@ class HostProxySpec : FeatureSpec() {
                                   factories: {}                                     
 
                                 httpPipeline: hostProxy
-                              """.trimIndent())
+                              """.trimIndent(),
+            defaultLoggingConfig = ResourcePaths.fixturesHome(StyxServerProvider::class.java, "/logback-instrumentation.xml")
+    )
 
     private val testServer = StyxServerProvider("""
                                 proxy:
