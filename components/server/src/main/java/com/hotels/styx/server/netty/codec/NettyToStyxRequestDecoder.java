@@ -151,7 +151,7 @@ public final class NettyToStyxRequestDecoder extends MessageToMessageDecoder<Htt
                 cause -> { },
                 format("%s, %s", loggingPrefix, ""),
                 null,
-                inactivityTimeoutMs);
+                inactivityTimeoutMs, ctx.channel().eventLoop());
     }
 
     private LiveHttpRequest toStyxRequest(HttpRequest request, Publisher<Buffer> contentPublisher) {

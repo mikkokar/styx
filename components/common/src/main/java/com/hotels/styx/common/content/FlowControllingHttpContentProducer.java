@@ -20,6 +20,7 @@ import com.hotels.styx.api.exceptions.ResponseTimeoutException;
 import com.hotels.styx.api.extension.Origin;
 import com.hotels.styx.common.StateMachine;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.EventLoop;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
@@ -78,6 +79,7 @@ public class FlowControllingHttpContentProducer {
     final AtomicLong queueDepthChunks = new AtomicLong(0);
 
     private final Origin origin;
+    private EventLoop nettyExecutor;
 
     private volatile Subscriber<? super ByteBuf> contentSubscriber;
 
@@ -100,15 +102,20 @@ public class FlowControllingHttpContentProducer {
             Consumer<Throwable> onTerminateAction,
             String loggingPrefix,
             Origin origin,
-            long inactivityTimeoutMs) {
+            long inactivityTimeoutMs,
+            EventLoop eventExecutors) {
         this.askForMore = requireNonNull(askForMore);
         this.onCompleteAction = requireNonNull(onCompleteAction);
         this.onTerminateAction = requireNonNull(onTerminateAction);
         this.loggingPrefix = loggingPrefix;
         this.origin = origin;
-        TimerTask timerTask = timeout -> stateMachine.handle(new TearDownEvent(new RuntimeException("Inactive Subscriber")));
+        this.nettyExecutor = eventExecutors;
+
+        TimerTask timerTask = timeout -> nettyExecutor.submit(() -> stateMachine.handle(new TearDownEvent(new RuntimeException("Inactive Subscriber"))));
+
         this.stateMachine = new StateMachine.Builder<ProducerState>()
                 .initialState(BUFFERING)
+
                 .transition(BUFFERING, RxBackpressureRequestEvent.class, this::rxBackpressureRequestInBuffering)
                 .transition(BUFFERING, ContentChunkEvent.class, this::contentChunkInBuffering)
                 .transition(BUFFERING, TearDownEvent.class, this::releaseAndTerminate)

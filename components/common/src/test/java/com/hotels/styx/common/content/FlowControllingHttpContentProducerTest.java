@@ -20,6 +20,7 @@ import com.hotels.styx.api.exceptions.TransportLostException;
 import com.hotels.styx.support.matchers.LoggingTestSupport;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.EventLoop;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,7 +88,7 @@ public class FlowControllingHttpContentProducerTest {
                 onTerminateAction,
                 "foobar",
                 newOriginBuilder("foohost", 12345).build(),
-                INACTIVITY_TIMEOUT_MS);
+                INACTIVITY_TIMEOUT_MS, mock(EventLoop.class));
 
         producer.request(initialCount);
     }
