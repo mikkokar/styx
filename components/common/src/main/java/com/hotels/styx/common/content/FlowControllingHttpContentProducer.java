@@ -111,7 +111,7 @@ public class FlowControllingHttpContentProducer {
         this.origin = origin;
         this.nettyExecutor = eventExecutors;
 
-        TimerTask timerTask = timeout -> nettyExecutor.submit(() -> stateMachine.handle(new TearDownEvent(new RuntimeException("Inactive Subscriber"))));
+        TimerTask timerTask = timeout -> nettyExecutor.submit(() -> stateMachine.handle(new TearDownEvent(new RuntimeException(loggingPrefix + " - Inactive Subscriber"))));
 
         this.stateMachine = new StateMachine.Builder<ProducerState>()
                 .initialState(BUFFERING)
@@ -167,7 +167,8 @@ public class FlowControllingHttpContentProducer {
                     LOGGER.debug(warningMessage(format("State transition: %s -> %s (%s)", oldState, newState, event)));
 
                     if (newState.equals(COMPLETED) || newState.equals(TERMINATED)) {
-                        timeout.cancel();
+                        boolean cancelled = timeout.cancel();
+                        LOGGER.debug(warningMessage(format("Cancelled timer: %s", cancelled)));
                     } else if (event instanceof RxBackpressureRequestEvent || event instanceof ContentSubscribedEvent) {
                         if (!oldState.equals(COMPLETED) && !oldState.equals(TERMINATED)) {
                             timeout.cancel();
