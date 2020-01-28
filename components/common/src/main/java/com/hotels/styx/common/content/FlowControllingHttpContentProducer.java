@@ -93,6 +93,7 @@ public class FlowControllingHttpContentProducer {
         TERMINATED
     }
 
+    // CHECKSTYLE:OFF
     public FlowControllingHttpContentProducer(
             Runnable askForMore,
             Runnable onCompleteAction,
@@ -163,6 +164,7 @@ public class FlowControllingHttpContentProducer {
                 }).build();
         timeout = timer.newTimeout(timerTask, inactivityTimeoutMs, MILLISECONDS);
     }
+    // CHECKSTYLE:ON
 
     /*
      * BUFFERING state event handlers
