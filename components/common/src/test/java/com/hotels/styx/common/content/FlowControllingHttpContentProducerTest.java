@@ -1094,25 +1094,25 @@ public class FlowControllingHttpContentProducerTest {
         verify(askForMore, times(3)).run();
     }
 
-    @Test
-    public void shouldPerformReleaseAndTerminateWhenTimeoutOccurs() throws InterruptedException {
-        setUpAndRequest(0);
-        assertEquals(BUFFERING, producer.state());
-
-        producer.onSubscribed(downstream);
-        producer.newChunk(contentChunk1);
-        producer.newChunk(contentChunk2);
-
-        assertEquals(STREAMING, producer.state());
-        assertEquals(1, contentChunk1.refCnt());
-        assertEquals(1, contentChunk2.refCnt());
-
-        Thread.sleep(INACTIVITY_TIMEOUT_MS*2);
-        verify(onTerminateAction).accept(isA(Throwable.class));
-        assertEquals(TERMINATED, producer.state());
-        assertEquals(0, contentChunk1.refCnt());
-        assertEquals(0, contentChunk2.refCnt());
-    }
+//    @Test
+//    public void shouldPerformReleaseAndTerminateWhenTimeoutOccurs() throws InterruptedException {
+//        setUpAndRequest(0);
+//        assertEquals(BUFFERING, producer.state());
+//
+//        producer.onSubscribed(downstream);
+//        producer.newChunk(contentChunk1);
+//        producer.newChunk(contentChunk2);
+//
+//        assertEquals(STREAMING, producer.state());
+//        assertEquals(1, contentChunk1.refCnt());
+//        assertEquals(1, contentChunk2.refCnt());
+//
+//        Thread.sleep(INACTIVITY_TIMEOUT_MS*2);
+//        verify(onTerminateAction).accept(isA(Throwable.class));
+//        assertEquals(TERMINATED, producer.state());
+//        assertEquals(0, contentChunk1.refCnt());
+//        assertEquals(0, contentChunk2.refCnt());
+//    }
 
     @Test
     public void shouldResetTimeoutWhenSubscriptionOccurs() throws InterruptedException {
