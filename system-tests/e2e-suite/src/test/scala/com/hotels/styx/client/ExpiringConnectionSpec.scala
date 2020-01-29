@@ -16,6 +16,7 @@
 package com.hotels.styx.client
 
 import com.github.tomakehurst.wiremock.client.WireMock.{get => _, _}
+import com.hotels.styx.api.HttpResponse
 import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.api.LiveHttpRequest._
 import com.hotels.styx.api.extension.ActiveOrigins
@@ -91,7 +92,9 @@ class ExpiringConnectionSpec extends FunSpec
   }
 
   it("Should expire connection after 1 second") {
-    val response1 = Mono.from(pooledClient.sendRequest(get(styxServer.routerURL("/app1/1")).build())).block()
+    val response1: HttpResponse = Mono.from(pooledClient.sendRequest(get(styxServer.routerURL("/app1/1")).build()))
+      .flatMap(r => Mono.from(r.aggregate(1024)))
+      .block()
 
     assertThat(response1.status(), is(OK))
 
@@ -102,7 +105,9 @@ class ExpiringConnectionSpec extends FunSpec
 
     Thread.sleep(2000)
 
-    val response2 = Mono.from(pooledClient.sendRequest(get(styxServer.routerURL("/app1/2")).build())).block()
+    val response2: HttpResponse = Mono.from(pooledClient.sendRequest(get(styxServer.routerURL("/app1/2")).build()))
+      .flatMap(r => Mono.from(r.aggregate(1024)))
+      .block()
 
     assertThat(response2.status(), is(OK))
 

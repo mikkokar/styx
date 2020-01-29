@@ -111,7 +111,7 @@ public class FlowControllingHttpContentProducer {
         this.origin = origin;
         this.nettyExecutor = eventExecutors;
 
-        TimerTask timerTask = timeout -> nettyExecutor.submit(() -> stateMachine.handle(new TearDownEvent(new RuntimeException(loggingPrefix + " - Inactive Subscriber"))));
+        TimerTask timerTask = timeout -> nettyExecutor.submit(() -> stateMachine.handle(new TearDownEvent(new RuntimeException("Subscriber inactive: " + loggingPrefix))));
 
         this.stateMachine = new StateMachine.Builder<ProducerState>()
                 .initialState(BUFFERING)

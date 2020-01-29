@@ -92,12 +92,14 @@ public final class NettyToStyxRequestDecoder extends MessageToMessageDecoder<Htt
                 ctx.channel().config().setAutoRead(false);
                 ctx.channel().read();
 
+
                 this.producer = Optional.of(createProducer(ctx));
                 Publisher<Buffer> contentPublisher = new FlowControllingPublisher(
                         ctx.channel().eventLoop(),
                         this.producer.get());
 
                 LiveHttpRequest styxRequest = toStyxRequest((HttpRequest) msg, contentPublisher);
+
                 out.add(styxRequest);
 
             }
@@ -143,7 +145,7 @@ public final class NettyToStyxRequestDecoder extends MessageToMessageDecoder<Htt
     }
 
     private FlowControllingHttpContentProducer createProducer(ChannelHandlerContext ctx) {
-        String loggingPrefix = format("Request: %s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
+        String loggingPrefix = format("Request body ByteStream: %s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
 
         return new FlowControllingHttpContentProducer(
                 () -> ctx.channel().read(),

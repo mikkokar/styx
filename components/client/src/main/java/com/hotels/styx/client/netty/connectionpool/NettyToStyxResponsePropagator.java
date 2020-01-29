@@ -159,7 +159,7 @@ final class NettyToStyxResponsePropagator extends SimpleChannelInboundHandler {
 
     private FlowControllingHttpContentProducer createProducer(ChannelHandlerContext ctx, LiveHttpRequest request) {
         String requestPrefix = request != null ? format("Request(method=%s, url=%s, id=%s)", request.method(), request.url(), request.id()) : "Request NA";
-        String loggingPrefix = format("Response: %s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
+        String loggingPrefix = format("Response body ByteStream: %s -> %s", ctx.channel().remoteAddress(), ctx.channel().localAddress());
 
         return new FlowControllingHttpContentProducer(
                 () -> ctx.channel().read(),
