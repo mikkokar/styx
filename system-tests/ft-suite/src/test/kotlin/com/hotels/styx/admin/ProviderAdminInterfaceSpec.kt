@@ -104,13 +104,17 @@ class ProviderAdminInterfaceSpec : FeatureSpec() {
 
         feature("Provider admin interface endpoints") {
             scenario("Exposes endpoints for each provider") {
-                styxServer.adminRequest("/admin/providers/myMonitor/status")
-                        .bodyAs(UTF_8)
-                        .shouldBe("""{ name: "HealthCheckMonitoringService" status: "RUNNING" }""")
+                eventually(1.seconds, AssertionError::class.java) {
+                    styxServer.adminRequest("/admin/providers/myMonitor/status")
+                            .bodyAs(UTF_8)
+                            .shouldBe("""{ name: "HealthCheckMonitoringService" status: "RUNNING" }""")
+                }
 
-                styxServer.adminRequest("/admin/providers/mySecondMonitor/status")
-                        .bodyAs(UTF_8)
-                        .shouldBe("""{ name: "HealthCheckMonitoringService" status: "RUNNING" }""")
+                eventually(1.seconds, AssertionError::class.java) {
+                    styxServer.adminRequest("/admin/providers/mySecondMonitor/status")
+                            .bodyAs(UTF_8)
+                            .shouldBe("""{ name: "HealthCheckMonitoringService" status: "RUNNING" }""")
+                }
             }
 
             scenario ("Provider list page contains links for each provider endpoint") {
@@ -140,10 +144,13 @@ class ProviderAdminInterfaceSpec : FeatureSpec() {
             scenario("The new admin endpoint returns status information without server restart") {
                 val responseA = styxServer.adminRequest("/admin/providers/appA-monitor/status")
                 responseA.status() shouldBe NOT_FOUND
-                val responseB = styxServer.adminRequest("/admin/providers/appB-monitor/status")
-                responseB.status() shouldBe OK
-                responseB.header(CONTENT_TYPE).get().toLowerCase() shouldBe APPLICATION_JSON.toString().toLowerCase()
-                responseB.bodyAs(UTF_8) shouldBe "{ name: \"HealthCheckMonitoringService\" status: \"RUNNING\" }"
+
+                eventually(1.seconds, AssertionError::class.java) {
+                    val responseB = styxServer.adminRequest("/admin/providers/appB-monitor/status")
+                    responseB.status() shouldBe OK
+                    responseB.header(CONTENT_TYPE).get().toLowerCase() shouldBe APPLICATION_JSON.toString().toLowerCase()
+                    responseB.bodyAs(UTF_8) shouldBe "{ name: \"HealthCheckMonitoringService\" status: \"RUNNING\" }"
+                }
             }
 
             scenario("Endpoints for dynamically removed Styx services are not listed in the Admin interface") {
