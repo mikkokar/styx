@@ -73,7 +73,7 @@ class BigFileDownloadSpec extends FunSpec
   val ONE_HUNDRED_MB: Long = 100L * 1024L * 1024L
 
   describe("Big file requests") {
-    it("should proxy big file requests") {
+    ignore("should proxy big file requests") {
       val req = get("/download")
         .addHeader(HOST, styxServer.proxyHost)
         .build()
