@@ -70,12 +70,6 @@ class OriginsFileCompatibilitySpec : FunSpec() {
                     http:
                       port: 0
 
-                request-logging:
-                  inbound:
-                    enabled: true
-                  outbound:
-                    enabled: true
-
                 providers:
                   originsFileLoader:
                     type: YamlFileConfigurationService
