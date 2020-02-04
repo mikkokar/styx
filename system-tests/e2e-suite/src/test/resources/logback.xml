@@ -19,5 +19,6 @@
   <logger name="com.hotels.styx.server.netty.connectors.HttpPipelineHandler" level="INFO"/>
   <logger name="com.hotels.styx.proxy.HttpErrorStatusCauseLogger" level="INFO"/>
   <logger name="com.hotels.styx.server.netty.connectors.HttpPipelineHandler" level="INFO"/>
+  <logger name="com.hotels.styx.common.content.FlowControllingHttpContentProducer" level="ERROR"/>
 
 </configuration>
