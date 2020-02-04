@@ -18,7 +18,9 @@ package com.hotels.styx.routing
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import com.hotels.styx.api.HttpHeaderNames.CHUNKED
 import com.hotels.styx.api.HttpHeaderNames.HOST
+import com.hotels.styx.api.HttpHeaderNames.TRANSFER_ENCODING
 import com.hotels.styx.api.HttpRequest.get
 import com.hotels.styx.api.HttpResponseStatus.BAD_GATEWAY
 import com.hotels.styx.api.HttpResponseStatus.CREATED
@@ -235,8 +237,12 @@ class HostProxySpec : FeatureSpec() {
                                connectionExpirationSeconds: $connectinExpiryInSeconds
                            """.trimIndent()) shouldBe CREATED
 
+                // TODO: Still vulnerable for client closing the connection after receiving the response.
+                //       This can potentially propagate back to pooled server side connection, and therefore
+                //       causing it to be closed it instead of returned back to pool.
                 client.send(get("/")
                         .header(HOST, styxServer().proxyHttpHostHeader())
+                        .header(TRANSFER_ENCODING, CHUNKED)
                         .build())
                         .wait()!!
                         .status() shouldBe OK
@@ -253,6 +259,7 @@ class HostProxySpec : FeatureSpec() {
 
                 client.send(get("/")
                         .header(HOST, styxServer().proxyHttpHostHeader())
+                        .header(TRANSFER_ENCODING, CHUNKED)
                         .build())
                         .wait()!!
                         .status() shouldBe OK
