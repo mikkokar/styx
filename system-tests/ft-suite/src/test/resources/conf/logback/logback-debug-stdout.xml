@@ -9,7 +9,7 @@
   <logger name="org.apache" level="WARN"/>
   <logger name="io.netty" level="WARN"/>
   <logger name="com.hotels.styx.proxy.backends.file.FileChangeMonitor" level="INFO"/>
-  <logger name="com.hotels.styx.common.content.FlowControllingHttpContentProducer" level="ERROR"/>
+  <logger name="com.hotels.styx.common.content.FlowControllingHttpContentProducer" level="INFO"/>
 
   <root level="INFO">
     <appender-ref ref="CONSOLE"/>

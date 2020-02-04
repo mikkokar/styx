@@ -27,6 +27,7 @@ import com.hotels.styx.api.HttpResponseStatus.OK
 import com.hotels.styx.client.StyxHttpClient
 import com.hotels.styx.server.HttpConnectorConfig
 import com.hotels.styx.servers.MockOriginServer
+import com.hotels.styx.support.ResourcePaths
 import com.hotels.styx.support.StyxServerProvider
 import com.hotels.styx.support.metrics
 import com.hotels.styx.support.newRoutingObject
@@ -83,7 +84,8 @@ class HostProxySpec : FeatureSpec() {
                 LOGGER.info("HostProxySpec: Failure: Styx server : {}", styxServer().metrics())
                 LOGGER.info("HostProxySpec: Failure: Test server : {}", testServer().metrics())
             }
-            else -> { }
+            else -> {
+            }
         }
     }
 
@@ -190,8 +192,12 @@ class HostProxySpec : FeatureSpec() {
                            """.trimIndent()) shouldBe CREATED
 
                 val requestFutures = (1..10)
-                        .map { "/$it" }
-                        .map { it to client.send(get(it).header(HOST, styxServer().proxyHttpHostHeader()).build()) }
+                        .map { "/hps-pcs/$it" }
+                        .map {
+                            it to client.send(get(it)
+                                    .header(HOST, styxServer().proxyHttpHostHeader())
+                                    .build())
+                        }
 
                 requestFutures
                         .forEach { (url, future) ->
@@ -243,7 +249,7 @@ class HostProxySpec : FeatureSpec() {
                 }
 
                 // Wait for connection to expiry
-                Thread.sleep(connectinExpiryInSeconds*1000L)
+                Thread.sleep(connectinExpiryInSeconds * 1000L)
 
                 client.send(get("/")
                         .header(HOST, styxServer().proxyHttpHostHeader())
@@ -384,7 +390,7 @@ class HostProxySpec : FeatureSpec() {
     }
 
     private val styxServer = StyxServerProvider(
-            defaultConfig="""
+            defaultConfig = """
                 proxy:
                   connectors:
                     http:
@@ -401,7 +407,7 @@ class HostProxySpec : FeatureSpec() {
 
                 httpPipeline: hostProxy
                 """.trimIndent()
-            )
+    )
 
     private val testServer = StyxServerProvider("""
                                 proxy:
@@ -419,6 +425,14 @@ class HostProxySpec : FeatureSpec() {
                                 services:
                                   factories: {}
 
+                                request-logging:
+                                  inbound:
+                                    enabled: True
+                                    longFormat: True
+                                  outbound:
+                                    enabled: True
+                                    longFormat: True
+
                                 httpPipeline:
                                   type: ConditionRouter
                                   config:
@@ -434,9 +448,12 @@ class HostProxySpec : FeatureSpec() {
                                       config:
                                         status: 200
                                         content: "Hello - HTTP"
-                              """.trimIndent())
+                              """.trimIndent(),
+            defaultLoggingConfig = ResourcePaths.fixturesHome(
+                    HostProxySpec::class.java,
+                    "/conf/logback/logback-debug-stdout.xml"))
 
-    val client: StyxHttpClient = System.setProperty("io.netty.eventLoopThreads", "2").let {StyxHttpClient.Builder().build()}
+    val client: StyxHttpClient = System.setProperty("io.netty.eventLoopThreads", "2").let { StyxHttpClient.Builder().build() }
 
     val mockServer = MockOriginServer.create("", "", 0, HttpConnectorConfig(0))
             .start()

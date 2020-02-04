@@ -182,7 +182,7 @@ public final class StateMachine<S> {
 
         public Builder<S> debugTransitions(String messagePrefix) {
             return this.onStateChange((oldState, newState, event)-> {
-                LOGGER.debug("{} {}: {} -> {}", new Object[] {messagePrefix, event, oldState, newState});
+                LOGGER.info("{} {}: {} -> {}", new Object[] {messagePrefix, event, oldState, newState});
             });
         }
     }
