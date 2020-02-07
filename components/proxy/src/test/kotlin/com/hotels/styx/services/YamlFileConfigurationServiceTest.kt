@@ -98,6 +98,7 @@ class YamlFileConfigurationServiceTest : FunSpec() {
                 }
             }
 
+            // MIKKO: This fails:
             test("It recovers from syntax errors") {
                 val routeDb = StyxObjectStore<RoutingObjectRecord>()
                 val serviceDb = StyxObjectStore<ProviderObjectRecord>()
@@ -110,7 +111,19 @@ class YamlFileConfigurationServiceTest : FunSpec() {
                         .start(wait = false)
                         .service
 
+
+                LOGGER.info("It recovers from syntax errors - before withService")
+
+                // It is as if it never comes here?
+                // Perhaps above code starts the server and throws an exception, thus by-passing `withService` block?
+                //  - But that should trigger a test case failure?
+
                 withService(service) {
+                    LOGGER.info("It recovers from syntax errors - in withService action")
+                    //
+                    // writeOrigins - this is never written to the temporary file.
+                    // the temporary file content remains as above (something's wrong)
+                    //
                     writeOrigins("""
                         ---
                         - id: "app"
