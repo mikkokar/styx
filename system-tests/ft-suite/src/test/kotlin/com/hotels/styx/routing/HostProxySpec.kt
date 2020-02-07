@@ -74,6 +74,8 @@ class HostProxySpec : FeatureSpec() {
     override fun afterTest(testCase: TestCase, result: TestResult) {
         super.afterTest(testCase, result)
 
+        LOGGER.info("HostProxySpec: Finished")
+
         when (result.status) {
             TestStatus.Error -> {
                 LOGGER.info("HostProxySpec: Error: Styx server : {}", styxServer().metrics())
