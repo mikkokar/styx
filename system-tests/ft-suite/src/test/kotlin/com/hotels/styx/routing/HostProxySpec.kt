@@ -205,6 +205,10 @@ class HostProxySpec : FeatureSpec() {
                     }
                 }
 
+                /*
+                 * There was 3 connection attempts, because one connection had terminated.
+                 * But `closedConnections` was zero, suggesting that origin closed the connection.
+                 */
                 withClue("Styx Server routing.objects.hostProxy.connectionspool.connection-attempts") {
                     styxServer().metrics().let {
                         (it["routing.objects.hostProxy.connectionspool.connection-attempts"]!!.get("value") as Int) shouldBeInRange 1..2
